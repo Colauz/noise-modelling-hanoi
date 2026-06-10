@@ -1,0 +1,25 @@
+# Data (too large for git)
+data/raw/
+data/processed/
+outputs/models/
+
+# Keep folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!outputs/models/.gitkeep
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+
+# OS
+.DS_Store
+
+# Caches HF/OSMnx créés à l'exécution des notebooks
+cache/
+notebooks/cache/
