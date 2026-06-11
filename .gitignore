@@ -1,7 +1,7 @@
 # Data (too large for git)
 data/raw/
 data/processed/
-outputs/models/
+outputs/models/*
 
 # Keep folder structure
 !data/raw/.gitkeep
