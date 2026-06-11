@@ -26,3 +26,4 @@ __pycache__/
 # Caches HF/OSMnx créés à l'exécution des notebooks
 cache/
 notebooks/cache/
+!outputs/models/surrogate_lgbm_v2_uganda.pkl
