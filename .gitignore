@@ -8,6 +8,9 @@ outputs/models/
 !data/processed/.gitkeep
 !outputs/models/.gitkeep
 
+# Modèle final partagé avec l'équipe (entraîné par scripts/train_large.py)
+!outputs/models/surrogate_lgbm_large.pkl
+
 # Secrets
 .env
 
