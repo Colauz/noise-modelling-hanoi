@@ -1,0 +1,28 @@
+PHONE CALIBRATION — 10 MIN, ONCE, START OF FIRST FIELD SESSION
+(Laurian / Lucas / Quang — Decibel X)
+
+SETTINGS (same on all 3 phones, do this first):
+  Decibel X > settings:
+  - Frequency weighting: A
+  - Response time: SLOW
+  - Trim: 0.0
+
+PROCEDURE (street side, before splitting up):
+  1. Put the 3 phones side by side, mics uncovered, facing the road
+  2. Everyone resets Decibel X, measure 1 minute, read AVG at the same moment
+  3. Write down the 3 values
+  4. Repeat 30 s to check stability (each phone should match its round 1 within ~1 dB)
+
+OFFSETS:
+  - Middle phone = reference
+  - Offset = reference value - phone value
+  Example: Laurian 72.1, Lucas 70.3, Quang 72.6
+  -> Laurian ref (0) / Lucas +1.9 / Quang -0.5
+
+APPLY:
+  Enter each offset in Decibel X > settings > Trim.
+  Done: all 3 phones now display the same values.
+
+RECORD:
+  Send the values + date to the group chat / calibration.csv:
+  phone, round, dBA, date
