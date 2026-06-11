@@ -40,9 +40,40 @@ R²   : 0.639
 ```
 
 → Au-dessus des critères (R² > 0.4, MAE < 6) : **le surrogate model est solide,
-checkpoint 1 validé.** Modèle : `outputs/models/surrogate_lgbm_large.pkl`
-(copié sur `surrogate_lgbm.pkl`, utilisé par le notebook 07).
+checkpoint 1 validé.** Modèle : `outputs/models/surrogate_lgbm_large.pkl`.
 Reproduction : `python3 scripts/train_large.py` (~5 min, caches OSM inclus).
+
+## Validation croisée sur Barcelone (Xarxa de Soroll, 197 capteurs, 4 mois)
+
+Barcelone = **banc d'essai diagnostique uniquement** (jamais en entraînement :
+capteurs fixes classe 1 / LAeq 4 mois ≠ smartphones / niveaux instantanés).
+Comparable au pipeline de référence des profs validé sur Barcelone (R²=0.61, r=0.66).
+
+| Expérience | MAE | R² | r |
+|---|---|---|---|
+| C. Pipeline entraîné directement sur Barcelone | 3.95 dB | 0.29 | 0.59 |
+| A/B. Transfert zéro-shot Uganda→Barcelone (v1 comptage) | 8.7 dB après offset | <0 | ~0 |
+| A/B. Transfert zéro-shot v2 (ratio surface bâtie) | 7.5 dB après offset | <0 | ~0 |
+
+**Enseignements :**
+1. La feature v1 "nombre de bâtiments/km²" n'est pas comparable entre villes
+   (OSM Kampala = petits bâtiments individuels, Barcelone = îlots entiers).
+   → **v2 : `built_area_ratio`** (surface bâtie / surface du disque, invariant).
+   Le biais de transfert passe de +19.3 à +8.6 dB, sans rien perdre côté Uganda
+   (v2 : MAE 5.11, R² 0.645, r 0.803 — légèrement meilleur que v1).
+2. Le **classement spatial ne se transfère pas zéro-shot** entre villes (r≈0),
+   en partie pour des raisons de fond (mismatch instruments/grandeurs/échantillonnage
+   spécifique à Barcelone), en partie domain shift. Limitation documentée pour le papier.
+3. **Conséquence pour Hanoï** : le transfert a structurellement de meilleures chances
+   (OSM Hanoï = petits bâtiments comme Kampala ; collecte smartphone en marche comme
+   Sunbird = même instrument et même grandeur), mais il n'est plus présumé acquis.
+   Le protocole du notebook 07 garde un double filet : calibration offset ET
+   fine-tuning sur nos mesures (la meilleure méthode gagne, mesurée sur un test set
+   tenu) — et en dernier recours, entraînement direct sur nos ~500 points.
+   **La session pilote (checkpoint 2) est décisive.**
+
+Modèle courant pour Hanoï : `outputs/models/surrogate_lgbm_v2_uganda.pkl`
+(features v2, utilisé par le notebook 07). Reproduction : `python3 scripts/train_v2_invariant.py`.
 
 ## Après le run `large` — la séquence
 
