@@ -1,6 +1,9 @@
 # Roadmap — état du projet et prochaines étapes
 
-*Mis à jour : 11 juin 2026*
+*Mis à jour : 12 juin 2026*
+
+**Ordre d'exécution des notebooks Hanoï : 07 (terrain) → 08 (prédiction) → 09 (export GAMA)**,
+à relancer dans cet ordre après chaque export Kobo placé dans `data/raw/hanoi/`.
 
 ## Où on en est
 
@@ -10,9 +13,10 @@
 | Modèle surrogate v1, config `small` (notebook 06) | **Terminé** — MAE 8.2 dB, R² 0.25 sur 955 points |
 | Modèle surrogate v2, config `large` (59K points) | **Terminé** — MAE 5.17 dB, RMSE 7.12, **R² 0.639** — checkpoint 1 validé |
 | Protocole terrain (ODK Collect + KoboToolbox) | **Prêt** — formulaire déployé, 3 collecteurs (Laurian/Lucas/Quang) |
-| Calibration des téléphones | À faire — procédure : `field/calibration.txt` (10 min, début 1re session) |
-| Collecte terrain | À lancer — objectif 300-700 samples |
-| Transfer learning Hanoï (notebook 07) | Code prêt, attend les mesures |
+| Calibration des téléphones | **Terminé** — cross-calibration Decibel X sur S24+ |
+| Session pilote (21 pts, Ocean Park, 10-11 juin) | **Terminé** — chaîne Kobo → 07 → 08 → 09 validée de bout en bout |
+| Collecte terrain complète | En cours — objectif 300-500 samples, multi-sites, AVEC points calmes |
+| Transfer learning Hanoï (notebook 08) | **Premier résultat (21 pts)** : MAE 6.6 dB après offset (+21.0 dB) — checkpoint 2 provisoirement validé |
 | GAMA | Squelette seulement (`gama/hanoi_noise.gaml`) |
 | Manuscrit | Pas commencé |
 
@@ -67,13 +71,13 @@ Comparable au pipeline de référence des profs validé sur Barcelone (R²=0.61,
 3. **Conséquence pour Hanoï** : le transfert a structurellement de meilleures chances
    (OSM Hanoï = petits bâtiments comme Kampala ; collecte smartphone en marche comme
    Sunbird = même instrument et même grandeur), mais il n'est plus présumé acquis.
-   Le protocole du notebook 07 garde un double filet : calibration offset ET
+   Le protocole du notebook 08 garde un double filet : calibration offset ET
    fine-tuning sur nos mesures (la meilleure méthode gagne, mesurée sur un test set
    tenu) — et en dernier recours, entraînement direct sur nos ~500 points.
    **La session pilote (checkpoint 2) est décisive.**
 
 Modèle courant pour Hanoï : `outputs/models/surrogate_lgbm_v2_uganda.pkl`
-(features v2, utilisé par le notebook 07). Reproduction : `python3 scripts/train_v2_invariant.py`.
+(features v2, utilisé par le notebook 08). Reproduction : `python3 scripts/train_v2_invariant.py`.
 
 ## Après le run `large` — la séquence
 
@@ -85,23 +89,23 @@ est terminée : pipeline reproduit + modèle entraîné (leur future work).
 ### 2. Terrain — LE chemin critique
 Plus rien côté code ne bloque. Tout dépend des mesures :
 - **Session pilote** : 30-50 samples, 1 site, calibration des 3 téléphones au début
-- Export Kobo → notebook 09 → notebook 07 → **checkpoint 2** : le MAE du modèle
+- Export Kobo → notebook 07 → notebook 08 → **checkpoint 2** : le MAE du modèle
   sur nos points Hanoï après calibration. < 7 dB = on continue ; > 10 dB = on
   diagnostique avant d'investir 3 semaines
 - Si OK → campagne complète 2-3 semaines (~500 samples, protocole `field/PROTOCOL.md`)
 
 ### 3. En parallèle de la campagne (celui qui ne collecte pas)
 - **GAMA** : installer, tuto officiel "load GIS data", puis étoffer
-  `gama/hanoi_noise.gaml` avec les exports du notebook 08. Dernière brique
+  `gama/hanoi_noise.gaml` avec les exports du notebook 09. Dernière brique
   technique inconnue — commencer tôt. Viser le palier 1 : carte de bruit
   importée + slider trafic (+10·log10 du facteur), pas la simulation d'agents complète
 - **Manuscrit** : squelette Overleaf + sections indépendantes du terrain
   (intro, related work, methods Sunbird)
 
 ### 4. Fin de campagne
-Notebook 09 complet (analyses QCVN 26:2010, figures Phase 3)
-→ notebook 07 final (carte de bruit Hanoï calibrée)
-→ notebook 08 (export GAMA)
+Notebook 07 complet (analyses QCVN 26:2010, figures Phase 3)
+→ notebook 08 final (carte de bruit Hanoï calibrée)
+→ notebook 09 (export GAMA)
 → scénarios GAMA
 → résultats + discussion du papier
 

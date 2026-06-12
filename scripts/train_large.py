@@ -10,13 +10,11 @@ Optimisations vs notebooks (small) :
 Sorties :
 - data/processed/sunbird_clean_large.csv
 - data/processed/sunbird_morphology_large.parquet
-- outputs/models/surrogate_lgbm_large.pkl  (+ copie sur surrogate_lgbm.pkl,
-  utilisé par le notebook 07)
+- outputs/models/surrogate_lgbm_large.pkl
 
 Usage : python3 scripts/train_large.py   (depuis la racine du repo)
 """
 import os
-import shutil
 import time
 import warnings
 
@@ -163,5 +161,4 @@ log(f'RMSE : {rmse:.2f} dB')
 log(f'R²   : {r2:.3f}')
 
 joblib.dump(model, 'outputs/models/surrogate_lgbm_large.pkl')
-shutil.copy('outputs/models/surrogate_lgbm_large.pkl', 'outputs/models/surrogate_lgbm.pkl')
-log('Modèle sauvegardé : outputs/models/surrogate_lgbm_large.pkl (+ copie surrogate_lgbm.pkl pour le notebook 07)')
+log('Modèle sauvegardé : outputs/models/surrogate_lgbm_large.pkl')
