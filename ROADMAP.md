@@ -109,13 +109,35 @@ Notebook 07 complet (analyses QCVN 26:2010, figures Phase 3)
 → scénarios GAMA
 → résultats + discussion du papier
 
+## Demandes du prof (réunion 12 juin 2026) — suivi
+
+| Demande | Statut |
+|---|---|
+| Direction source horizontal/vertical dans le form | ✅ `mic_to_source` + `phone_orientation` (form v2) |
+| Vidéo dans le form | ✅ `video_traffic` (rush hours 07-09h/17-19h, en binôme : un filme en haut, un mesure en bas) |
+| Distance au chantier (radius) | ✅ croisement GPS mesures × registre chantiers au traitement |
+| Destruction dans le form | ✅ `site_type` = démolition (registre chantiers) |
+| Noise modeling radius ("between the points") | ✅ protocole transect : fiche chantier + 2-3 mesures normales en s'éloignant → courbe dB-distance |
+| "Have someone done this?" (rayon bruit chantier) | 🔲 mini revue de littérature à faire |
+| Population affectée | 🔲 analyse à coder : carte de bruit × densité de population (WorldPop ou GHSL, datasets ouverts) |
+| Hauteur des bâtiments (réf. dataset Munich) | 🔲 feature à ajouter : tags OSM `building:levels` d'abord, sinon dataset open de hauteurs |
+| GAMA : 30 voitures / motos seules / voitures seules | 🔶 prévu dans `gama/PLAN.md` — calibrable grâce aux comptages véhicules du form v2 |
+| Log construction/destruction | ✅ formulaire dédié `field/hanoi_construction_form.xlsx` |
+| App mobile d'exposition personnelle | 🔶 future work (hors scope des 2 semaines) |
+| Comptage véhicules au moment de la capture (2 téléphones) | ✅ `count_motorbikes/cars/heavy/ev` + vidéo |
+
+À ajouter aussi au notebook 08 quand on aura ~100+ points : le 4e candidat
+**entraînement direct sur nos données seules** dans la comparaison automatique
+(brut / offset / fine-tuning / direct) — la comparaison transfert vs direct en
+fonction de n est un résultat du papier, pas un choix à faire à l'avance.
+
 ## Les 3 checkpoints de validation
 
 | # | Question | Statut |
 |---|---|---|
 | 1 | Le modèle apprend-il sur Sunbird ? | **Validé** — R² 0.639, MAE 5.17 dB sur le config `large` |
-| 2 | La chaîne Hanoï tient-elle ? (session pilote → MAE) | À faire — première sortie terrain |
-| 3 | L'offset Kampala→Hanoï est-il stable entre sites ? | À faire — en cours de campagne |
+| 2 | La chaîne Hanoï tient-elle ? (session pilote → MAE) | **Provisoirement validé** — 55 pts Ocean Park : MAE 7.5 dB après offset (+27 dB) ; à confirmer avec points calmes + autres sites |
+| 3 | L'offset Kampala→Hanoï est-il stable entre sites ? | En cours — offset bougé de +21→+27 entre les 2 premiers batchs (échantillon 100% bord de route) ; à réévaluer avec points variés |
 
 Filet de sécurité : même si le modèle spatial décevait, 500 mesures + analyse des
 dépassements QCVN + simulation GAMA = un projet complet. Le ML est la cerise, pas le gâteau.
