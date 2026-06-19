@@ -52,7 +52,9 @@ EXTRA_COLS = ['temperature_2m', 'wind_speed_10m', 'precipitation', 'dist_to_road
 
 
 def latest_export():
-    files = [f for f in glob.glob(f'{RAW_DIR}/*.csv') if not f.endswith('measurements.csv')]
+    # on exclut measurements.csv (notre sortie) et le registre chantiers (form séparé)
+    files = [f for f in glob.glob(f'{RAW_DIR}/*.csv')
+             if not f.endswith('measurements.csv') and 'construction' not in f.lower()]
     if not files:
         raise SystemExit(f'Aucun export Kobo dans {RAW_DIR}/ (hors measurements.csv).')
     return max(files)  # le nom contient la date → max = le plus récent
