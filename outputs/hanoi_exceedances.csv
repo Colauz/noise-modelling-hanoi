@@ -1,4 +1,6 @@
-site,period,n,median_dB,pct_exceed,mean_exceed_dB
-Hoan Kiem lake,day,16,73.0,62.5,5.4
-Ocean Park,day,90,70.5,50.0,4.9
-Ocean Park,night,1,70.0,100.0,15.0
+site,period,n,dB_median,pct_depassement,severite_moy_dB
+Hoan Kiem lake,day,38.0,71.9,68.4,4.6
+Hoan Kiem lake,night,6.0,71.0,100.0,15.2
+Ocean Park,day,144.0,65.0,32.6,5.0
+Ocean Park,night,4.0,57.0,50.0,9.5
+Vinh Tuy area,day,28.0,62.3,7.1,2.0
