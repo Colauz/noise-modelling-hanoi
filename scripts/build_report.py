@@ -1,6 +1,14 @@
-"""Assemble le rapport d'analyse de données en un seul PDF : outputs/report.pdf.
+"""Assemble le Data Collection Report du projet en un seul PDF : outputs/report.pdf.
+
+Comprehensive (mais pas trop formel) : objectif, méthodologie (protocole de
+collecte + reproduction Sunbird), analyse de données (patterns temporels,
+sources, dépassements QCVN/OMS), modèle prédictif (transfert vs entraînement
+direct), limitations & prochaines étapes.
+
 Données descriptives recalculées depuis measurements.csv ; métriques modèle
-vérifiées dans le notebook 08 (CV spatiale honnête). Usage : python3 scripts/build_report.py
+recopiées du notebook 08 (dicts MODEL et PERSITE ci-dessous — à mettre à jour
+si les scores du notebook changent).
+Usage : python3 scripts/build_report.py
 """
 import warnings; warnings.filterwarnings('ignore')
 import numpy as np, pandas as pd, matplotlib
@@ -18,83 +26,133 @@ df['exceeds'] = df.noise_dB > df['limit']
 df['is_constr'] = df['class'].astype(str).str.contains('construction', case=False)
 SITES = list(df.site.unique())
 COL = dict(zip(SITES, ['#c0392b', '#2471a3', '#1e8449', '#8e44ad']))
-
-# métriques modèle (vérifiées cette session — CV spatiale honnête)
-MODEL = {
-    'Direct training (spatial CV, honest)': ('0.69', '0.45', '4.7'),
-    'Direct training (random split, upper bound)': ('0.74', '0.53', '4.3'),
-    'Uganda->Hanoi transfer (comparison)': ('0.23', '-0.68', '8.5'),
-}
-PERSITE = {'Ocean Park': '0.46', 'Vinh Tuy area': '0.18', 'Hoan Kiem lake': '-0.89'}
 date_min, date_max = df.timestamp.min().strftime('%d %b'), df.timestamp.max().strftime('%d %b %Y')
 exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
+# métriques modèle — recopiées de la sortie du notebook 08 (CV spatiale honnête)
+MODEL = {
+    'Direct training, spatial CV (honest)': ('0.65', '0.40', '4.8'),
+    'Direct training, random split (optimistic)': ('0.76', '0.57', '4.0'),
+    'Uganda to Hanoi transfer (comparison)': ('0.26', '−0.59', '8.2'),
+}
+PERSITE = {'Ocean Park': '0.28', 'Vinh Tuy area': '−0.56', 'Hoan Kiem lake': '−0.90'}
+
+FOOT = 'Hanoi Urban Noise · Data Collection Report'
+def footer(fig, n, total=6):
+    fig.text(.5, .03, f'{FOOT} · page {n}/{total}', ha='center', fontsize=7.5, color='#999')
+
+def styled_table(ax, rows, highlight=None, foot=False, colWidths=None):
+    t = ax.table(cellText=rows[1:], colLabels=rows[0], loc='center', cellLoc='center',
+                 colWidths=colWidths)
+    t.auto_set_font_size(False); t.set_fontsize(9); t.scale(1, 1.6)
+    for (r, c), cell in t.get_celld().items():
+        if r == 0:
+            cell.set_facecolor('#34495e'); cell.set_text_props(color='w', weight='bold')
+        elif foot and r == len(rows) - 1:
+            cell.set_facecolor('#eaeef1'); cell.set_text_props(weight='bold')
+        elif highlight is not None and r == highlight:
+            cell.set_facecolor('#eafaf1')
+    return t
+
 pp = PdfPages('outputs/report.pdf')
 
-# ---------- PAGE 1 : couverture + résumé des données ----------
-fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(left=.08, right=.92, top=.94, bottom=.06)
-fig.text(.5, .92, 'Urban Noise Mapping — Hanoi', ha='center', fontsize=20, weight='bold')
-fig.text(.5, .888, 'Data Analysis Report', ha='center', fontsize=14, color='#555')
-fig.text(.5, .862, f'{len(df)} smartphone measurements · 3 sites · {date_min} – {date_max} 2026',
+# ================= PAGE 1 : couverture + objectif + données =================
+fig = plt.figure(figsize=(8.27, 11.69))
+fig.text(.5, .94, 'Hanoi Urban Noise Mapping', ha='center', fontsize=21, weight='bold')
+fig.text(.5, .908, 'Data Collection Report', ha='center', fontsize=14, color='#555')
+fig.text(.5, .882, f'{len(df)} smartphone measurements · 3 sites · {date_min} to {date_max}',
          ha='center', fontsize=10, color='#777')
-fig.text(.5, .845, 'Methodology adapted from Sunbird AI (Urban Noise Uganda 61K)',
-         ha='center', fontsize=9, style='italic', color='#777')
 
-# bandeau KPI
 kpis = [('Measurements', f'{len(df)}'), ('Sites', '3'),
-        ('dB range', f'{df.noise_dB.min():.0f}–{df.noise_dB.max():.0f}'),
-        ('Exceed QCVN', f'{exc_glob:.0f}%'), ('Peak hour', f'{peak_h}:00')]
+        ('dB range', f'{df.noise_dB.min():.0f}-{df.noise_dB.max():.0f}'),
+        ('Model R²', '0.40'), ('Exceed QCVN', f'{exc_glob:.0f}%')]
 for i, (k, v) in enumerate(kpis):
     x = .10 + i * .163
-    fig.patches.append(plt.Rectangle((x, .76), .15, .055, transform=fig.transFigure,
+    fig.patches.append(plt.Rectangle((x, .80), .15, .055, transform=fig.transFigure,
                        facecolor='#f2f4f6', edgecolor='#d0d4d8'))
-    fig.text(x + .075, .793, v, ha='center', fontsize=13, weight='bold', color='#c0392b')
-    fig.text(x + .075, .77, k, ha='center', fontsize=7.5, color='#555')
+    fig.text(x + .075, .833, v, ha='center', fontsize=13, weight='bold', color='#c0392b')
+    fig.text(x + .075, .81, k, ha='center', fontsize=7.5, color='#555')
 
-# tableau par site
-fig.text(.08, .71, '1.  Data collection summary', fontsize=13, weight='bold')
-rows = [['Site', 'n', 'Median dB', 'Min–Max', '% < 60 dB', '% roadside']]
+fig.text(.08, .75, '1.  Objective', fontsize=13, weight='bold')
+obj = (
+    'Map and characterise urban noise in three contrasting districts of Hanoi, and predict noise from\n'
+    'urban morphology. We follow the Sunbird AI methodology (Urban Noise Uganda 61K, Nsumba et al.,\n'
+    '2026): smartphone field collection plus a morphology-to-noise model, reproduced then applied here.')
+fig.text(.08, .71, obj, fontsize=9.5, va='top', linespacing=1.6)
+
+fig.text(.08, .615, '2.  Data collection summary', fontsize=13, weight='bold')
+rows = [['Site', 'n', 'Median dB', 'Min-Max', '% < 60 dB', '% roadside']]
 for s in SITES:
     g = df[df.site == s]
     rd = 100 * g.dist_to_road.astype(str).str.contains('0-2|0-10|2-10').mean()
     rows.append([s, str(len(g)), f'{g.noise_dB.median():.0f}',
-                 f'{g.noise_dB.min():.0f}–{g.noise_dB.max():.0f}',
+                 f'{g.noise_dB.min():.0f}-{g.noise_dB.max():.0f}',
                  f'{100*(g.noise_dB<60).mean():.0f}%', f'{rd:.0f}%'])
 rows.append(['ALL', str(len(df)), f'{df.noise_dB.median():.0f}',
-             f'{df.noise_dB.min():.0f}–{df.noise_dB.max():.0f}',
+             f'{df.noise_dB.min():.0f}-{df.noise_dB.max():.0f}',
              f'{100*(df.noise_dB<60).mean():.0f}%',
              f'{100*df.dist_to_road.astype(str).str.contains("0-2|0-10|2-10").mean():.0f}%'])
-ax = fig.add_axes([.08, .53, .84, .15]); ax.axis('off')
-t = ax.table(cellText=rows[1:], colLabels=rows[0], loc='center', cellLoc='center')
-t.auto_set_font_size(False); t.set_fontsize(9); t.scale(1, 1.6)
-for (r, c), cell in t.get_celld().items():
-    if r == 0: cell.set_facecolor('#34495e'); cell.set_text_props(color='w', weight='bold')
-    elif r == len(rows) - 1: cell.set_facecolor('#eaeef1'); cell.set_text_props(weight='bold')
+ax = fig.add_axes([.08, .435, .84, .15]); ax.axis('off')
+styled_table(ax, rows, foot=True)
+fig.text(.08, .39, 'Zones: Ocean Park = new high-rise development (shielding, construction); '
+         'Vinh Tuy = transport\ninfrastructure (heavy traffic); Hoan Kiem = historic old quarter '
+         '(narrow streets, pedestrian zones).\n'
+         'QC: site labels cross-checked against GPS (6 mislabelled submissions reassigned).',
+         fontsize=8.5, color='#555', style='italic', va='top', linespacing=1.5)
+fig.text(.08, .315, f'Headline findings: median {df.noise_dB.median():.0f} dB, {exc_glob:.0f}% of '
+         f'measurements exceed the QCVN limit, noise peaks at {peak_h}:00.\nA model trained directly '
+         'on our data reaches R² 0.40 (honest cross-validation, section 5).',
+         fontsize=9.5, va='top', linespacing=1.6)
+footer(fig, 1); pp.savefig(fig); plt.close(fig)
 
-# notes
-fig.text(.08, .47, '2.  Protocol & standards', fontsize=13, weight='bold')
-notes = (
-    '•  Capture: smartphone (Decibel X, A-weighting), ODK Collect + KoboToolbox, walking sampling,\n'
-    '   GPS < 10 m accuracy, >=10 s audio per point, cross-calibrated phones, 05:00–23:00 window.\n'
-    '•  Per point: location, dB, dominant source category, distance to road, audio; construction\n'
-    '   sites logged separately (radius transect). 40 traffic videos for later vehicle counting.\n'
-    '•  Standards: QCVN 26:2010/BTNMT = 70 dB day (6–21h) / 55 dB night.  WHO = 53 / 45 dB.')
-fig.text(.08, .40, notes, fontsize=9, va='top', linespacing=1.6)
-fig.text(.5, .03, 'Hanoi Urban Noise — Data Analysis Report — page 1/4', ha='center', fontsize=7.5, color='#999')
-pp.savefig(fig); plt.close(fig)
+# ================= PAGE 2 : méthodologie =================
+fig = plt.figure(figsize=(8.27, 11.69))
+fig.text(.08, .95, '3.  Methodology', fontsize=14, weight='bold')
 
-# ---------- PAGE 2 : patterns temporels ----------
-fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.93, bottom=.07, hspace=.32)
-fig.text(.08, .955, '3.  Temporal patterns by site', fontsize=14, weight='bold', transform=fig.transFigure)
+fig.text(.08, .91, '3.1  Field data-collection protocol', fontsize=11.5, weight='bold', color='#34495e')
+proto = (
+    'Study zones were mapped in Google Earth and chosen for contrasting typologies (section 2).\n'
+    'At each point we recorded a 20-30 s reading (with a 10 s audio clip) in ODK Collect, submitted\n'
+    'live to a KoboToolbox server with automatic timestamp and GPS. Phones were held at 1.2 m (SPB\n'
+    'positioning) at varied distances from the road, by three cross-calibrated collectors, from 05:00\n'
+    'to 23:00 with emphasis on rush hours. Weather (Open-Meteo) and spatial context (OSM) are added.')
+fig.text(.08, .875, proto, fontsize=9.5, va='top', linespacing=1.55)
+
+fig.text(.08, .735, '3.2  Reproduction of the Sunbird pipeline', fontsize=11.5, weight='bold', color='#34495e')
+repro = (
+    'We reproduced the full Sunbird chain on their Uganda dataset (notebooks 01-06): cleaning, audio\n'
+    'QC, morphology features, figures, surrogate model. Our statistics match the paper (median 49 dB\n'
+    'vs their 45-50 dB).')
+fig.text(.08, .70, repro, fontsize=9.5, va='top', linespacing=1.55)
+
+fig.text(.08, .615, '3.3  Model features', fontsize=11.5, weight='bold', color='#34495e')
+feat = (
+    'Morphology within 300 m of each point (OpenStreetMap): built-area ratio, road density,\n'
+    'intersection count, distance to nearest road; plus hour of day and weekend flag. Model: LightGBM.')
+fig.text(.08, .58, feat, fontsize=9.5, va='top', linespacing=1.55)
+
+fig.text(.08, .50, '3.4  Standards used', fontsize=11.5, weight='bold', color='#34495e')
+std = [['Standard', 'Day (6-21h)', 'Night (21-6h)'],
+       ['QCVN 26:2010/BTNMT (Vietnam, ordinary area)', '70 dB', '55 dB'],
+       ['WHO (road-traffic guideline)', '53 dB', '45 dB']]
+ax = fig.add_axes([.08, .39, .84, .08]); ax.axis('off')
+styled_table(ax, std, colWidths=[.5, .25, .25])
+footer(fig, 2); pp.savefig(fig); plt.close(fig)
+
+# ================= PAGE 3 : patterns temporels =================
+fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.92, bottom=.07, hspace=.32)
+fig.text(.08, .955, '4.  Data analysis: temporal patterns', fontsize=14, weight='bold', transform=fig.transFigure)
 ax1 = fig.add_subplot(2, 1, 1)
 for s in SITES:
     g = df[df.site == s].groupby('hour').noise_dB.median()
     ax1.plot(g.index, g.values, marker='o', lw=2, color=COL[s], label=s)
 ax1.axhline(QCVN_D, ls='--', c='red', alpha=.6, label='QCVN day 70'); ax1.axhline(QCVN_N, ls='--', c='darkred', alpha=.6, label='QCVN night 55')
 ax1.axhline(WHO_D, ls=':', c='gray', alpha=.6, label='WHO day 53')
-ax1.set_title('Hourly pattern within a day', fontsize=11); ax1.set_xlabel('Hour'); ax1.set_ylabel('Median dB')
-ax1.set_xticks(range(0, 24, 2)); ax1.legend(fontsize=7.5, ncol=2); ax1.grid(alpha=.3)
+ax1.set_title('Hourly pattern within a day (capture window 05:00-23:00)', fontsize=11)
+ax1.set_xlabel('Hour'); ax1.set_ylabel('Median dB')
+ax1.set_xlim(4.5, 23.5); ax1.set_xticks(range(5, 24, 2))
+ax1.legend(fontsize=7.5, ncol=2); ax1.grid(alpha=.3)
 ax2 = fig.add_subplot(2, 1, 2)
 order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 for s in SITES:
@@ -103,12 +161,11 @@ for s in SITES:
 ax2.axhline(QCVN_D, ls='--', c='red', alpha=.6)
 ax2.set_title('Day-of-week pattern', fontsize=11); ax2.set_xticks(range(7))
 ax2.set_xticklabels(['Mon','Tue','Wed','Thu','Fri','Sat','Sun']); ax2.set_ylabel('Median dB'); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
-fig.text(.5, .03, 'Hanoi Urban Noise — Data Analysis Report — page 2/4', ha='center', fontsize=7.5, color='#999')
-pp.savefig(fig); plt.close(fig)
+footer(fig, 3); pp.savefig(fig); plt.close(fig)
 
-# ---------- PAGE 3 : sources + dépassements ----------
-fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.93, bottom=.07, hspace=.32, wspace=.28)
-fig.text(.08, .955, '4.  Noise sources & standard exceedances', fontsize=14, weight='bold', transform=fig.transFigure)
+# ================= PAGE 4 : sources + dépassements =================
+fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.92, bottom=.10, hspace=.32, wspace=.28)
+fig.text(.08, .955, '4.  Data analysis: sources & exceedances', fontsize=14, weight='bold', transform=fig.transFigure)
 ax1 = fig.add_subplot(2, 2, 1)
 data = [df[~df.is_constr].noise_dB.dropna(), df[df.is_constr].noise_dB.dropna()]
 ax1.boxplot(data, tick_labels=['Transport', 'Construction']); ax1.axhline(QCVN_D, ls='--', c='red', alpha=.6)
@@ -120,66 +177,81 @@ for i, s in enumerate(SITES):
     cv = sub[sub.is_constr].noise_dB.median()
     ax2.bar(i+w/2, 0 if np.isnan(cv) else cv, w, color='#e67e22', label='Construction' if i==0 else '')
 ax2.axhline(QCVN_D, ls='--', c='red', alpha=.6); ax2.set_xticks(range(len(SITES)))
-ax2.set_xticklabels([s.split()[0] for s in SITES], fontsize=8); ax2.set_title('By site', fontsize=10); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
+ax2.set_xticklabels([s.split()[0] for s in SITES], fontsize=8); ax2.set_title('Median dB by site', fontsize=10); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
 ax3 = fig.add_subplot(2, 1, 2)
 pe = df.groupby('hour').apply(lambda g: (g.noise_dB > np.where((g.hour>=21)|(g.hour<6), QCVN_N, QCVN_D)).mean()*100)
 ax3.bar(pe.index, pe.values, color=['#c0392b' if v>50 else '#e67e22' if v>0 else '#27ae60' for v in pe.values])
-ax3.set_xlabel('Hour'); ax3.set_ylabel('% measurements > QCVN'); ax3.set_xticks(range(0, 24, 2))
+ax3.set_xlabel('Hour'); ax3.set_ylabel('% measurements > QCVN')
+ax3.set_xlim(4.5, 23.5); ax3.set_xticks(range(5, 24, 2))
 ax3.set_title('Frequency of QCVN exceedance by hour (peak periods)', fontsize=11); ax3.grid(alpha=.3)
-fig.text(.5, .03, 'Hanoi Urban Noise — Data Analysis Report — page 3/4', ha='center', fontsize=7.5, color='#999')
-pp.savefig(fig); plt.close(fig)
+footer(fig, 4); pp.savefig(fig); plt.close(fig)
 
-# ---------- PAGE 4 : modèle + tableau dépassements + limites ----------
+# ================= PAGE 5 : modèle (transfert vs direct) =================
 fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(left=.08, right=.92)
-fig.text(.08, .95, '5.  Predictive model (morphology + time -> dB)', fontsize=14, weight='bold')
-fig.text(.08, .915, 'LightGBM on urban-morphology features (built ratio, road density, distance to road,\n'
-         'intersections) + hour + weekend. Reported on held-out data.', fontsize=9, va='top', linespacing=1.5)
+fig.text(.08, .95, '5.  Predictive model', fontsize=14, weight='bold')
+fig.text(.08, .915, 'LightGBM mapping urban morphology + time of day to noise level (dB).',
+         fontsize=9.5, va='top')
+
+fig.text(.08, .87, '5.1  Key finding: transfer fails, direct training works', fontsize=11.5, weight='bold', color='#34495e')
+finding = (
+    'The Uganda-pretrained model transfers poorly to Hanoi even after offset calibration (R² < 0):\n'
+    'the noise-morphology relationship learned in Kampala does not hold here, as in the Barcelona\n'
+    'cross-city experiment. Training directly on our own measurements works, and is our method.')
+fig.text(.08, .835, finding, fontsize=9.5, va='top', linespacing=1.55)
+
 mrows = [['Method', 'r', 'R²', 'MAE (dB)']] + [[k, v[0], v[1], v[2]] for k, v in MODEL.items()]
-mrows.append(['Barcelona reference (profs)', '0.66', '0.61', '—'])
-ax = fig.add_axes([.08, .70, .84, .15]); ax.axis('off')
-t = ax.table(cellText=mrows[1:], colLabels=mrows[0], loc='center', cellLoc='center')
-t.auto_set_font_size(False); t.set_fontsize(9); t.scale(1, 1.6)
-for (r, c), cell in t.get_celld().items():
-    if r == 0: cell.set_facecolor('#34495e'); cell.set_text_props(color='w', weight='bold')
-    elif r == 1: cell.set_facecolor('#eafaf1')           # méthode retenue
-    elif r == len(mrows)-1: cell.set_facecolor('#fef5e7')
-fig.text(.08, .665, 'Per-site generalization (leave-one-site-out): Ocean Park R² '
-         f'{PERSITE["Ocean Park"]}  ·  Vinh Tuy R² {PERSITE["Vinh Tuy area"]}  ·  '
-         f'Hoan Kiem R² {PERSITE["Hoan Kiem lake"]}', fontsize=8.5, color='#555')
+mrows.append(['Barcelona reference (for context)', '0.66', '0.61', 'n/a'])
+ax = fig.add_axes([.08, .59, .84, .14]); ax.axis('off')
+styled_table(ax, mrows, highlight=1, colWidths=[.48, .14, .14, .18])
+fig.text(.08, .565, 'Spatial CV: tested on locations the model never saw in training (the honest number). '
+         'Random split: test points can\nsit metres from training points, which inflates scores; kept '
+         'as an optimistic upper bound.', fontsize=8.5, color='#555', style='italic', va='top', linespacing=1.5)
 
-# tableau dépassements
-fig.text(.08, .61, '6.  QCVN 26:2010 exceedances by site', fontsize=13, weight='bold')
-erows = [['Site', 'Period', 'n', 'Median dB', 'Limit', '% exceed', 'Mean excess']]
-for s in SITES:
-    for per in ['day', 'night']:
-        g = df[(df.site == s) & (df.period == per)]
-        if len(g) == 0: continue
-        lim = QCVN_D if per == 'day' else QCVN_N
-        sev = (g.noise_dB - lim)[g.noise_dB > lim].mean()
-        erows.append([s, per, str(len(g)), f'{g.noise_dB.median():.0f}', str(lim),
-                      f'{100*(g.noise_dB>lim).mean():.0f}%', f'{sev:.1f} dB' if not np.isnan(sev) else '—'])
-ax = fig.add_axes([.08, .36, .84, .22]); ax.axis('off')
-t = ax.table(cellText=erows[1:], colLabels=erows[0], loc='center', cellLoc='center')
-t.auto_set_font_size(False); t.set_fontsize(8.5); t.scale(1, 1.5)
-for (r, c), cell in t.get_celld().items():
-    if r == 0: cell.set_facecolor('#34495e'); cell.set_text_props(color='w', weight='bold')
+fig.text(.08, .51, '5.2  Per-site generalization (leave-one-site-out)', fontsize=11.5, weight='bold', color='#34495e')
+prows = [['Test site', 'R²', 'Comment'],
+         ['Ocean Park', PERSITE['Ocean Park'], 'best case (largest, most varied sample)'],
+         ['Vinh Tuy', PERSITE['Vinh Tuy area'], 'unstable: n=29, single time window'],
+         ['Hoan Kiem', PERSITE['Hoan Kiem lake'], 'distinct old-quarter morphology']]
+ax = fig.add_axes([.08, .39, .84, .11]); ax.axis('off')
+styled_table(ax, prows, colWidths=[.24, .14, .52])
+fig.text(.08, .35, 'A stress test: each site is predicted by a model trained on the other two only. '
+         'Per-site R² on such\nsmall samples is noisy; the spatial CV above is the reliable number.',
+         fontsize=9.5, va='top', linespacing=1.55)
+fig.text(.08, .285, 'Reading the metrics: r = does the model rank places correctly; R² = are predicted '
+         'dB values accurate.\nDirect training delivers both: r 0.65, R² 0.40.',
+         fontsize=9.5, va='top', linespacing=1.55)
+footer(fig, 5); pp.savefig(fig); plt.close(fig)
 
-fig.text(.08, .305, '7.  Limitations', fontsize=13, weight='bold')
+# ================= PAGE 6 : limitations + prochaines étapes =================
+fig = plt.figure(figsize=(8.27, 11.69))
+fig.text(.08, .95, '6.  Limitations', fontsize=14, weight='bold')
 lim_txt = (
-    '•  The model generalizes well within consistently-sampled sites (Ocean Park R² 0.46) but\n'
-    '   poorly to the historic centre (Hoan Kiem), where sampling was narrow (mostly roadside,\n'
-    '   little dB variation) — a sampling issue, not a model limitation.\n'
-    '•  Instantaneous smartphone readings carry ~±5 dB of irreducible noise (a passing bus),\n'
-    '   which caps the achievable R² (~0.6); aggregating repeated measurements would help.\n'
-    '•  Cross-city transfer (Uganda -> Hanoi) failed (R² < 0); only direct local training works.\n'
-    '•  Non-professional sound meter: a constant calibration bias is correctable, clipping > 90 dB\n'
-    '   and wind are not. Weekend loud points and a third quiet site remain under-sampled.')
-fig.text(.08, .25, lim_txt, fontsize=9, va='top', linespacing=1.6)
-fig.text(.08, .085, 'Next: collect varied quieter points at Hoan Kiem; vehicle counting via computer vision\n'
-         'on traffic videos; GAMA simulation (calibrated noise map + traffic scenarios).',
-         fontsize=9, va='top', style='italic', color='#555', linespacing=1.5)
-fig.text(.5, .03, 'Hanoi Urban Noise — Data Analysis Report — page 4/4', ha='center', fontsize=7.5, color='#999')
-pp.savefig(fig); plt.close(fig)
+    '•  The model interpolates well within the sampled areas but extrapolates poorly to a district\n'
+    '   it has never seen: city-wide prediction would need more urban typologies covered.\n\n'
+    '•  Instantaneous readings carry ±5 dB of irreducible noise (a passing bus), capping the\n'
+    '   achievable R² near 0.6; repeated measurements at fixed points would raise it.\n\n'
+    '•  Consumer sound meters: a constant calibration bias is correctable, clipping above 90 dB and\n'
+    '   wind noise are not. Vinh Tuy is the least-sampled site (n=29, weekday late mornings only).')
+fig.text(.08, .905, lim_txt, fontsize=9.5, va='top', linespacing=1.55)
+
+fig.text(.08, .71, '7.  Next steps', fontsize=14, weight='bold')
+nxt = (
+    '•  Diversify Vinh Tuy sampling (rush hours, evenings, weekend, off-road points) and add\n'
+    '   repeated measurements at fixed locations.\n\n'
+    '•  Vehicle counting from the traffic videos via computer vision (transport composition).\n\n'
+    '•  GAMA simulation: import the noise map, add a traffic-volume slider and what-if scenarios\n'
+    '   (pedestrianisation, peak-hour traffic).\n\n'
+    '•  Manuscript: methods (Sunbird reproduction + transferability study), results, discussion.')
+fig.text(.08, .665, nxt, fontsize=9.5, va='top', linespacing=1.55)
+
+fig.text(.08, .45, '8.  Summary', fontsize=14, weight='bold')
+summ = (
+    f'{len(df)} calibrated measurements across 3 districts confirm high exposure ({exc_glob:.0f}% exceed\n'
+    'QCVN). A model trained on our data reaches R² 0.40 / r 0.65 / MAE 4.8 dB (spatial CV), solid\n'
+    'for instantaneous smartphone data. Cross-city transfer from Uganda fails: a documented,\n'
+    'useful methodological result.')
+fig.text(.08, .405, summ, fontsize=9.5, va='top', linespacing=1.6, color='#222')
+footer(fig, 6); pp.savefig(fig); plt.close(fig)
 
 pp.close()
-print('OK -> outputs/report.pdf')
+print('OK -> outputs/report.pdf  (6 pages)')

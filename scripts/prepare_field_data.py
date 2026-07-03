@@ -41,6 +41,14 @@ RAW_DIR = os.path.join(ROOT, 'data', 'raw', 'hanoi')
 OUT = os.path.join(RAW_DIR, 'measurements.csv')
 
 CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}
+# Centres des 3 zones d'étude : le site est réassigné au centre le plus proche
+# du GPS (le label du form est parfois oublié entre deux zones — vu 1 cas le 30/06).
+# Les sites sont distants de plusieurs km, l'assignation est sans ambiguïté.
+SITE_CENTERS = {
+    'Hoan Kiem lake': (21.0317, 105.8514),
+    'Vinh Tuy area':  (20.9928, 105.8690),
+    'Ocean Park':     (20.9922, 105.9441),
+}
 DIST_NORM = {
     'd_0_10': '0-10 m (v1)', 'd_0_2': '0-2 m', 'd_2_10': '2-10 m',
     'd_10_30': '10-30 m', 'd_30_60': '30-60 m', 'd_60plus': '> 60 m',
@@ -111,6 +119,22 @@ def standardize(raw):
     return df
 
 
+def fix_site_by_gps(df):
+    """Réassigne `site` au centre de zone le plus proche du GPS (corrige les
+    oublis de changement de site dans le form). Signale toute correction."""
+    names = list(SITE_CENTERS)
+    centers = np.array([SITE_CENTERS[n] for n in names])
+    d2 = ((df['latitude'].values[:, None] - centers[:, 0]) ** 2 +
+          (df['longitude'].values[:, None] - centers[:, 1]) ** 2)
+    gps_site = pd.Series([names[i] for i in d2.argmin(axis=1)], index=df.index)
+    changed = df['site'].notna() & (df['site'] != gps_site)
+    for _, r in df[changed].iterrows():
+        print(f"  site corrigé par GPS : {r['site']} -> {gps_site[r.name]} "
+              f"({r['timestamp']}, {r['noise_dB']:.1f} dB)")
+    df['site'] = gps_site
+    return df
+
+
 def clean(df):
     df = df.dropna(subset=['noise_dB', 'latitude', 'longitude'])
     df = df.drop_duplicates(subset=['collector', 'timestamp'])
@@ -157,7 +181,7 @@ def build_dataframe(path=None, weather=True):
     """Pipeline complet : export brut → DataFrame propre et enrichi (en mémoire).
     C'est le point d'entrée utilisé par le notebook 07."""
     path = path or latest_export()
-    df = clean(standardize(load_raw(path)))
+    df = fix_site_by_gps(clean(standardize(load_raw(path))))
     if weather:
         df = add_weather(df)
     return df
