@@ -27,3 +27,7 @@ __pycache__/
 cache/
 notebooks/cache/
 !outputs/models/surrogate_lgbm_v2_uganda.pkl
+yolov8n.pt
+
+# data/processed/hanoi/vehicle_counts.csv est tracké de force (git add -f) :
+# petit, coûteux à régénérer (25 min de YOLO), utile à l'équipe

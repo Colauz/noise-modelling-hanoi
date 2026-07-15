@@ -94,8 +94,8 @@ log(f'Après jointure positions : {len(df)} cellules, {df.Id_Instal.nunique()} c
 MARGIN = 0.01
 bbox = (df.longitude.min() - MARGIN, df.latitude.min() - MARGIN,
         df.longitude.max() + MARGIN, df.latitude.max() + MARGIN)
-bpath = 'data/processed/barcelona_buildings.gpkg'
-gpath = 'data/processed/barcelona_roads.graphml'
+bpath = 'data/processed/barcelona/barcelona_buildings.gpkg'
+gpath = 'data/processed/barcelona/barcelona_roads.graphml'
 ox.settings.timeout = 600
 
 if not os.path.exists(bpath):
@@ -137,7 +137,7 @@ pts['dist_road_m'] = near.groupby(near.index)['dist_road_m'].min()
 morph = pd.DataFrame(pts.drop(columns='geometry'))
 df = df.merge(morph[['Id_Instal', 'building_density_km2', 'road_density_km_km2',
                      'intersection_count', 'dist_road_m']], on='Id_Instal')
-df.to_parquet('data/processed/barcelona_test_set.parquet', index=False)
+df.to_parquet('data/processed/barcelona/barcelona_test_set.parquet', index=False)
 log(f'Test set Barcelone : {len(df)} lignes')
 
 # ---------- 4. Expériences ----------

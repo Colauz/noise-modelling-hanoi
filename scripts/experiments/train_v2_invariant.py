@@ -17,8 +17,8 @@ Le modèle pour Hanoï reste : pré-entraîné Uganda (même instrument, même
 échantillonnage que notre collecte) + calibration sur nos mesures terrain.
 
 Sorties :
-  data/processed/uganda_morphology_v2.parquet
-  data/processed/barcelona_morphology_v2.parquet
+  data/processed/uganda/uganda_morphology_v2.parquet
+  data/processed/barcelona/barcelona_morphology_v2.parquet
   outputs/models/surrogate_lgbm_v2_uganda.pkl
 
 Usage : python3 scripts/train_v2_invariant.py
@@ -86,7 +86,7 @@ def morphology_v2(points_df, bpath, gpath, crs_utm):
 
 
 # ---------- 1. Uganda : morphologie v2 ----------
-df_ug = pd.read_csv('data/processed/sunbird_clean_large.csv')
+df_ug = pd.read_csv('data/processed/uganda/sunbird_clean_large.csv')
 df_ug['timestamp'] = pd.to_datetime(df_ug['timestamp'], format='ISO8601')
 df_ug['hour'] = df_ug['timestamp'].dt.hour
 df_ug['is_weekend'] = df_ug['timestamp'].dt.dayofweek.isin([5, 6]).astype(int)
@@ -99,21 +99,21 @@ for region in df_ug['region'].unique():
         sub, f'data/processed/{region.lower()}_buildings.gpkg',
         f'data/processed/{region.lower()}_roads.graphml', 'EPSG:32636'))
 ug = pd.concat(feats, ignore_index=True)
-ug.to_parquet('data/processed/uganda_morphology_v2.parquet', index=False)
+ug.to_parquet('data/processed/uganda/uganda_morphology_v2.parquet', index=False)
 log(f'Uganda v2 : {len(ug)} points, built_area_ratio moyen = {ug.built_area_ratio.mean():.3f}')
 
 # ---------- 2. Barcelone : morphologie v2 ----------
-bcn_cells = pd.read_parquet('data/processed/barcelona_test_set.parquet')
+bcn_cells = pd.read_parquet('data/processed/barcelona/barcelona_test_set.parquet')
 sensors = bcn_cells[['Id_Instal', 'latitude', 'longitude']].drop_duplicates('Id_Instal')
 log(f'Barcelone : morphologie v2 sur {len(sensors)} capteurs...')
-m2 = morphology_v2(sensors, 'data/processed/barcelona_buildings.gpkg',
-                   'data/processed/barcelona_roads.graphml', 'EPSG:32631')
+m2 = morphology_v2(sensors, 'data/processed/barcelona/barcelona_buildings.gpkg',
+                   'data/processed/barcelona/barcelona_roads.graphml', 'EPSG:32631')
 bcn = bcn_cells.drop(columns=[c for c in ['building_density_km2', 'road_density_km_km2',
                                           'intersection_count', 'dist_road_m']
                               if c in bcn_cells.columns]) \
                .merge(m2[['Id_Instal', 'built_area_ratio', 'road_density_km_km2',
                           'intersection_count', 'dist_road_m']], on='Id_Instal')
-bcn.to_parquet('data/processed/barcelona_morphology_v2.parquet', index=False)
+bcn.to_parquet('data/processed/barcelona/barcelona_morphology_v2.parquet', index=False)
 log(f'Barcelone v2 : {len(bcn)} cellules, built_area_ratio moyen = {bcn.built_area_ratio.mean():.3f}')
 log(f'Comparaison domaines — built_area_ratio Uganda [{ug.built_area_ratio.quantile(0.05):.2f}-'
     f'{ug.built_area_ratio.quantile(0.95):.2f}] vs Barcelone [{bcn.built_area_ratio.quantile(0.05):.2f}-'

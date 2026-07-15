@@ -1,6 +1,6 @@
 # Plan GAMA — simulation de scénarios de bruit
 
-*Entrées : `outputs/maps/gama_inputs/` (roads.shp, buildings.shp, noise_map.csv),
+*Entrées : `outputs/gama_inputs/` (roads.shp, buildings.shp, noise_map.csv),
 produits par le notebook 09 après chaque mise à jour de la carte.*
 
 ## L'idée directrice : agents récepteurs, pas agents émetteurs

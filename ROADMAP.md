@@ -1,143 +1,49 @@
-# Roadmap — état du projet et prochaines étapes
+# Roadmap
 
-*Mis à jour : 12 juin 2026*
+*Mis à jour : 15 juillet 2026 — intègre la feuille de route officielle du projet*
 
-**Ordre d'exécution des notebooks Hanoï : 07 (terrain) → 08 (prédiction) → 09 (export GAMA)**,
-à relancer dans cet ordre après chaque export Kobo placé dans `data/raw/hanoi/`.
+**État** : 323 mesures / 3 sites · modèle direct **R² 0.45 / r 0.68 / MAE 4.4 dB** (CV spatiale) ·
+le transfert inter-villes échoue, l'entraînement direct fonctionne · 107 vidéos comptées par YOLO
+(caveat : véhicules garés inclus, motos sous-détectées) · pas d'effet météo robuste ·
+rapport 7 pages, carte et analyses à jour.
 
-## Où on en est
+**Pipeline après chaque export Kobo** : CSV dans `data/raw/hanoi/` (ancien dans `old/`)
+→ `python3 scripts/prepare_field_data.py` → notebooks 07 → 08 → `python3 scripts/build_report.py`
+(recopier les scores du notebook 08 dans `MODEL`/`PERSITE` avant).
 
-| Bloc | État |
-|---|---|
-| Reproduction pipeline Sunbird (notebooks 01-05) | **Terminé** — tout tourne, stats conformes au papier |
-| Modèle surrogate v1, config `small` (notebook 06) | **Terminé** — MAE 8.2 dB, R² 0.25 sur 955 points |
-| Modèle surrogate v2, config `large` (59K points) | **Terminé** — MAE 5.17 dB, RMSE 7.12, **R² 0.639** — checkpoint 1 validé |
-| Protocole terrain (ODK Collect + KoboToolbox) | **Prêt** — formulaire déployé, 3 collecteurs (Laurian/Lucas/Quang) |
-| Calibration des téléphones | **Terminé** — cross-calibration Decibel X sur S24+ |
-| Session pilote (21 pts, Ocean Park, 10-11 juin) | **Terminé** — chaîne Kobo → 07 → 08 → 09 validée de bout en bout |
-| Collecte terrain complète | En cours — objectif 300-500 samples, multi-sites, AVEC points calmes |
-| Transfer learning Hanoï (notebook 08) | **Premier résultat (21 pts)** : MAE 6.6 dB après offset (+21.0 dB) — checkpoint 2 provisoirement validé |
-| GAMA | Squelette seulement (`gama/hanoi_noise.gaml`) |
-| Manuscrit | Pas commencé |
+## Feuille de route officielle
 
-## Pourquoi le passage en `large`
+### 1. Gestion de projet & infrastructure
+- [x] **Restructuration du git** : architecture claire (fait juillet 2026 — en attente de commit)
 
-Courbe d'apprentissage mesurée sur le config `small` — le R² monte régulièrement
-et ne plafonne pas, le modèle est limité par les données, pas par les features :
+### 2. État de l'art & R&D
+- [ ] **Ancrage scientifique Q1** : biblio de papiers Q1 pour justifier démarche et choix
+  techniques (→ `paper/references/`)
+- [ ] **Benchmark de modèles** : tester nos données sur plusieurs modèles de l'état de l'art,
+  **dont les modèles de l'équipe de Barcelone** (LSTM baseline, ST-GNN) — en plus de LightGBM
 
-```
-train= 100   R² = -0.09   MAE = 10.1 dB
-train= 200   R² = -0.05   MAE =  9.8 dB
-train= 400   R² = +0.10   MAE =  8.8 dB
-train= 600   R² = +0.16   MAE =  8.4 dB
-train= 764   R² = +0.20   MAE =  8.2 dB
-```
+### 3. Collecte & analyse de données
+- [ ] **Audio démolition : minimum 10 h** d'enregistrements de sons de démolition
+- [ ] **100-200 séquences vidéo+audio** pour la computer vision —
+  ⚠️ **format HORIZONTAL obligatoire** (vertical inexploitable : champ trop restreint).
+  Acquis : ~78 séquences horizontales valides (les TC_*) ; ~29 verticales à refaire
+- [ ] **Cartographie/EDA complète** : analyse exploratoire et mapping beaucoup plus détaillés
+  des jeux de données actuels
 
-Extrapolation pour 48K points d'entraînement : R² ~0.40-0.55, MAE ~5.5-6.5 dB.
+### 4. Rédaction scientifique
+- [ ] **Papier de recherche complet** (→ `paper/`) :
+  - méthodologie précise + illustrations (schémas, diagrammes de flux)
+  - architecture du modèle, protocole d'entraînement, tests, résultats
 
-**Résultat réel du run `large` (11 juin 2026, 59 366 points, train 47 492 / test 11 874) :**
+## Reliquat technique (à caser dans les items ci-dessus)
 
-```
-MAE  : 5.17 dB
-RMSE : 7.12 dB
-R²   : 0.639
-```
+- Filtre de mouvement dans `count_vehicles.py` (exclure véhicules garés) + feature trafic
+  dans le notebook 08 → alimente le benchmark (2) et le papier (4)
+- GAMA palier 1 (`gama/PLAN.md`) — si toujours au scope
+- Propagation dB vs distance + lecture santé/OMS → candidat pour l'EDA détaillée (3)
+- Téléphone posé 1 journée → séries temporelles pour le benchmark LSTM (2)
 
-→ Au-dessus des critères (R² > 0.4, MAE < 6) : **le surrogate model est solide,
-checkpoint 1 validé.** Modèle : `outputs/models/surrogate_lgbm_large.pkl`.
-Reproduction : `python3 scripts/train_large.py` (~5 min, caches OSM inclus).
+## Règles
 
-## Validation croisée sur Barcelone (Xarxa de Soroll, 197 capteurs, 4 mois)
-
-Barcelone = **banc d'essai diagnostique uniquement** (jamais en entraînement :
-capteurs fixes classe 1 / LAeq 4 mois ≠ smartphones / niveaux instantanés).
-Comparable au pipeline de référence des profs validé sur Barcelone (R²=0.61, r=0.66).
-
-| Expérience | MAE | R² | r |
-|---|---|---|---|
-| C. Pipeline entraîné directement sur Barcelone | 3.95 dB | 0.29 | 0.59 |
-| A/B. Transfert zéro-shot Uganda→Barcelone (v1 comptage) | 8.7 dB après offset | <0 | ~0 |
-| A/B. Transfert zéro-shot v2 (ratio surface bâtie) | 7.5 dB après offset | <0 | ~0 |
-
-**Enseignements :**
-1. La feature v1 "nombre de bâtiments/km²" n'est pas comparable entre villes
-   (OSM Kampala = petits bâtiments individuels, Barcelone = îlots entiers).
-   → **v2 : `built_area_ratio`** (surface bâtie / surface du disque, invariant).
-   Le biais de transfert passe de +19.3 à +8.6 dB, sans rien perdre côté Uganda
-   (v2 : MAE 5.11, R² 0.645, r 0.803 — légèrement meilleur que v1).
-2. Le **classement spatial ne se transfère pas zéro-shot** entre villes (r≈0),
-   en partie pour des raisons de fond (mismatch instruments/grandeurs/échantillonnage
-   spécifique à Barcelone), en partie domain shift. Limitation documentée pour le papier.
-3. **Conséquence pour Hanoï** : le transfert a structurellement de meilleures chances
-   (OSM Hanoï = petits bâtiments comme Kampala ; collecte smartphone en marche comme
-   Sunbird = même instrument et même grandeur), mais il n'est plus présumé acquis.
-   Le protocole du notebook 08 garde un double filet : calibration offset ET
-   fine-tuning sur nos mesures (la meilleure méthode gagne, mesurée sur un test set
-   tenu) — et en dernier recours, entraînement direct sur nos ~500 points.
-   **La session pilote (checkpoint 2) est décisive.**
-
-Modèle courant pour Hanoï : `outputs/models/surrogate_lgbm_v2_uganda.pkl`
-(features v2, utilisé par le notebook 08). Reproduction : `python3 scripts/train_v2_invariant.py`.
-
-## Après le run `large` — la séquence
-
-### 1. Figer le modèle (5 min)
-Le run sauvegarde `outputs/models/surrogate_lgbm_large.pkl`. C'est le modèle
-définitif côté Uganda — on n'y retouche plus. La colonne "reproduction Sunbird"
-est terminée : pipeline reproduit + modèle entraîné (leur future work).
-
-### 2. Terrain — LE chemin critique
-Plus rien côté code ne bloque. Tout dépend des mesures :
-- **Session pilote** : 30-50 samples, 1 site, calibration des 3 téléphones au début
-- Export Kobo → notebook 07 → notebook 08 → **checkpoint 2** : le MAE du modèle
-  sur nos points Hanoï après calibration. < 7 dB = on continue ; > 10 dB = on
-  diagnostique avant d'investir 3 semaines
-- Si OK → campagne complète 2-3 semaines (~500 samples, protocole `field/PROTOCOL.md`)
-
-### 3. En parallèle de la campagne (celui qui ne collecte pas)
-- **GAMA** : installer, tuto officiel "load GIS data", puis étoffer
-  `gama/hanoi_noise.gaml` avec les exports du notebook 09. Dernière brique
-  technique inconnue — commencer tôt. Viser le palier 1 : carte de bruit
-  importée + slider trafic (+10·log10 du facteur), pas la simulation d'agents complète
-- **Manuscrit** : squelette Overleaf + sections indépendantes du terrain
-  (intro, related work, methods Sunbird)
-
-### 4. Fin de campagne
-Notebook 07 complet (analyses QCVN 26:2010, figures Phase 3)
-→ notebook 08 final (carte de bruit Hanoï calibrée)
-→ notebook 09 (export GAMA)
-→ scénarios GAMA
-→ résultats + discussion du papier
-
-## Demandes du prof (réunion 12 juin 2026) — suivi
-
-| Demande | Statut |
-|---|---|
-| Direction source horizontal/vertical dans le form | ✅ `mic_to_source` + `phone_orientation` (form v2) |
-| Vidéo dans le form | ✅ `video_traffic` (rush hours 07-09h/17-19h, en binôme : un filme en haut, un mesure en bas) |
-| Distance au chantier (radius) | ✅ croisement GPS mesures × registre chantiers au traitement |
-| Destruction dans le form | ✅ `site_type` = démolition (registre chantiers) |
-| Noise modeling radius ("between the points") | ✅ protocole transect : fiche chantier + 2-3 mesures normales en s'éloignant → courbe dB-distance |
-| "Have someone done this?" (rayon bruit chantier) | 🔲 mini revue de littérature à faire |
-| Population affectée | 🔲 analyse à coder : carte de bruit × densité de population (WorldPop ou GHSL, datasets ouverts) |
-| Hauteur des bâtiments (réf. dataset Munich) | 🔲 feature à ajouter : tags OSM `building:levels` d'abord, sinon dataset open de hauteurs |
-| GAMA : 30 voitures / motos seules / voitures seules | 🔶 prévu dans `gama/PLAN.md` — calibrable grâce aux comptages véhicules du form v2 |
-| Log construction/destruction | ✅ formulaire dédié `field/hanoi_construction_form.xlsx` |
-| App mobile d'exposition personnelle | 🔶 future work (hors scope des 2 semaines) |
-| Comptage véhicules au moment de la capture (2 téléphones) | ✅ `count_motorbikes/cars/heavy/ev` + vidéo |
-
-À ajouter aussi au notebook 08 quand on aura ~100+ points : le 4e candidat
-**entraînement direct sur nos données seules** dans la comparaison automatique
-(brut / offset / fine-tuning / direct) — la comparaison transfert vs direct en
-fonction de n est un résultat du papier, pas un choix à faire à l'avance.
-
-## Les 3 checkpoints de validation
-
-| # | Question | Statut |
-|---|---|---|
-| 1 | Le modèle apprend-il sur Sunbird ? | **Validé** — R² 0.639, MAE 5.17 dB sur le config `large` |
-| 2 | La chaîne Hanoï tient-elle ? (session pilote → MAE) | **Provisoirement validé** — 55 pts Ocean Park : MAE 7.5 dB après offset (+27 dB) ; à confirmer avec points calmes + autres sites |
-| 3 | L'offset Kampala→Hanoï est-il stable entre sites ? | En cours — offset bougé de +21→+27 entre les 2 premiers batchs (échantillon 100% bord de route) ; à réévaluer avec points variés |
-
-Filet de sécurité : même si le modèle spatial décevait, 500 mesures + analyse des
-dépassements QCVN + simulation GAMA = un projet complet. Le ML est la cerise, pas le gâteau.
+- Vidéos et données brutes hors git (`data/raw/` ignoré).
+- Aucun commit / push sans demande explicite.

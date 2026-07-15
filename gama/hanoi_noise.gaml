@@ -6,9 +6,9 @@
 model hanoi_noise
 
 global {
-    file roads_file     <- file('../outputs/maps/gama_inputs/roads.shp');
-    file buildings_file <- file('../outputs/maps/gama_inputs/buildings.shp');
-    file noise_csv      <- csv_file('../outputs/maps/gama_inputs/noise_map.csv', true);
+    file roads_file     <- file('../outputs/gama_inputs/roads.shp');
+    file buildings_file <- file('../outputs/gama_inputs/buildings.shp');
+    file noise_csv      <- csv_file('../outputs/gama_inputs/noise_map.csv', true);
 
     // Scénarios : modifie ces paramètres pour tester
     float traffic_multiplier <- 1.0;  // 1.5 = +50% de trafic

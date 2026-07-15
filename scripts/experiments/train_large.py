@@ -8,8 +8,8 @@ Optimisations vs notebooks (small) :
 - réutilise les caches OSM des notebooks ; les étend si l'emprise `large` dépasse
 
 Sorties :
-- data/processed/sunbird_clean_large.csv
-- data/processed/sunbird_morphology_large.parquet
+- data/processed/uganda/sunbird_clean_large.csv
+- data/processed/uganda/sunbird_morphology_large.parquet
 - outputs/models/surrogate_lgbm_large.pkl
 
 Usage : python3 scripts/train_large.py   (depuis la racine du repo)
@@ -65,7 +65,7 @@ df['timestamp'] = pd.to_datetime(df['timestamp'], format='ISO8601')
 df['hour'] = df['timestamp'].dt.hour
 df['is_weekend'] = df['timestamp'].dt.dayofweek.isin([5, 6]).astype(int)
 df = df.reset_index(drop=True)
-df.to_csv('data/processed/sunbird_clean_large.csv', index=False)
+df.to_csv('data/processed/uganda/sunbird_clean_large.csv', index=False)
 log(f'{len(df)} lignes après nettoyage')
 
 # ---------- 3. Caches OSM (étendus si l'emprise large dépasse celle du small) ----------
@@ -135,7 +135,7 @@ for region, (buildings, edges, nodes) in osm.items():
     feats.append(pd.DataFrame(pts.drop(columns='geometry')))
 
 feat = pd.concat(feats, ignore_index=True)
-feat.to_parquet('data/processed/sunbird_morphology_large.parquet', index=False)
+feat.to_parquet('data/processed/uganda/sunbird_morphology_large.parquet', index=False)
 log(f'Morphologie sauvegardée ({len(feat)} points)')
 
 # ---------- 5. Entraînement ----------
