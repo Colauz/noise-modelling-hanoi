@@ -4,7 +4,7 @@ Préparation des données terrain Hanoï : export brut Kobo → measurements.csv
 SOURCE DE VÉRITÉ UNIQUE du nettoyage terrain. Utilisable de 2 façons :
   - en script   : `python3 scripts/prepare_field_data.py`  (régénère measurements.csv)
   - en module   : `import prepare_field_data as pfd; df = pfd.build_dataframe()`
-                  (c'est ce que fait le notebook 07 — pas de logique dupliquée)
+                  (c'est ce que fait le notebook 07 - pas de logique dupliquée)
 
 À relancer à chaque nouvel export Kobo :
     1. déposer le CSV dans data/raw/hanoi/ (les anciens dans data/raw/hanoi/old/)
@@ -42,7 +42,7 @@ OUT = os.path.join(RAW_DIR, 'measurements.csv')
 
 CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}
 # Centres des 3 zones d'étude : le site est réassigné au centre le plus proche
-# du GPS (le label du form est parfois oublié entre deux zones — vu 1 cas le 30/06).
+# du GPS (le label du form est parfois oublié entre deux zones - vu 1 cas le 30/06).
 # Les sites sont distants de plusieurs km, l'assignation est sans ambiguïté.
 SITE_CENTERS = {
     'Hoan Kiem lake': (21.0317, 105.8514),
@@ -169,7 +169,7 @@ def add_weather(df):
             w['site'] = site
             frames.append(w)
     if not frames:
-        print('  (météo : API injoignable, ignorée — relancer plus tard)')
+        print('  (météo : API injoignable, ignorée - relancer plus tard)')
         return df
     weather = pd.concat(frames)
     df['time_h'] = df['timestamp'].dt.floor('h')

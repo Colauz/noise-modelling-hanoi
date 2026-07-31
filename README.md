@@ -1,13 +1,13 @@
 # Noise Modelling Hanoi
 
 Smartphone-based urban noise mapping for Hanoi. We reproduce the methodology of
-[Nsumba et al. 2026 (Scientific Data)](https://doi.org/10.1038/s41597-026-06658-w) — the
-[Sunbird Urban Noise Uganda 61K dataset](https://huggingface.co/datasets/Sunbird/urban-noise-uganda-61k) —
-then apply it to Hanoi with our own field campaign (323 measurements, 3 districts),
-a LightGBM model trained directly on our data, and (later) a GAMA simulation.
+[Nsumba et al. 2026 (Scientific Data)](https://doi.org/10.1038/s41597-026-06658-w) - the
+[Sunbird Urban Noise Uganda 61K dataset](https://huggingface.co/datasets/Sunbird/urban-noise-uganda-61k) -
+then apply it to Hanoi with our own field campaign (363 measurements, 3 districts),
+a LightGBM model trained directly on our data, and a GAMA agent-based simulation.
 
 **Key result so far**: cross-city transfer (Uganda → Hanoi) fails (R² < 0); training
-directly on our measurements works — **R² 0.45 · r 0.68 · MAE 4.4 dB** under honest
+directly on our measurements works - **R² 0.45 · r 0.69 · MAE 4.2 dB** under honest
 spatial cross-validation. See `outputs/report.pdf` and `ROADMAP.md`.
 
 ## Repository layout

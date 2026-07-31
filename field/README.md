@@ -1,10 +1,10 @@
-# Field — protocole & formulaires
+# Field - protocole & formulaires
 
 ## Fichiers
 
-- `hanoi_noise_form_v2.xlsx` — formulaire principal (XLSForm Kobo) : dB, GPS, catégorie,
+- `hanoi_noise_form_v2.xlsx` - formulaire principal (XLSForm Kobo) : dB, GPS, catégorie,
   distance route/source, orientation téléphone, comptages véhicules, vidéo, chantier audible
-- `hanoi_construction_form.xlsx` — registre des chantiers (1 fiche par site : position GPS,
+- `hanoi_construction_form.xlsx` - registre des chantiers (1 fiche par site : position GPS,
   type construction/démolition/rénovation, niveau d'activité, photo)
 
 ## Setup (une fois)
@@ -12,7 +12,7 @@
 1. **Kobo** : compte sur kobotoolbox.org (serveur Global) → New → Upload XLSForm → Deploy
 2. **Téléphones** : ODK Collect (Play Store), serveur `https://kc.kobotoolbox.org` +
    identifiants Kobo → Get Blank Form
-3. **Sonomètre** : Decibel X, mêmes réglages partout — pondération **A**, réponse **SLOW**, trim 0.0
+3. **Sonomètre** : Decibel X, mêmes réglages partout - pondération **A**, réponse **SLOW**, trim 0.0
 
 ## Calibration croisée (10 min, début de première session, les 3 téléphones ensemble)
 

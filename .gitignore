@@ -31,3 +31,7 @@ yolov8n.pt
 
 # data/processed/hanoi/vehicle_counts.csv est tracké de force (git add -f) :
 # petit, coûteux à régénérer (25 min de YOLO), utile à l'équipe
+
+# Metadonnees Eclipse creees par GAMA a l'ouverture du modele
+gama/.project
+gama/.settings/

@@ -6,7 +6,7 @@ sources, dépassements QCVN/OMS), modèle prédictif (transfert vs entraînement
 direct), limitations & prochaines étapes.
 
 Données descriptives recalculées depuis measurements.csv ; métriques modèle
-recopiées du notebook 08 (dicts MODEL et PERSITE ci-dessous — à mettre à jour
+recopiées du notebook 08 (dicts MODEL et PERSITE ci-dessous - à mettre à jour
 si les scores du notebook changent).
 Usage : python3 scripts/build_report.py
 """
@@ -31,16 +31,16 @@ date_min, date_max = df.timestamp.min().strftime('%d %b'), df.timestamp.max().st
 exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
-# métriques modèle — recopiées de la sortie du notebook 08 (CV spatiale honnête)
+# métriques modèle - recopiées de la sortie du notebook 08 (CV spatiale honnête)
 MODEL = {
-    'Direct training, spatial CV (honest)': ('0.68', '0.45', '4.4'),
-    'Direct training, random split (optimistic)': ('0.71', '0.49', '4.1'),
-    'Uganda to Hanoi transfer (comparison)': ('0.06', '−1.48', '8.4'),
+    'Direct training, spatial CV (honest)': ('0.69', '0.45', '4.2'),
+    'Direct training, random split (optimistic)': ('0.70', '0.48', '4.1'),
+    'Uganda to Hanoi transfer (comparison)': ('0.07', '−1.26', '7.9'),
 }
-PERSITE = {'Ocean Park': '0.28', 'Vinh Tuy area': '−0.71', 'Hoan Kiem lake': '−0.28'}
+PERSITE = {'Ocean Park': '0.21', 'Vinh Tuy area': '−0.68', 'Hoan Kiem lake': '−0.37'}
 
 FOOT = 'Hanoi Urban Noise · Data Collection Report'
-def footer(fig, n, total=7):
+def footer(fig, n, total=8):
     fig.text(.5, .03, f'{FOOT} · page {n}/{total}', ha='center', fontsize=7.5, color='#999')
 
 def styled_table(ax, rows, highlight=None, foot=False, colWidths=None):
@@ -193,7 +193,6 @@ if os.path.exists(VC):
     vc = pd.read_csv(VC, parse_dates=['video_start', 'matched_timestamp'])
     vc = vc.merge(df[['timestamp', 'site']], left_on='matched_timestamp',
                   right_on='timestamp', how='left')
-    vc['rush'] = vc.video_start.dt.strftime('%m%d').isin(['0708', '0713', '0714'])
 
     fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.86, bottom=.42, wspace=.30)
     fig.text(.08, .955, '4.  Data analysis: traffic videos & weather', fontsize=14, weight='bold')
@@ -214,21 +213,23 @@ if os.path.exists(VC):
     ax1.legend(fontsize=8); ax1.grid(alpha=.3, axis='y')
 
     ax2 = fig.add_subplot(1, 2, 2)
-    for rush, colr, lab in [(False, '#2471a3', 'moderate traffic (June)'), (True, '#c0392b', 'rush hours (July)')]:
-        g = vc[vc.rush == rush]
-        ax2.scatter(g.vehicles_mean, g.matched_dB, s=22, alpha=.6, color=colr,
-                    label=f'{lab}  r={g.vehicles_mean.corr(g.matched_dB):+.2f}')
+    for s in vc.site.dropna().unique():
+        g = vc[vc.site == s]
+        ax2.scatter(g.vehicles_mean, g.matched_dB, s=22, alpha=.6, color=COL.get(s, '#888'),
+                    label=f'{s.split()[0]}  r={g.vehicles_mean.corr(g.matched_dB):+.2f}')
     ax2.set_xlabel('Vehicles per frame'); ax2.set_ylabel('Measured dB')
-    ax2.set_title('Traffic density vs noise', fontsize=10); ax2.legend(fontsize=8); ax2.grid(alpha=.3)
+    ax2.set_title('Traffic density vs noise, by site', fontsize=10); ax2.legend(fontsize=8); ax2.grid(alpha=.3)
 
     findings = (
         'Findings: traffic composition matches the zone typologies: Hoan Kiem is motorbike-'
-        'dominated, Ocean Park\ncar-dominated, Vinh Tuy densest (up to 14 vehicles/frame). In '
-        'moderate traffic, more vehicles = more noise\n(r +0.37); at rush hours the correlation '
-        'reverses (r −0.32): congestion slows traffic down, and slow dense\ntraffic is quieter '
-        'than free-flowing traffic. Note: small motorbikes are harder to detect than cars, so\n'
-        'motorbike shares are likely underestimated.\n\n'
-        'Weather: no robust effect. Raw correlations (temperature +0.26, rain −0.29) vanish '
+        'dominated (65%),\nOcean Park car-dominated (84%), Vinh Tuy the densest corridor (up to '
+        '14 vehicles/frame). The link\nbetween density and noise is site- and congestion-dependent, '
+        'not a simple rule: in most sessions more\nvehicles means more noise, but the two most '
+        'congested Ocean Park sessions (7-8 vehicles/frame,\nnear-gridlock) show the opposite '
+        '(r about -0.35) - slow, jammed traffic can be quieter than a\nfaster, sparser flow. Note: '
+        'small motorbikes are harder to detect than cars and parked vehicles are\ncounted too (no '
+        'motion filter yet), so motorbike shares are a lower bound.\n\n'
+        'Weather: no robust effect. Raw correlations (temperature +0.26, rain -0.29) vanish '
         'once hour of day and\nsession are controlled: quiet-point campaigns happened to fall on '
         'rainy days. Wind shows no effect on\nreadings (no microphone artefact).')
     fig.text(.08, .36, findings, fontsize=9.5, va='top', linespacing=1.55)
@@ -266,11 +267,73 @@ fig.text(.08, .35, 'A stress test: each site is predicted by a model trained on 
          'Per-site R² on such\nsmall samples is noisy; the spatial CV above is the reliable number.',
          fontsize=9.5, va='top', linespacing=1.55)
 fig.text(.08, .285, 'Reading the metrics: r = does the model rank places correctly; R² = are predicted '
-         'dB values accurate.\nDirect training delivers both: r 0.68, R² 0.45.',
+         'dB values accurate.\nDirect training delivers both: r 0.69, R² 0.45.',
          fontsize=9.5, va='top', linespacing=1.55)
 footer(fig, 6); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 7 : limitations + prochaines étapes =================
+# ================= PAGE 7 : simulation GAMA + validation =================
+VALID_PNG = 'outputs/hanoi/validation_simulation.png'
+VALID_CSV = 'outputs/hanoi/validation_simulation.csv'
+if os.path.exists(VALID_CSV):
+    vd = pd.read_csv(VALID_CSV)
+    v_bias = vd.error.mean(); v_mae = vd.error.abs().mean()
+    v_r = vd.sim_dB.corr(vd.noise_dB)
+    v_w5 = (vd.error.abs() <= 5).mean() * 100
+
+    fig = plt.figure(figsize=(8.27, 11.69))
+    fig.text(.08, .95, '6.  Agent-based simulation (GAMA)', fontsize=14, weight='bold')
+    fig.text(.08, .915, 'The predicted noise map is loaded into an agent-based model with moving '
+             'vehicles,\nconstruction sites and interactive scenario controls.',
+             fontsize=9.5, va='top', linespacing=1.55)
+
+    fig.text(.08, .858, '6.1  What the simulation contains', fontsize=11.5, weight='bold', color='#34495e')
+    srows = [['Layer', 'Source', 'Status'],
+             ['Background noise level, per hour', 'LightGBM on our 363 measurements', 'predicted'],
+             ['Traffic density and vehicle mix', '147 videos, YOLO counts', 'measured'],
+             ['Construction excess (+2 dB at 56 m)', 'our 32 near-site measurements', 'calibrated'],
+             ['Vehicles as sound sources', 'not identifiable in our data', 'excluded'],
+             ['Traffic-volume scenario', '10 log10 of the volume factor', 'physical law']]
+    ax = fig.add_axes([.08, .70, .84, .14]); ax.axis('off')
+    styled_table(ax, srows, colWidths=[.42, .36, .22])
+
+    fig.text(.08, .665, '6.2  Scenario controls', fontsize=11.5, weight='bold', color='#34495e')
+    fig.text(.08, .632, 'Hour of day (5h-21h, each hour predicted separately, vehicle numbers follow the '
+             'traffic\nmeasured at that hour) · traffic volume (x0.2 to x3) · construction on/off with '
+             'working hours\n· mitigation: 30 km/h zone (-3 dB) or pedestrianisation (traffic x0.2).\n\n'
+             'Calibration note: we tried to derive a per-vehicle emission level from our own data\n'
+             '(non-negative energy regression on the 147 matched videos). All three coefficients came\n'
+             'out at zero - at a given site, the number of visible vehicles does not explain the measured\n'
+             'level (R2 0.008-0.042). Rather than inject invented values, vehicles are displayed as a\n'
+             'calibrated picture of the fleet but carry no sound in the computation.',
+             fontsize=9.5, va='top', linespacing=1.55)
+
+    fig.text(.08, .455, '6.3  Does the simulation reproduce our measurements?',
+             fontsize=11.5, weight='bold', color='#34495e')
+    vrows = [['Metric', 'Value'],
+             ['Measurements compared', f'{len(vd)}'],
+             ['Bias (simulated - measured)', f'{v_bias:+.2f} dB'],
+             ['Mean absolute error', f'{v_mae:.2f} dB'],
+             ['Correlation r', f'{v_r:.2f}'],
+             ['Within +/- 5 dB', f'{v_w5:.0f} %']]
+    ax = fig.add_axes([.08, .305, .40, .13]); ax.axis('off')
+    styled_table(ax, vrows, colWidths=[.62, .38])
+
+    fig.text(.52, .428, 'Each field measurement is compared with the grid cell it falls in\n'
+             '(median 16 m away), at the hour it was taken.\n\n'
+             'Caveat: this is an in-sample check - the model that produces\n'
+             'the grid was trained on these same points. It measures the\n'
+             'fidelity of the chain model -> 40 m grid -> GAMA, not\n'
+             'generalisation. The honest generalisation figure remains the\n'
+             'spatial cross-validation of section 5: R2 0.45 / MAE 4.2 dB.',
+             fontsize=8.5, va='top', color='#555', linespacing=1.6)
+
+    if os.path.exists(VALID_PNG):
+        img = plt.imread(VALID_PNG)
+        ax = fig.add_axes([.08, .07, .84, .21]); ax.axis('off')
+        ax.imshow(img)
+    footer(fig, 7); pp.savefig(fig); plt.close(fig)
+
+# ================= PAGE 8 : limitations + prochaines étapes =================
 fig = plt.figure(figsize=(8.27, 11.69))
 fig.text(.08, .95, '6.  Limitations', fontsize=14, weight='bold')
 lim_txt = (
@@ -296,11 +359,11 @@ fig.text(.08, .665, nxt, fontsize=9.5, va='top', linespacing=1.55)
 fig.text(.08, .45, '8.  Summary', fontsize=14, weight='bold')
 summ = (
     f'{len(df)} calibrated measurements across 3 districts confirm high exposure ({exc_glob:.0f}% exceed\n'
-    'QCVN). A model trained on our data reaches R² 0.45 / r 0.68 / MAE 4.4 dB (spatial CV), solid\n'
+    'QCVN). A model trained on our data reaches R² 0.45 / r 0.69 / MAE 4.2 dB (spatial CV), solid\n'
     'for instantaneous smartphone data. Cross-city transfer from Uganda fails: a documented,\n'
     'useful methodological result.')
 fig.text(.08, .405, summ, fontsize=9.5, va='top', linespacing=1.6, color='#222')
-footer(fig, 7); pp.savefig(fig); plt.close(fig)
+footer(fig, 8); pp.savefig(fig); plt.close(fig)
 
 pp.close()
-print('OK -> outputs/report.pdf  (7 pages)')
+print('OK -> outputs/report.pdf  (8 pages)')
