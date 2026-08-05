@@ -1,0 +1,21 @@
+{
+  "form": "E = A_hw/max(d_hw,D0) + A_res/max(d_res,D0) + B ; L = 10*log10(E)",
+  "A_highway": 47740121.85653321,
+  "A_residential": 37999904.24630178,
+  "B_background": 1.1063539038895509e-10,
+  "D0_m": 5.0,
+  "delivered_model": "physical",
+  "selected_under": "Buffered LOO 300 m",
+  "apply_residual": false,
+  "residual_features": [
+    "built_area_ratio",
+    "road_density_km_km2",
+    "intersection_count",
+    "dist_highway_m",
+    "dist_residential_m",
+    "hour_sin",
+    "hour_cos",
+    "is_weekend"
+  ],
+  "residual_model": "hybrid_residual_lgbm.txt"
+}

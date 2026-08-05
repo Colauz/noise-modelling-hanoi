@@ -128,13 +128,94 @@
           4.1643613025064665,
           5.139938746476164
         ],
-        "label": "LightGBM — morphologie + temps (modèle du projet)"
+        "label": "LightGBM — morphologie + temps (v1)"
+      },
+      "lgbm_v2": {
+        "n": 363,
+        "r": 0.5943381566993815,
+        "r2": 0.3321660520050822,
+        "mae": 4.70528253455806,
+        "rmse": 5.8339823683311245,
+        "r2_ci95": [
+          0.10580892603920727,
+          0.48597042259287987
+        ],
+        "mae_ci95": [
+          4.076275215680137,
+          5.316864966273349
+        ],
+        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+      },
+      "physical": {
+        "n": 363,
+        "r": 0.5075085651179563,
+        "r2": 0.255108453429123,
+        "mae": 4.9621294649956305,
+        "rmse": 6.1613714125542565,
+        "r2_ci95": [
+          0.08737487903232115,
+          0.35686542019789347
+        ],
+        "mae_ci95": [
+          4.164385714484655,
+          5.611766617722558
+        ],
+        "label": "Noyau physique seul (3 paramètres)"
+      },
+      "hybrid": {
+        "n": 363,
+        "r": 0.6342098955854059,
+        "r2": 0.394761780792376,
+        "mae": 4.456972377567006,
+        "rmse": 5.553848628232349,
+        "r2_ci95": [
+          0.18435990979529715,
+          0.528382460422551
+        ],
+        "mae_ci95": [
+          3.9430018681210974,
+          5.021531882547307
+        ],
+        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+      },
+      "hybrid_lowcap": {
+        "n": 363,
+        "r": 0.6210584805547296,
+        "r2": 0.3777856496750629,
+        "mae": 4.544028230874904,
+        "rmse": 5.631199037232863,
+        "r2_ci95": [
+          0.19903470595492542,
+          0.5072211646517487
+        ],
+        "mae_ci95": [
+          3.8649839606230256,
+          5.1650890525053885
+        ],
+        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
       }
     },
     "morphology_gain": {
       "vs": "site_hour_mean",
       "delta_r2": 0.3118709982410428,
       "delta_mae_dB": 0.800558415674093
+    },
+    "v2_gains": {
+      "residual_ml_gain": {
+        "vs": "physical",
+        "delta_r2": 0.13965332736325298,
+        "delta_mae_dB": 0.5051570874286249
+      },
+      "hybrid_vs_dist_road": {
+        "vs": "dist_road",
+        "delta_r2": 0.1742003406379854,
+        "delta_mae_dB": 0.7176035009717792
+      },
+      "hybrid_vs_lgbm_v1": {
+        "vs": "lgbm_full",
+        "delta_r2": 0.09072623377825484,
+        "delta_mae_dB": 0.24412488698546664
+      }
     }
   },
   "bloo": {
@@ -266,13 +347,94 @@
           4.558174484957527,
           5.894675038743662
         ],
-        "label": "LightGBM — morphologie + temps (modèle du projet)"
+        "label": "LightGBM — morphologie + temps (v1)"
+      },
+      "lgbm_v2": {
+        "n": 363,
+        "r": 0.43033700076620557,
+        "r2": 0.0985673499574804,
+        "mae": 5.538860823918511,
+        "rmse": 6.777936698354389,
+        "r2_ci95": [
+          -0.12973066414961087,
+          0.24988156060555475
+        ],
+        "mae_ci95": [
+          4.831673331658651,
+          6.160876553187053
+        ],
+        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+      },
+      "physical": {
+        "n": 363,
+        "r": 0.4981850894997999,
+        "r2": 0.24621132065980078,
+        "mae": 5.014124221281164,
+        "rmse": 6.198058510969313,
+        "r2_ci95": [
+          0.097290198463331,
+          0.3386094436953776
+        ],
+        "mae_ci95": [
+          4.220886966407891,
+          5.670319675953407
+        ],
+        "label": "Noyau physique seul (3 paramètres)"
+      },
+      "hybrid": {
+        "n": 363,
+        "r": 0.453969608080913,
+        "r2": 0.12346989772139105,
+        "mae": 5.385296613217186,
+        "rmse": 6.683658999955778,
+        "r2_ci95": [
+          -0.21892144252962897,
+          0.29486776280143223
+        ],
+        "mae_ci95": [
+          4.654727066491678,
+          6.186474106831179
+        ],
+        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+      },
+      "hybrid_lowcap": {
+        "n": 363,
+        "r": 0.4546904463239736,
+        "r2": 0.14381361533916526,
+        "mae": 5.297102663667937,
+        "rmse": 6.605641879396823,
+        "r2_ci95": [
+          -0.14760404292638235,
+          0.34608309898033845
+        ],
+        "mae_ci95": [
+          4.265816092209379,
+          6.1961038363652134
+        ],
+        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
       }
     },
     "morphology_gain": {
       "vs": "site_hour_mean",
       "delta_r2": 0.5562129997285225,
       "delta_mae_dB": 1.3237885882121674
+    },
+    "v2_gains": {
+      "residual_ml_gain": {
+        "vs": "physical",
+        "delta_r2": -0.12274142293840973,
+        "delta_mae_dB": -0.3711723919360219
+      },
+      "hybrid_vs_dist_road": {
+        "vs": "dist_road",
+        "delta_r2": -0.07619321571340087,
+        "delta_mae_dB": -0.10638479607754014
+      },
+      "hybrid_vs_lgbm_v1": {
+        "vs": "lgbm_full",
+        "delta_r2": -0.013809967245283272,
+        "delta_mae_dB": -0.12514495600554376
+      }
     }
   },
   "loso": {
@@ -404,16 +566,143 @@
           5.177411378411577,
           6.361335483205442
         ],
-        "label": "LightGBM — morphologie + temps (modèle du projet)"
+        "label": "LightGBM — morphologie + temps (v1)"
+      },
+      "lgbm_v2": {
+        "n": 363,
+        "r": 0.2913962579076489,
+        "r2": -0.035358196168623124,
+        "mae": 5.834925432048395,
+        "rmse": 7.264005749904752,
+        "r2_ci95": [
+          -0.3986839018530044,
+          0.15727777083964442
+        ],
+        "mae_ci95": [
+          5.094042407758061,
+          6.640736885231427
+        ],
+        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+      },
+      "physical": {
+        "n": 363,
+        "r": 0.47847803654742527,
+        "r2": 0.22208152662603453,
+        "mae": 5.016789995495145,
+        "rmse": 6.2964811684307165,
+        "r2_ci95": [
+          0.05320778382868908,
+          0.3281681268107473
+        ],
+        "mae_ci95": [
+          4.154185194111576,
+          5.738168305967364
+        ],
+        "label": "Noyau physique seul (3 paramètres)"
+      },
+      "hybrid": {
+        "n": 363,
+        "r": 0.3674280328984328,
+        "r2": 0.0354515754186302,
+        "mae": 5.652660145492991,
+        "rmse": 7.011208531985152,
+        "r2_ci95": [
+          -0.40885514866169,
+          0.23398963016972837
+        ],
+        "mae_ci95": [
+          4.955263770118797,
+          6.530979478125902
+        ],
+        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+      },
+      "hybrid_lowcap": {
+        "n": 363,
+        "r": 0.40986389045447286,
+        "r2": 0.10635809503526472,
+        "mae": 5.387300154173709,
+        "rmse": 6.748583553375351,
+        "r2_ci95": [
+          -0.2663851012514945,
+          0.27140396446096976
+        ],
+        "mae_ci95": [
+          4.642946713833599,
+          6.224452502262038
+        ],
+        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
       }
     },
     "morphology_gain": {
       "vs": "site_hour_mean",
       "delta_r2": 0.0869627471113924,
       "delta_mae_dB": 0.36712505073804547
+    },
+    "v2_gains": {
+      "residual_ml_gain": {
+        "vs": "physical",
+        "delta_r2": -0.18662995120740433,
+        "delta_mae_dB": -0.6358701499978459
+      },
+      "hybrid_vs_dist_road": {
+        "vs": "dist_road",
+        "delta_r2": -0.15361640489227302,
+        "delta_mae_dB": -0.39471145654184614
+      },
+      "hybrid_vs_lgbm_v1": {
+        "vs": "lgbm_full",
+        "delta_r2": 0.006075036459547767,
+        "delta_mae_dB": 0.025326821796976873
+      }
     }
   },
   "loso_per_site": {
+    "Ocean Park": {
+      "n": 184,
+      "r": 0.5000158735176753,
+      "r2": 0.20413041642756247,
+      "mae": 5.896438069250021,
+      "rmse": 7.218808565526152
+    },
+    "Hoan Kiem lake": {
+      "n": 99,
+      "r": 0.23377733653696542,
+      "r2": -0.0840238347714084,
+      "mae": 4.598324035678101,
+      "rmse": 5.885768008265928
+    },
+    "Vinh Tuy area": {
+      "n": 80,
+      "r": 0.6528171977777035,
+      "r2": 0.41910060495478973,
+      "mae": 3.511451051132524,
+      "rmse": 4.143270984049453
+    }
+  },
+  "loso_per_site_physical": {
+    "Ocean Park": {
+      "n": 184,
+      "r": 0.5000158735176753,
+      "r2": 0.20413041642756247,
+      "mae": 5.896438069250021,
+      "rmse": 7.218808565526152
+    },
+    "Hoan Kiem lake": {
+      "n": 99,
+      "r": 0.23377733653696542,
+      "r2": -0.0840238347714084,
+      "mae": 4.598324035678101,
+      "rmse": 5.885768008265928
+    },
+    "Vinh Tuy area": {
+      "n": 80,
+      "r": 0.6528171977777035,
+      "r2": 0.41910060495478973,
+      "mae": 3.511451051132524,
+      "rmse": 4.143270984049453
+    }
+  },
+  "loso_per_site_lgbm_full": {
     "Ocean Park": {
       "n": 184,
       "r": 0.51007450774014,
@@ -436,13 +725,37 @@
       "rmse": 6.823228678584405
     }
   },
+  "physical_params": {
+    "form": "E = A_hw/max(d_hw,D0) + A_res/max(d_res,D0) + B ; L = 10*log10(E)",
+    "A_highway": 47740121.85653321,
+    "A_residential": 37999904.24630178,
+    "B_background": 1.1063539038895509e-10,
+    "D0_m": 5.0,
+    "delivered_model": "physical",
+    "selected_under": "Buffered LOO 300 m",
+    "apply_residual": false,
+    "residual_features": [
+      "built_area_ratio",
+      "road_density_km_km2",
+      "intersection_count",
+      "dist_highway_m",
+      "dist_residential_m",
+      "hour_sin",
+      "hour_cos",
+      "is_weekend"
+    ],
+    "residual_model": "hybrid_residual_lgbm.txt"
+  },
+  "physical_residual_sd_dB": 6.068214729923023,
   "feature_importance_gain": {
-    "built_area_ratio": 36010.993825644255,
-    "road_density_km_km2": 19860.398678600788,
-    "intersection_count": 16463.623727172613,
-    "dist_road_m": 74249.83483096957,
-    "hour": 21216.46706995368,
-    "is_weekend": 17700.195291519165
+    "built_area_ratio": 21805.295585155487,
+    "road_density_km_km2": 19251.903770923615,
+    "intersection_count": 7420.758193969727,
+    "dist_highway_m": 20809.025145053864,
+    "dist_residential_m": 10701.46139883995,
+    "hour_sin": 12066.287390470505,
+    "hour_cos": 8888.738767147064,
+    "is_weekend": 15413.127026557922
   },
   "meta": {
     "n_measurements": 363,
@@ -463,6 +776,8 @@
     "date_min": "2026-06-10",
     "date_max": "2026-07-22",
     "headline_protocol": "bloo",
+    "delivered_model": "physical",
+    "delivered_label": "Noyau physique seul (3 paramètres)",
     "note": "Protocole de référence = buffered leave-one-out (exclusion de 300 m, soit le rayon des features). Le block-CV 600 m est la version rapide. Les deux remplacent le GroupKFold sur cellules de 110 m du notebook 08, qui fuyait (Roberts et al. 2017)."
   }
 }

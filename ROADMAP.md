@@ -17,10 +17,90 @@ Base : `audit_noise_modeling.md` (audit du 5 août 2026).
 grille de bruit sur les 3 zones mesurées × 17 heures · simulation GAMA corrigée · rapport
 8 pages branché sur `metrics.json`.
 
-## Le résultat central (5 août 2026)
+## V2 (5 août 2026) — ce que l'amélioration des algorithmes a donné
 
-Les scripts ont tourné sur les vraies données. Le verdict de l'ablation est le suivant, et
-c'est lui que défend le papier :
+La V2 devait améliorer deux choses : le comptage vidéo (suivi d'objets au lieu de densité) et
+le modèle (architecture hybride physique + ML). Les deux ont été construits. **Le résultat est
+que l'élaboration algorithmique n'améliore rien sous validation honnête, et que le modèle le
+plus simple des trois — trois paramètres physiques — est celui qui est livré.**
+
+R² par protocole (n = 363, IC 95 % bootstrap par bloc, `outputs/models/model_comparison.md`) :
+
+| Modèle | Block-CV 600 m | **Buffered LOO (référence)** | Leave-one-site-out |
+|---|---|---|---|
+| Table site × heure | −0,008 | −0,419 | −0,058 |
+| Régression log(dist_road), 2 param. | 0,221 | 0,200 | 0,189 |
+| **Noyau physique, 3 param. — LIVRÉ** | 0,255 | **0,246** | **0,222** |
+| LightGBM v1 (6 features) | 0,304 | 0,137 | 0,029 |
+| LightGBM v2 (8 features, voiries séparées + heure cyclique) | 0,332 | 0,099 | −0,035 |
+| Hybride (physique + ML sur le résidu) | **0,395** | 0,123 | 0,035 |
+| Hybride conservateur (résidu bridé) | 0,378 | 0,144 | 0,106 |
+
+**Le classement s'inverse presque exactement entre la première colonne et les deux autres.**
+Les modèles qui gagnent le découpage permissif sont ceux qui perdent le découpage strict, de
+façon monotone. C'est la signature d'une capacité qui apprend l'autocorrélation spatiale de
+l'échantillon, pas la physique.
+
+- L'**apport du ML sur le résidu** vaut ΔR² +0,140 sous block-CV, mais **−0,123** sous BLOO et
+  **−0,187** sous leave-one-site-out. L'architecture hybride que nous recommandions nous-mêmes
+  en conclusion de `negative_results.md` est donc **testée et rejetée à cette taille
+  d'échantillon**, pas reportée en *future work*.
+- Le **meilleur feature engineering a dégradé** le ML pur : séparer les classes de voirie et
+  encoder l'heure en sin/cos fait gagner 0,03 sous block-CV et perdre 0,04 sous BLOO.
+- Brider le résidu (5 feuilles, 120 arbres, privé des distances) récupère une partie de la
+  perte (0,144 / 0,106). Le SENS de ce compromis est le diagnostic : ce que le résidu libre
+  apprenait n'était pas de la physique manquante.
+
+**Le modèle livré est choisi par le code**, pas à la main : `evaluate_models.py` retient le
+meilleur R² sous le protocole de référence parmi six candidats arrêtés à l'avance, écrit
+`meta.delivered_model` dans `metrics.json`, et `export_gama_zones.py` lit le drapeau
+`apply_residual`. La carte publiée ne peut donc pas hériter en silence d'un modèle qui ne
+gagne que sur un découpage permissif.
+
+### Trafic : le débit ne sauve pas la corrélation non plus
+
+Les 147 vidéos ont été repassées en **suivi d'objets** (ByteTrack, 10 img/s) avec comptage de
+**franchissements de ligne** — la recommandation que nous formulions nous-mêmes en §5.x.
+
+- Comptages désormais physiquement cohérents : le temps de présence impliqué par la loi de
+  Little (4,7 s) est du même ordre que celui observé sur les trajectoires (7,6 s). La première
+  règle de comptage écrite impliquait 0,3 s, soit 60-90 m/s — absurde.
+- **La corrélation reste négative** : r = −0,11 pour le débit contre −0,15 pour la densité.
+  Le débit de motos est décorrélé (r = −0,004). La régression NNLS en énergie par *passage*
+  ramène toujours moto et voiture à zéro.
+- Un coefficient poids lourd sort non nul (46,8 dB/passage) mais il est ajusté sur **4 vidéos
+  sur 147**, soit 0,4 % du débit total, avec r = +0,02 : c'est un artefact de la contrainte de
+  non-négativité, pas une émission identifiée. **Ne pas le citer.**
+- **Une exception structurée** : Vinh Tuy, le seul site en corridor de transit, est le seul
+  positif — et il s'améliore avec le débit (r = +0,22 → +0,30). C'est la direction que prédit
+  la physique : là où le trafic s'écoule vraiment, le débit suit le niveau.
+
+Ce qui manque reste ce qu'on avait listé : la **vitesse** (pas d'homographie sol) et la
+**distance** source-récepteur (champ de caméra non géoréférencé). Passer au débit était
+nécessaire — c'est la différence entre une grandeur structurellement fausse et une grandeur
+incomplète — mais ce n'est **pas suffisant**.
+
+### Trois bugs trouvés en calibrant le comptage (pour mémoire)
+
+1. Bande morte en **pixels absolus** alors que les vidéos ont deux résolutions (1080×1920 et
+   1280×720) : elle valait 4 % de la hauteur dans un cas, 13 % dans l'autre.
+2. ByteTrack **ré-utilise ses identifiants** sur nos scènes peu peuplées → 109 véh/min sur une
+   vidéo montrant 0,6 véhicule par image. Plafonné à un franchissement par sens et par
+   trajectoire, contrôlé par la loi de Little.
+3. Ligne de franchissement **horizontale imposée** alors que les véhicules traversent le champ
+   latéralement : 14 des 19 vidéos `VID_*` sortaient à débit nul. L'orientation est maintenant
+   choisie par vidéo, perpendiculairement au mouvement dominant, en amplitudes **normalisées
+   par la dimension de l'image** (comparer des pixels bruts favorise le côté le plus long).
+   Zéros tombés de 27/145 à 3/147.
+
+## Le résultat de la V1 (5 août 2026) — conservé, mais ÉLARGI par la V2 ci-dessus
+
+> **Lire la section V2 d'abord.** Ce qui suit reste exact : une régression à une variable bat
+> le LightGBM à 6 variables. Mais la V2 a montré que ce n'est pas la formulation la plus forte
+> — le noyau physique à 3 paramètres bat *aussi* la régression à une variable, et bat tous les
+> modèles appris, y compris l'hybride. C'est cette version-là que défend le papier (§5.z).
+
+Les scripts ont tourné sur les vraies données. Le verdict de l'ablation V1 était le suivant :
 
 > **Une simple régression physique sur `log(dist_road)` — deux paramètres, une variable —
 > généralise mieux que notre modèle LightGBM à 6 variables. La morphologie urbaine agrégée

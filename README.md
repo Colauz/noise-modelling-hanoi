@@ -7,22 +7,28 @@ then apply it to Hanoi with our own field campaign (363 measurements, 3 district
 a LightGBM model trained directly on our data, and a GAMA agent-based simulation.
 
 **Key results.** Three of them are negative, and they are the most transferable:
-1. **A one-variable physical baseline beats the ML model.** An OLS regression on
-   `log(dist_road)` — two parameters — generalises better than our six-variable LightGBM:
-   R² = **0.200 vs 0.137** under buffered leave-one-out, **0.189 vs 0.029** under
-   leave-one-site-out. Urban morphology aggregated over a 300 m radius adds *no* measurable
-   value over that single distance term; adding it costs 0.07–0.18 R² depending on the
-   protocol. The LightGBM leads only under the most permissive split (600 m block-CV, 0.304
-   vs 0.221). See `paper/sections/negative_results.md` §5.z.
+1. **A three-parameter physical model beats every learned model we built.** The delivered
+   model is a line-source attenuation law (`E = A_hw/d_hw + A_res/d_res + B`), R² = **0.246**
+   under buffered leave-one-out and **0.222** under leave-one-site-out — ahead of a
+   six-variable LightGBM (0.137 / 0.029) and of the physics+ML **hybrid** we built to improve
+   on it (0.123 / 0.035). The learned residual gains ΔR² +0.140 under the permissive 600 m
+   block split and loses −0.123 / −0.187 under the two strict ones: the ranking of the seven
+   models inverts almost exactly between protocols. Morphology aggregated over 300 m adds no
+   measurable value. See `paper/sections/negative_results.md` §5.z.
 2. **Cross-city transfer fails.** A morphology→noise model pretrained on Uganda gives R² < 0
    on Hanoi even with convention-invariant features. Local measurement is a prerequisite,
    not a refinement.
 3. **Per-frame vehicle density carries no acoustic signal.** Non-negative energy regression
    on 147 matched videos returns three zero coefficients: density is not flow, and speed is
-   not observable in a frame count.
+   not observable in a frame count. V2 replaces density with **real flow** (YOLOv8 +
+   ByteTrack line-crossing counts, veh/min) and re-tests the emission fit on the physically
+   correct formulation, energy per *pass*.
 
 Full table with baselines, ablation and bootstrap CIs under all three protocols:
 `outputs/models/model_comparison.md`.
+
+**Interactive dashboard**: `./run_dashboard.sh` builds `outputs/dashboard/index.html` (map,
+model comparison, traffic flow, link to the report, GAMA instructions) and opens it.
 
 > ⚠️ **Measurement status.** Our target is a 20–30 s A-weighted level from consumer
 > smartphones (`L_A,25s`), not a certified `L_Aeq`. The three phones are cross-calibrated

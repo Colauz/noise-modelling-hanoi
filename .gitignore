@@ -11,6 +11,15 @@ outputs/models/*
 # Modèle final partagé avec l'équipe (entraîné par scripts/train_large.py)
 !outputs/models/surrogate_lgbm_large.pkl
 
+# Sorties de modèle SUIVIES : petites, en texte, et ce sont les sources uniques de tous
+# les chiffres publiés (rapport, dashboard, sections de papier). Sans elles le dépôt ne
+# peut pas justifier ses propres affirmations. Elles étaient jusqu'ici ajoutées à la main
+# avec `git add -f` — cette règle rend le suivi explicite.
+!outputs/models/metrics.json
+!outputs/models/model_comparison.md
+!outputs/models/hybrid_physical.json
+!outputs/models/hybrid_residual_lgbm.txt
+
 # Secrets
 .env
 
@@ -29,8 +38,10 @@ notebooks/cache/
 !outputs/models/surrogate_lgbm_v2_uganda.pkl
 yolov8n.pt
 
-# data/processed/hanoi/vehicle_counts.csv est tracké de force (git add -f) :
-# petit, coûteux à régénérer (25 min de YOLO), utile à l'équipe
+# Comptages vidéo : petits, coûteux à régénérer (~26 min de YOLO+ByteTrack), utiles à
+# l'équipe. Exception explicite à l'exclusion de data/processed/.
+!data/processed/hanoi/
+!data/processed/hanoi/vehicle_counts.csv
 
 # Metadonnees Eclipse creees par GAMA a l'ouverture du modele
 gama/.project

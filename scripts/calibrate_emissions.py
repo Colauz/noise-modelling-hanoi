@@ -55,18 +55,34 @@ def load():
                 right_on='timestamp', how='left')
     v = v.dropna(subset=['matched_dB', 'site']).copy()
     v['heavy_mean'] = v['bus_mean'] + v['truck_mean']
+    if 'bus_flow' in v.columns:
+        v['heavy_flow'] = v['bus_flow'] + v['truck_flow']
     return v
 
 
-def fit_emissions(v):
-    """NNLS en énergie : E = somme(fond_site) + somme(n_type · e_type)."""
+def fit_emissions(v, suffix='_mean'):
+    """NNLS en énergie : E = somme(fond_site) + somme(x_type · e_type).
+
+    Deux formulations, selon `suffix` :
+
+    `_mean` (v1) — x = DENSITÉ, nombre moyen de véhicules visibles par image. `e_type`
+        s'interprète alors comme l'énergie d'un véhicule *présent dans le champ*. C'est
+        la formulation qui a produit le résultat négatif de §5.x : la densité est un
+        stock, elle ne dit rien du nombre de passages.
+
+    `_flow` (v2) — x = DÉBIT, franchissements de ligne par minute. C'est la formulation
+        PHYSIQUEMENT CORRECTE : un niveau équivalent intégré sur une période T résulte de
+        la somme des énergies apportées par chaque PASSAGE, donc E = E_fond + somme(Q_c·e_c)
+        avec Q_c le débit de la classe c et e_c l'énergie par passage. C'est cette
+        formulation qui peut, si les données le permettent, identifier une émission.
+    """
     sites = sorted(v.site.unique())
     cols, names = [], []
     for s in sites:                       # fond propre à chaque site
         cols.append((v.site == s).astype(float).values)
         names.append(f'bg::{s}')
     for t in TYPES:                       # une colonne par type de véhicule
-        cols.append(v[f'{t}_mean'].values)
+        cols.append(v[f'{t}{suffix}'].values)
         names.append(t)
 
     X = np.column_stack(cols)
@@ -115,18 +131,55 @@ def construction_excess():
 
 
 def diagnostics(v):
-    """Le comptage vidéo porte-t-il un signal acoustique exploitable ?"""
-    print('Pouvoir explicatif du comptage (régression du dB sur le nombre de véhicules) :')
+    """Le comptage vidéo porte-t-il un signal acoustique exploitable ?
+
+    On compare frontalement les deux prédicteurs : la densité (v1) et le débit (v2).
+    C'est LA question que le passage au suivi d'objets devait trancher.
+    """
+    has_flow = 'vehicles_flow' in v.columns
+    print('Pouvoir explicatif du comptage (corrélation du dB mesuré avec le comptage) :')
+    head = f'  {"site":16} {"n":>4}  {"r densité":>10}  {"R²":>6}'
+    if has_flow:
+        head += f'  |  {"r DÉBIT":>9}  {"R²":>6}'
+    print(head)
     for s, g in v.groupby('site'):
         r = g.vehicles_mean.corr(g.matched_dB)
-        print(f'  {s:16} n={len(g):3}  r {r:+.2f}  ->  R² {r**2:.3f}')
+        line = f'  {s:16} {len(g):4}  {r:+10.2f}  {r**2:6.3f}'
+        if has_flow:
+            rf = g.vehicles_flow.corr(g.matched_dB)
+            line += f'  |  {rf:+9.2f}  {rf**2:6.3f}'
+        print(line)
+    r = v.vehicles_mean.corr(v.matched_dB)
+    line = f'  {"TOUS SITES":16} {len(v):4}  {r:+10.2f}  {r**2:6.3f}'
+    if has_flow:
+        rf = v.vehicles_flow.corr(v.matched_dB)
+        line += f'  |  {rf:+9.2f}  {rf**2:6.3f}'
+    print(line)
+    if has_flow:
+        print(f'\n  débit motos seul : r = {v.moto_flow.corr(v.matched_dB):+.2f}')
     print()
 
 
 def main():
     v = load()
     diagnostics(v)
-    coef, fit = fit_emissions(v)
+
+    has_flow = 'vehicles_flow' in v.columns
+    if has_flow:
+        # Formulation physiquement correcte en premier : énergie par PASSAGE.
+        coef_f, fit_f = fit_emissions(v, suffix='_flow')
+        print(f'--- v2, régression sur le DÉBIT (énergie par passage) ---')
+        print(f'  ajustement : MAE {fit_f["mae_dB"]:.2f} dB · biais {fit_f["bias_dB"]:+.2f} dB '
+              f'· r {fit_f["r"]:.2f}')
+        for t in TYPES:
+            e = coef_f.get(t, 0.0)
+            print(f'  {t:8} {("%.4g" % e) if e > 0 else "0":>12}   '
+                  + (f'-> {to_dB(e):.1f} dB par passage' if e > 0
+                     else '(contrainte NNLS -> 0, non identifiable)'))
+        print()
+
+    coef, fit = fit_emissions(v, suffix='_mean')
+    print('--- v1, régression sur la DENSITÉ (conservée pour comparaison) ---')
     print(f'Calibration sur {fit["n"]} vidéos appariées à une mesure')
     print(f'  qualité de l\'ajustement : MAE {fit["mae_dB"]:.2f} dB · '
           f'biais {fit["bias_dB"]:+.2f} dB · r {fit["r"]:.2f}\n')

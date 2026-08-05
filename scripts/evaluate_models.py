@@ -29,7 +29,20 @@ vraiment à quelque chose ? ».
   idw               pondération inverse de la distance     (interpolation pure)
   lgbm_time         LightGBM, heure + weekend SEULEMENT    (ablation : sans morphologie)
   lgbm_morpho       LightGBM, morphologie SEULEMENT        (ablation : sans temps)
-  lgbm_full         LightGBM, morphologie + temps          (le modèle du projet)
+  lgbm_full         LightGBM, morphologie + temps          (le modèle v1)
+
+V2 (août 2026) — TROIS MODÈLES DE PLUS
+--------------------------------------
+  lgbm_v2           LightGBM sur les features v2 : distances SÉPARÉES par classe de
+                    voirie (dist_highway / dist_residential) et heure CYCLIQUE (sin/cos).
+                    Isole l'apport du feature engineering, à architecture inchangée.
+  physical          Noyau physique seul : source linéique, décroissance en 1/d, trois
+                    paramètres positifs. Aucune donnée morphologique.
+  hybrid            LE MODÈLE LIVRÉ : le noyau physique porte la prédiction, le LightGBM
+                    apprend uniquement le RÉSIDU. C'est l'architecture recommandée en
+                    conclusion de paper/sections/negative_results.md : la part
+                    transférable est portée par des paramètres physiques, la part non
+                    transférable est confinée dans une correction bornée.
 
 Chaque score est assorti d'un intervalle de confiance à 95 % par bootstrap PAR BLOC
 (et non par point : rééchantillonner des points corrélés donnerait un IC trop étroit).
@@ -74,6 +87,8 @@ PROC = os.path.join(ROOT, 'data', 'processed', 'hanoi')
 OUT_JSON = os.path.join(ROOT, 'outputs', 'models', 'metrics.json')
 OUT_MD = os.path.join(ROOT, 'outputs', 'models', 'model_comparison.md')
 FINAL_MODEL = os.path.join(ROOT, 'outputs', 'models', 'surrogate_lgbm_hanoi_direct.txt')
+RESID_MODEL = os.path.join(ROOT, 'outputs', 'models', 'hybrid_residual_lgbm.txt')
+PHYS_JSON = os.path.join(ROOT, 'outputs', 'models', 'hybrid_physical.json')
 
 CRS_M = 'EPSG:32648'      # UTM 48N (mètres)
 R = 300                   # rayon des features de morphologie (m) - fixe le reste
@@ -87,8 +102,23 @@ MORPHO = ['built_area_ratio', 'road_density_km_km2', 'intersection_count', 'dist
 TIME = ['hour', 'is_weekend']
 FEATURES = MORPHO + TIME
 
+# --- v2 (août 2026) : voiries séparées + heure cyclique ---------------------------------
+MORPHO2 = ['built_area_ratio', 'road_density_km_km2', 'intersection_count',
+           'dist_highway_m', 'dist_residential_m']
+TIME2 = ['hour_sin', 'hour_cos', 'is_weekend']
+FEATURES2 = MORPHO2 + TIME2
+# Features du résidu de la variante conservatrice : PAS de distance, elle est déjà
+# entièrement consommée par le noyau physique.
+RESID_RESTRICTED = ['built_area_ratio', 'road_density_km_km2', 'intersection_count',
+                    'hour_sin', 'hour_cos', 'is_weekend']
+
+D0 = 5.0        # plancher de distance (m) : évite la singularité 1/d au ras de la voie
+
 LGB_PARAMS = dict(n_estimators=300, learning_rate=0.05, num_leaves=15,
                   min_child_samples=10, random_state=SEED, verbose=-1)
+# Le modèle de résidu apprend une correction bornée, pas le niveau complet : il lui faut
+# moins de capacité, sinon il ré-apprend le bruit que la physique a déjà expliqué.
+LGB_RESID = dict(LGB_PARAMS, n_estimators=200, num_leaves=7)
 
 
 # ----------------------------------------------------------------------------- données
@@ -105,6 +135,9 @@ def load_points():
 
     m = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     m['hour'] = m.timestamp.dt.hour
+    # heure CYCLIQUE : 23 h et 0 h doivent être voisines dans l'espace des features
+    m['hour_sin'] = np.sin(2 * np.pi * m.hour / 24.0)
+    m['hour_cos'] = np.cos(2 * np.pi * m.hour / 24.0)
     m['is_weekend'] = m.timestamp.dt.dayofweek.isin([5, 6]).astype(int)
     m = m.dropna(subset=['noise_dB', 'latitude', 'longitude']).reset_index(drop=True)
 
@@ -174,6 +207,86 @@ def _lgbm(cols):
     return f
 
 
+# --------------------------------------------------- noyau physique + modèle hybride (v2)
+# ÉQUATION. Une voie est modélisée comme une source LINÉIQUE incohérente : l'intensité
+# décroît en 1/d (et non en 1/d², qui vaut pour une source ponctuelle). L'énergie reçue
+# est la somme des contributions des deux classes de voirie et d'un fond résiduel :
+#
+#     E(x) = A_hw / max(d_hw, D0) + A_res / max(d_res, D0) + B
+#     L(x) = 10 · log10( E(x) )
+#
+# Trois paramètres, tous CONTRAINTS POSITIFS : une source ne peut pas retirer d'énergie.
+# A_hw et A_res sont des puissances par unité de longueur (grands axes / petites rues),
+# B le fond non routier. C'est la même famille d'équations que les modèles d'émission
+# normalisés, réduite à ce que nos données peuvent identifier.
+#
+# AJUSTEMENT EN DÉCIBELS, PAS EN ÉNERGIE. Nos niveaux couvrent 47-88 dB, soit quatre
+# ordres de grandeur en énergie : un moindre carré en énergie serait entièrement piloté
+# par les points les plus bruyants. On minimise donc l'écart en dB, ce qui est aussi la
+# métrique sur laquelle le modèle est jugé.
+def _phys_design(df):
+    d_hw = np.maximum(df.dist_highway_m.values.astype(float), D0)
+    d_res = np.maximum(df.dist_residential_m.values.astype(float), D0)
+    return np.column_stack([1.0 / d_hw, 1.0 / d_res, np.ones(len(df))])
+
+
+def fit_physical(tr):
+    from scipy.optimize import least_squares
+    X = _phys_design(tr)
+    y = tr.noise_dB.values.astype(float)
+    e_mean = float(np.mean(10 ** (y / 10.0)))
+    # initialisation : moitié du niveau moyen dans le fond, moitié partagée entre les
+    # deux classes de voirie à leur distance médiane.
+    p0 = np.array([0.25 * e_mean * float(np.median(np.maximum(tr.dist_highway_m, D0))),
+                   0.25 * e_mean * float(np.median(np.maximum(tr.dist_residential_m, D0))),
+                   0.50 * e_mean])
+    f = lambda p: 10 * np.log10(np.maximum(X @ p, 1e-9)) - y
+    return least_squares(f, p0, bounds=(0, np.inf), max_nfev=2000).x
+
+
+def predict_physical(p, te):
+    return 10 * np.log10(np.maximum(_phys_design(te) @ p, 1e-9))
+
+
+def m_physical(tr, te):
+    """Le noyau physique SEUL : trois paramètres, aucune donnée morphologique."""
+    return predict_physical(fit_physical(tr), te)
+
+
+def m_hybrid_lowcap(tr, te):
+    """Variante conservatrice de l'hybride, sur le compromis interpolation/extrapolation.
+
+    Deux différences avec `m_hybrid`, toutes deux destinées à empêcher le résidu de
+    ré-apprendre ce que la physique explique déjà :
+      - le modèle de résidu ne VOIT PAS les distances (elles sont déjà consommées par le
+        noyau physique) : il ne dispose que de la morphologie et du temps ;
+      - sa capacité est réduite (5 feuilles, 120 arbres).
+    Les deux variantes sont publiées côte à côte parce qu'elles ne répondent pas à la même
+    question : `hybrid` maximise l'interpolation dans les typologies échantillonnées,
+    `hybrid_lowcap` préserve mieux l'extrapolation vers une typologie non vue. Choisir
+    l'une ou l'autre sur la CV qui sert ensuite à la publier serait une sélection sur le
+    test : on les rapporte donc toutes les deux, avec leurs deux profils.
+    """
+    return m_hybrid(tr, te, cols=RESID_RESTRICTED,
+                    params=dict(LGB_RESID, num_leaves=5, n_estimators=120))
+
+
+def m_hybrid(tr, te, cols=None, params=None):
+    """Architecture hybride : la physique porte la prédiction, le LightGBM la corrige.
+
+    Le LightGBM n'apprend PAS le niveau, il apprend le RÉSIDU du modèle physique. La
+    part transférable de la prédiction (la divergence géométrique) est ainsi portée par
+    des paramètres physiques, et la part non transférable est confinée dans un terme de
+    correction borné - l'architecture recommandée en conclusion de negative_results.md.
+    """
+    cols = cols or FEATURES2
+    p = fit_physical(tr)
+    base_tr = predict_physical(p, tr)
+    mdl = lgb.LGBMRegressor(**(params or LGB_RESID)).fit(
+        tr[cols], tr.noise_dB.values - base_tr)
+    return predict_physical(p, te) + mdl.predict(te[cols])
+
+
 MODELS = {
     'global_mean':    (m_global_mean, 'Moyenne globale'),
     'site_mean':      (m_site_mean, 'Moyenne par site'),
@@ -182,7 +295,12 @@ MODELS = {
     'idw':            (m_idw, 'Distance inverse (k=8, p=2)'),
     'lgbm_time':      (_lgbm(TIME), 'LightGBM — temps seul (ablation)'),
     'lgbm_morpho':    (_lgbm(MORPHO), 'LightGBM — morphologie seule (ablation)'),
-    'lgbm_full':      (_lgbm(FEATURES), 'LightGBM — morphologie + temps (modèle du projet)'),
+    'lgbm_full':      (_lgbm(FEATURES), 'LightGBM — morphologie + temps (v1)'),
+    # --- v2 ---
+    'lgbm_v2':        (_lgbm(FEATURES2), 'LightGBM v2 — voiries séparées + heure cyclique'),
+    'physical':       (m_physical, 'Noyau physique seul (3 paramètres)'),
+    'hybrid':         (m_hybrid, 'HYBRIDE — physique + LightGBM sur le résidu'),
+    'hybrid_lowcap':  (m_hybrid_lowcap, 'HYBRIDE conservateur — résidu bridé (morpho+temps)'),
 }
 
 
@@ -269,6 +387,9 @@ def main():
                  ('loso', 'Leave-one-site-out', oof_loso)]
     if not args.fast:
         protocols.insert(1, ('bloo', f'Buffered LOO {BUFFER_M} m', oof_bloo))
+    # protocole de référence : le buffered LOO, dont le rayon d'exclusion égale le rayon
+    # d'agrégation des features. C'est lui qui départage les modèles candidats.
+    REF_PROTO = 'block_cv' if args.fast else 'bloo'
 
     results = {}
     for pkey, plabel, runner in protocols:
@@ -295,27 +416,109 @@ def main():
         print(f'  {results[pkey]["label"]:24} ΔR² {d_r2:+.3f} · ΔMAE {d_mae:+.2f} dB '
               f'(lgbm_full vs site_hour_mean)')
 
-    # --- LOSO détaillé par site (le vrai test de généralisation) ---
-    oof = oof_loso(df, MODELS['lgbm_full'][0])
-    per_site = {}
-    for s in df.site.unique():
-        k = (df.site == s).values
-        per_site[s] = scores(y[k], oof[k])
-    results['loso_per_site'] = per_site
-    print('\n=== LOSO par site (lgbm_full) ' + '=' * 34)
-    for s, v in per_site.items():
-        print(f'  {s:18} n={v["n"]:3}  R² {v["r2"]:6.2f}  MAE {v["mae"]:5.2f}  r {v["r"]:5.2f}')
+    # --- v2 : les deux questions que pose l'architecture hybride ---
+    # (a) que gagne le ML APRÈS que la physique a fait son travail ?
+    # (b) l'hybride bat-il enfin la régression à une variable, qui battait le ML v1 ?
+    print('\n=== Apport du ML sur le résidu, et hybride vs baseline physique ' + '=' * 1)
+    for pkey in results:
+        mm = results[pkey]['models']
+        gains = {
+            'residual_ml_gain': {
+                'vs': 'physical',
+                'delta_r2': mm['hybrid']['r2'] - mm['physical']['r2'],
+                'delta_mae_dB': mm['physical']['mae'] - mm['hybrid']['mae']},
+            'hybrid_vs_dist_road': {
+                'vs': 'dist_road',
+                'delta_r2': mm['hybrid']['r2'] - mm['dist_road']['r2'],
+                'delta_mae_dB': mm['dist_road']['mae'] - mm['hybrid']['mae']},
+            'hybrid_vs_lgbm_v1': {
+                'vs': 'lgbm_full',
+                'delta_r2': mm['hybrid']['r2'] - mm['lgbm_full']['r2'],
+                'delta_mae_dB': mm['lgbm_full']['mae'] - mm['hybrid']['mae']},
+        }
+        results[pkey]['v2_gains'] = gains
+        print(f'  {results[pkey]["label"]:24} '
+              f'ML/physique ΔR² {gains["residual_ml_gain"]["delta_r2"]:+.3f} · '
+              f'hybride/dist_road ΔR² {gains["hybrid_vs_dist_road"]["delta_r2"]:+.3f} · '
+              f'hybride/ML v1 ΔR² {gains["hybrid_vs_lgbm_v1"]["delta_r2"]:+.3f}')
+
+    # --- QUEL MODÈLE LIVRE-T-ON ? (voir le bloc détaillé plus bas) -------------------
+    DELIVERABLE = ['dist_road', 'lgbm_full', 'lgbm_v2', 'physical', 'hybrid', 'hybrid_lowcap']
+    ref = results[REF_PROTO]['models']
+    delivered = max((k for k in DELIVERABLE if k in ref), key=lambda k: ref[k]['r2'])
+
+    # --- LOSO détaillé par site, pour le modèle LIVRÉ et pour l'ancien LightGBM ------
+    results['loso_per_site'] = {}
+    for mkey in dict.fromkeys([delivered, 'lgbm_full']):
+        oof = oof_loso(df, MODELS[mkey][0])
+        per_site = {}
+        for s in df.site.unique():
+            k = (df.site == s).values
+            per_site[s] = scores(y[k], oof[k])
+        if mkey == delivered:
+            results['loso_per_site'] = per_site       # clé historique = modèle livré
+        results[f'loso_per_site_{mkey}'] = per_site
+        print(f'\n=== LOSO par site ({mkey}) ' + '=' * (40 - len(mkey)))
+        for s, v in per_site.items():
+            print(f'  {s:18} n={v["n"]:3}  R² {v["r2"]:6.2f}  MAE {v["mae"]:5.2f}  r {v["r"]:5.2f}')
+
+    # --- QUEL MODÈLE LIVRE-T-ON ? ---------------------------------------------------
+    # Le choix n'est PAS « le plus sophistiqué » ni « celui qu'on voulait construire ».
+    # C'est celui qui gagne sous le PROTOCOLE DE RÉFÉRENCE, parmi une liste de candidats
+    # arrêtée AVANT de voir les scores. Le run d'août 2026 a montré pourquoi ce garde-fou
+    # est nécessaire : l'hybride complet domine sous block-CV 600 m (le protocole le plus
+    # permissif) et perd sous les deux protocoles stricts. Le livrer parce qu'il est le
+    # plus élaboré serait exactement l'erreur que documente negative_results.md §5.z.
+    print(f'\n=== Modèle livré ' + '=' * 47)
+    print(f'  choisi sous « {results[REF_PROTO]["label"]} » parmi {len(DELIVERABLE)} candidats')
+    for k in DELIVERABLE:
+        if k in ref:
+            mark = '  <== LIVRÉ' if k == delivered else ''
+            print(f'    {ref[k]["label"]:52} R² {ref[k]["r2"]:+.3f}{mark}')
 
     # --- modèle final : entraîné sur TOUS les points, sauvegardé pour la carte ---
     # Aucune métrique n'en est tirée (tous les chiffres publiés viennent des protocoles
     # ci-dessus). Il est écrit ici pour que la chaîne de scripts soit AUTONOME :
     # export_gama_zones.py en dépend, et il ne doit pas exiger d'avoir lancé un notebook.
-    final = lgb.LGBMRegressor(**dict(LGB_PARAMS, n_estimators=400)).fit(
-        df[FEATURES], df.noise_dB)
-    final.booster_.save_model(FINAL_MODEL)
-    print(f'\nModèle final (tous les points) -> {FINAL_MODEL}')
+    # DEUX FICHIERS : les coefficients physiques (JSON, lisibles à l'oeil) et le LightGBM
+    # de résidu (booster). Le drapeau `apply_residual` du JSON dit lequel des deux compte :
+    # il est LU par export_gama_zones.py, qui décide ainsi si la carte publiée est corrigée
+    # par le LightGBM ou reste purement physique.
+    phys = fit_physical(df)
+    base = predict_physical(phys, df)
+    apply_resid = delivered in ('hybrid', 'hybrid_lowcap')
+    if delivered == 'hybrid_lowcap':
+        resid_cols, resid_params = RESID_RESTRICTED, dict(LGB_RESID, num_leaves=5,
+                                                          n_estimators=120)
+    else:
+        resid_cols, resid_params = FEATURES2, dict(LGB_RESID, n_estimators=300)
+    resid_mdl = lgb.LGBMRegressor(**resid_params).fit(
+        df[resid_cols], df.noise_dB.values - base)
+    resid_mdl.booster_.save_model(RESID_MODEL)
+
+    phys_json = {'form': 'E = A_hw/max(d_hw,D0) + A_res/max(d_res,D0) + B ; L = 10*log10(E)',
+                 'A_highway': float(phys[0]), 'A_residential': float(phys[1]),
+                 'B_background': float(phys[2]), 'D0_m': D0,
+                 'delivered_model': delivered,
+                 'selected_under': results[REF_PROTO]['label'],
+                 'apply_residual': apply_resid,
+                 'residual_features': resid_cols,
+                 'residual_model': os.path.basename(RESID_MODEL)}
+    with open(PHYS_JSON, 'w') as f:
+        json.dump(phys_json, f, indent=2)
+    results['physical_params'] = phys_json
+    results['physical_residual_sd_dB'] = float(np.std(df.noise_dB.values - base))
+    print(f'\nNoyau physique ajusté : A_hw={phys[0]:.3g}  A_res={phys[1]:.3g}  B={phys[2]:.3g}')
+    print(f'  -> niveau prédit par la physique seule : {base.min():.1f}-{base.max():.1f} dB '
+          f'(résidu sd {results["physical_residual_sd_dB"]:.2f} dB)')
+    print(f'Modèle livré -> {PHYS_JSON} + {RESID_MODEL}'
+          + ('' if apply_resid else '  (résidu écrit mais NON appliqué : livraison physique pure)'))
     results['feature_importance_gain'] = dict(zip(
-        FEATURES, [float(v) for v in final.booster_.feature_importance('gain')]))
+        resid_cols, [float(v) for v in resid_mdl.booster_.feature_importance('gain')]))
+
+    # l'ancien modèle v1 reste écrit : des sorties archivées y font référence
+    lgb.LGBMRegressor(**dict(LGB_PARAMS, n_estimators=400)).fit(
+        df[FEATURES], df.noise_dB).booster_.save_model(FINAL_MODEL)
 
     results['meta'] = {
         'n_measurements': int(len(df)), 'n_blocks': int(df.block.nunique()),
@@ -324,7 +527,9 @@ def main():
         'sites': {s: int(n) for s, n in df.site.value_counts().items()},
         'db_min': float(y.min()), 'db_max': float(y.max()), 'db_sd': float(y.std()),
         'date_min': str(df.timestamp.min().date()), 'date_max': str(df.timestamp.max().date()),
-        'headline_protocol': 'bloo' if not args.fast else 'block_cv',
+        'headline_protocol': REF_PROTO,
+        'delivered_model': delivered,
+        'delivered_label': results[REF_PROTO]['models'][delivered]['label'],
         'note': ('Protocole de référence = buffered leave-one-out (exclusion de 300 m, '
                  'soit le rayon des features). Le block-CV 600 m est la version rapide. '
                  'Les deux remplacent le GroupKFold sur cellules de 110 m du notebook 08, '
@@ -346,7 +551,7 @@ def write_markdown(res):
          'Tous les modèles sont évalués sur **exactement les mêmes découpages**. '
          'IC 95 % par bootstrap par bloc.', '']
     for pkey, blk in res.items():
-        if pkey in ('meta', 'loso_per_site', 'feature_importance_gain'):
+        if not isinstance(blk, dict) or 'models' not in blk:
             continue
         L += [f'## {blk["label"]}', '',
               '| Modèle | R² | IC 95 % | MAE (dB) | IC 95 % | r |', '|---|---|---|---|---|---|']
@@ -355,13 +560,36 @@ def write_markdown(res):
                      f'[{m["r2_ci95"][0]:.2f}, {m["r2_ci95"][1]:.2f}] | {m["mae"]:.2f} | '
                      f'[{m["mae_ci95"][0]:.2f}, {m["mae_ci95"][1]:.2f}] | {m["r"]:.2f} |')
         g = blk['morphology_gain']
-        L += ['', f'**Apport propre de la morphologie** (LightGBM complet vs table site × heure) : '
-                  f'ΔR² = {g["delta_r2"]:+.3f}, ΔMAE = {g["delta_mae_dB"]:+.2f} dB.', '']
-    L += ['## Leave-one-site-out, par site (LightGBM complet)', '',
-          '| Site | n | R² | MAE (dB) | r |', '|---|---|---|---|---|']
-    for s, v in res['loso_per_site'].items():
-        L.append(f'| {s} | {v["n"]} | {v["r2"]:.2f} | {v["mae"]:.2f} | {v["r"]:.2f} |')
-    L += ['', '_Un R² négatif signifie : moins bon que de prédire partout la moyenne globale._', '']
+        v2 = blk['v2_gains']
+        L += ['', f'**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : '
+                  f'ΔR² = {g["delta_r2"]:+.3f}, ΔMAE = {g["delta_mae_dB"]:+.2f} dB.',
+              '', '**Architecture hybride (v2)** :', '',
+              f'- ML sur le résidu vs noyau physique seul : ΔR² = '
+              f'{v2["residual_ml_gain"]["delta_r2"]:+.3f}, '
+              f'ΔMAE = {v2["residual_ml_gain"]["delta_mae_dB"]:+.2f} dB',
+              f'- hybride vs régression log(dist_road) : ΔR² = '
+              f'{v2["hybrid_vs_dist_road"]["delta_r2"]:+.3f}, '
+              f'ΔMAE = {v2["hybrid_vs_dist_road"]["delta_mae_dB"]:+.2f} dB',
+              f'- hybride vs LightGBM v1 : ΔR² = {v2["hybrid_vs_lgbm_v1"]["delta_r2"]:+.3f}, '
+              f'ΔMAE = {v2["hybrid_vs_lgbm_v1"]["delta_mae_dB"]:+.2f} dB', '']
+    for mkey, title in (('hybrid', 'modèle hybride livré'), ('lgbm_full', 'LightGBM v1')):
+        key = f'loso_per_site_{mkey}'
+        if key not in res:
+            continue
+        L += [f'## Leave-one-site-out, par site ({title})', '',
+              '| Site | n | R² | MAE (dB) | r |', '|---|---|---|---|---|']
+        for s, v in res[key].items():
+            L.append(f'| {s} | {v["n"]} | {v["r2"]:.2f} | {v["mae"]:.2f} | {v["r"]:.2f} |')
+        L += ['']
+    p = res.get('physical_params', {})
+    if p:
+        L += ['## Noyau physique ajusté', '',
+              f'`{p["form"]}`', '',
+              f'- `A_highway` = {p["A_highway"]:.4g} (puissance par unité de longueur, grands axes)',
+              f'- `A_residential` = {p["A_residential"]:.4g} (petites rues)',
+              f'- `B_background` = {p["B_background"]:.4g} (fond non routier)',
+              f'- `D0` = {p["D0_m"]:.0f} m (plancher de distance)', '']
+    L += ['_Un R² négatif signifie : moins bon que de prédire partout la moyenne globale._', '']
     with open(OUT_MD, 'w') as f:
         f.write('\n'.join(L))
 

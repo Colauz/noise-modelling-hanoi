@@ -15,9 +15,19 @@ Tous les modèles sont évalués sur **exactement les mêmes découpages**. IC 9
 | Distance inverse (k=8, p=2) | 0.117 | [-0.14, 0.31] | 5.25 | [4.34, 6.17] | 0.44 |
 | LightGBM — temps seul (ablation) | 0.230 | [0.02, 0.45] | 4.87 | [3.75, 5.80] | 0.51 |
 | LightGBM — morphologie seule (ablation) | 0.153 | [-0.09, 0.29] | 5.15 | [4.76, 5.57] | 0.48 |
-| LightGBM — morphologie + temps (modèle du projet) | 0.304 | [0.10, 0.46] | 4.70 | [4.16, 5.14] | 0.58 |
+| LightGBM — morphologie + temps (v1) | 0.304 | [0.10, 0.46] | 4.70 | [4.16, 5.14] | 0.58 |
+| LightGBM v2 — voiries séparées + heure cyclique | 0.332 | [0.11, 0.49] | 4.71 | [4.08, 5.32] | 0.59 |
+| Noyau physique seul (3 paramètres) | 0.255 | [0.09, 0.36] | 4.96 | [4.16, 5.61] | 0.51 |
+| HYBRIDE — physique + LightGBM sur le résidu | 0.395 | [0.18, 0.53] | 4.46 | [3.94, 5.02] | 0.63 |
+| HYBRIDE conservateur — résidu bridé (morpho+temps) | 0.378 | [0.20, 0.51] | 4.54 | [3.86, 5.17] | 0.62 |
 
-**Apport propre de la morphologie** (LightGBM complet vs table site × heure) : ΔR² = +0.312, ΔMAE = +0.80 dB.
+**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.312, ΔMAE = +0.80 dB.
+
+**Architecture hybride (v2)** :
+
+- ML sur le résidu vs noyau physique seul : ΔR² = +0.140, ΔMAE = +0.51 dB
+- hybride vs régression log(dist_road) : ΔR² = +0.174, ΔMAE = +0.72 dB
+- hybride vs LightGBM v1 : ΔR² = +0.091, ΔMAE = +0.24 dB
 
 ## Buffered LOO 300 m
 
@@ -30,9 +40,19 @@ Tous les modèles sont évalués sur **exactement les mêmes découpages**. IC 9
 | Distance inverse (k=8, p=2) | -0.203 | [-0.37, 0.02] | 6.44 | [5.28, 7.34] | 0.02 |
 | LightGBM — temps seul (ablation) | 0.075 | [-0.13, 0.46] | 5.19 | [3.67, 6.28] | 0.39 |
 | LightGBM — morphologie seule (ablation) | 0.041 | [-0.24, 0.23] | 5.63 | [4.99, 6.21] | 0.41 |
-| LightGBM — morphologie + temps (modèle du projet) | 0.137 | [-0.10, 0.33] | 5.26 | [4.56, 5.89] | 0.47 |
+| LightGBM — morphologie + temps (v1) | 0.137 | [-0.10, 0.33] | 5.26 | [4.56, 5.89] | 0.47 |
+| LightGBM v2 — voiries séparées + heure cyclique | 0.099 | [-0.13, 0.25] | 5.54 | [4.83, 6.16] | 0.43 |
+| Noyau physique seul (3 paramètres) | 0.246 | [0.10, 0.34] | 5.01 | [4.22, 5.67] | 0.50 |
+| HYBRIDE — physique + LightGBM sur le résidu | 0.123 | [-0.22, 0.29] | 5.39 | [4.65, 6.19] | 0.45 |
+| HYBRIDE conservateur — résidu bridé (morpho+temps) | 0.144 | [-0.15, 0.35] | 5.30 | [4.27, 6.20] | 0.45 |
 
-**Apport propre de la morphologie** (LightGBM complet vs table site × heure) : ΔR² = +0.556, ΔMAE = +1.32 dB.
+**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.556, ΔMAE = +1.32 dB.
+
+**Architecture hybride (v2)** :
+
+- ML sur le résidu vs noyau physique seul : ΔR² = -0.123, ΔMAE = -0.37 dB
+- hybride vs régression log(dist_road) : ΔR² = -0.076, ΔMAE = -0.11 dB
+- hybride vs LightGBM v1 : ΔR² = -0.014, ΔMAE = -0.13 dB
 
 ## Leave-one-site-out
 
@@ -45,16 +65,35 @@ Tous les modèles sont évalués sur **exactement les mêmes découpages**. IC 9
 | Distance inverse (k=8, p=2) | -0.140 | [-0.34, 0.05] | 6.25 | [5.00, 7.30] | 0.18 |
 | LightGBM — temps seul (ablation) | -0.139 | [-0.29, 0.08] | 5.82 | [4.54, 6.75] | 0.21 |
 | LightGBM — morphologie seule (ablation) | 0.007 | [-0.36, 0.17] | 5.75 | [5.45, 6.20] | 0.35 |
-| LightGBM — morphologie + temps (modèle du projet) | 0.029 | [-0.35, 0.21] | 5.68 | [5.18, 6.36] | 0.33 |
+| LightGBM — morphologie + temps (v1) | 0.029 | [-0.35, 0.21] | 5.68 | [5.18, 6.36] | 0.33 |
+| LightGBM v2 — voiries séparées + heure cyclique | -0.035 | [-0.40, 0.16] | 5.83 | [5.09, 6.64] | 0.29 |
+| Noyau physique seul (3 paramètres) | 0.222 | [0.05, 0.33] | 5.02 | [4.15, 5.74] | 0.48 |
+| HYBRIDE — physique + LightGBM sur le résidu | 0.035 | [-0.41, 0.23] | 5.65 | [4.96, 6.53] | 0.37 |
+| HYBRIDE conservateur — résidu bridé (morpho+temps) | 0.106 | [-0.27, 0.27] | 5.39 | [4.64, 6.22] | 0.41 |
 
-**Apport propre de la morphologie** (LightGBM complet vs table site × heure) : ΔR² = +0.087, ΔMAE = +0.37 dB.
+**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.087, ΔMAE = +0.37 dB.
 
-## Leave-one-site-out, par site (LightGBM complet)
+**Architecture hybride (v2)** :
+
+- ML sur le résidu vs noyau physique seul : ΔR² = -0.187, ΔMAE = -0.64 dB
+- hybride vs régression log(dist_road) : ΔR² = -0.154, ΔMAE = -0.39 dB
+- hybride vs LightGBM v1 : ΔR² = +0.006, ΔMAE = +0.03 dB
+
+## Leave-one-site-out, par site (LightGBM v1)
 
 | Site | n | R² | MAE (dB) | r |
 |---|---|---|---|---|
 | Ocean Park | 184 | 0.19 | 5.80 | 0.51 |
 | Hoan Kiem lake | 99 | -0.42 | 5.30 | 0.41 |
 | Vinh Tuy area | 80 | -0.58 | 5.85 | 0.14 |
+
+## Noyau physique ajusté
+
+`E = A_hw/max(d_hw,D0) + A_res/max(d_res,D0) + B ; L = 10*log10(E)`
+
+- `A_highway` = 4.774e+07 (puissance par unité de longueur, grands axes)
+- `A_residential` = 3.8e+07 (petites rues)
+- `B_background` = 1.106e-10 (fond non routier)
+- `D0` = 5 m (plancher de distance)
 
 _Un R² négatif signifie : moins bon que de prédire partout la moyenne globale._

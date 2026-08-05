@@ -77,18 +77,25 @@ REFLABEL = METRICS[REF]['label']
 MODELS = METRICS[REF]['models']
 GAIN = METRICS[REF]['morphology_gain']
 PERSITE = METRICS['loso_per_site']
-R2_HEAD = MODELS['lgbm_full']['r2']
-MAE_HEAD = MODELS['lgbm_full']['mae']
-CI_HEAD = MODELS['lgbm_full']['r2_ci95']
+# Le modèle LIVRÉ est l'hybride depuis août 2026 ; on retombe sur le LightGBM v1 si le
+# JSON vient d'un run antérieur, pour que le rapport reste constructible sur d'anciennes
+# sorties archivées.
+DELIVERED = METRICS['meta'].get('delivered_model',
+                                'hybrid' if 'hybrid' in MODELS else 'lgbm_full')
+HEAD = MODELS[DELIVERED]
+R2_HEAD = HEAD['r2']
+MAE_HEAD = HEAD['mae']
+CI_HEAD = HEAD['r2_ci95']
 
 FOOT = 'Hanoi Urban Noise · Data Collection Report'
 def footer(fig, n, total=8):
     fig.text(.5, .03, f'{FOOT} · page {n}/{total}', ha='center', fontsize=7.5, color='#999')
 
-def styled_table(ax, rows, highlight=None, foot=False, colWidths=None):
+def styled_table(ax, rows, highlight=None, foot=False, colWidths=None,
+                 fontsize=9, vscale=1.6):
     t = ax.table(cellText=rows[1:], colLabels=rows[0], loc='center', cellLoc='center',
                  colWidths=colWidths)
-    t.auto_set_font_size(False); t.set_fontsize(9); t.scale(1, 1.6)
+    t.auto_set_font_size(False); t.set_fontsize(fontsize); t.scale(1, vscale)
     for (r, c), cell in t.get_celld().items():
         if r == 0:
             cell.set_facecolor('#34495e'); cell.set_text_props(color='w', weight='bold')
@@ -280,12 +287,18 @@ if os.path.exists(VC):
     vc = vc.merge(df[['timestamp', 'site']], left_on='matched_timestamp',
                   right_on='timestamp', how='left')
 
-    fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.86, bottom=.42, wspace=.30)
+    fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.83, bottom=.42, wspace=.30)
     fig.text(.08, .955, '4.  Data analysis: traffic videos & weather', fontsize=14, weight='bold')
+    HASFLOW = 'vehicles_flow' in vc.columns
+    _fps = vc.sample_fps.median() if 'sample_fps' in vc.columns else 1
     fig.text(.08, .925, f'{len(vc)} traffic videos (~25 s each) matched to their measurement by '
-             f'timestamp (median gap {vc.match_gap_s.median():.0f} s).\nVehicles counted with '
-             'YOLOv8 at ~1 frame/s '
-             f'({vc.n_frames.sum()} frames analysed): average vehicles visible per frame.',
+             f'timestamp (median gap {vc.match_gap_s.median():.0f} s).\n'
+             + (f'YOLOv8 + ByteTrack at ~{_fps:.0f} frames/s ({vc.n_frames.sum()} frames): '
+                'vehicles are TRACKED and counted when they\ncross a virtual line, giving a real '
+                'FLOW in vehicles/min - not just a density per frame.'
+                if HASFLOW else
+                f'Vehicles counted with YOLOv8 at ~1 frame/s ({vc.n_frames.sum()} frames '
+                'analysed): average vehicles visible per frame.'),
              fontsize=9.5, va='top', linespacing=1.55)
 
     ax1 = fig.add_subplot(1, 2, 1)
@@ -299,13 +312,19 @@ if os.path.exists(VC):
     ax1.set_ylabel('Mean vehicles per frame'); ax1.set_title('Traffic composition by site', fontsize=10)
     ax1.legend(fontsize=8); ax1.grid(alpha=.3, axis='y')
 
+    # On trace le DÉBIT dès qu'il est disponible : c'est la grandeur physiquement liée à
+    # l'émission, donc celle sur laquelle le lecteur doit juger l'absence de relation.
+    _xcol = 'vehicles_flow' if HASFLOW else 'vehicles_mean'
     ax2 = fig.add_subplot(1, 2, 2)
     for s in vc.site.dropna().unique():
         g = vc[vc.site == s]
-        ax2.scatter(g.vehicles_mean, g.matched_dB, s=22, alpha=.6, color=COL.get(s, '#888'),
-                    label=f'{s.split()[0]}  r={g.vehicles_mean.corr(g.matched_dB):+.2f}')
-    ax2.set_xlabel('Vehicles per frame'); ax2.set_ylabel('Measured dB')
-    ax2.set_title('Traffic density vs noise, by site', fontsize=10); ax2.legend(fontsize=8); ax2.grid(alpha=.3)
+        ax2.scatter(g[_xcol], g.matched_dB, s=22, alpha=.6, color=COL.get(s, '#888'),
+                    label=f'{s.split()[0]}  r={g[_xcol].corr(g.matched_dB):+.2f}')
+    ax2.set_xlabel('Vehicles per minute crossing the line' if HASFLOW else 'Vehicles per frame')
+    ax2.set_ylabel('Measured dB')
+    ax2.set_title('Traffic FLOW vs noise, by site' if HASFLOW else 'Traffic density vs noise, by site',
+                  fontsize=10)
+    ax2.legend(fontsize=8); ax2.grid(alpha=.3)
 
     # Aucun de ces chiffres n'est écrit à la main : ils sont recalculés depuis vehicle_counts.csv
     # à chaque build, sinon le texte se désynchronise du run YOLO (cf. règle du ROADMAP).
@@ -317,18 +336,31 @@ if os.path.exists(VC):
     _vt = next((s for s in _sh.index if 'Vinh' in s), _sh.index[-1])
     _rtxt = ', '.join(f'{s.split()[0]} {_rs[s]:+.2f}' for s in _sh.index)
     _neg = sum(1 for v in _rs.values() if v < 0)
+    _rf = {s: g.vehicles_flow.corr(g.matched_dB) for s, g in vc.groupby('site')} if HASFLOW else {}
+    _rftxt = ', '.join(f'{s.split()[0]} {_rf[s]:+.2f}' for s in _sh.index) if HASFLOW else ''
     findings = (
         'Findings: traffic composition matches the zone typologies: '
         f'{_hk.split()[0]} is motorbike-dominated\n({_sh.loc[_hk, "moto_mean"]:.0f}%), '
         f'{_op.split()[0]} car-dominated ({_sh.loc[_op, "car_mean"]:.0f}%), '
         f'{_vt.split()[0]} the densest corridor (up to {_mx[_vt]:.0f} vehicles/frame).\n'
-        'Vehicle density does NOT track noise: the site-wise correlations are weak and of\n'
-        f'inconsistent sign ({_rtxt}), negative on {_neg} of {len(_rs)} sites,\n'
-        f'and {vc.vehicles_mean.corr(vc.matched_dB):+.2f} overall. Density is a stock; emission '
-        'is driven by flow and speed, which a\nper-frame count cannot observe - see section 7. '
-        'Note: small motorbikes are harder to\ndetect than cars and parked vehicles are counted '
-        'too (no motion filter yet), so motorbike\nshares are a lower bound, and the detector was '
-        'never validated against manual counts.\n\n'
+        + ((f'Mean flow is {vc.vehicles_flow.mean():.0f} veh/min (median '
+            f'{vc.vehicles_flow.median():.0f}, max {vc.vehicles_flow.max():.0f}).\n'
+            'MOVING TO REAL FLOW DOES NOT RECOVER THE SIGNAL. Correlation with level, by site:\n'
+            f'density {_rtxt};\nflow {_rftxt}.\n'
+            f'Pooled: density {vc.vehicles_mean.corr(vc.matched_dB):+.2f}, flow '
+            f'{vc.vehicles_flow.corr(vc.matched_dB):+.2f} - still the wrong sign; motorcycle flow\n'
+            f'is uncorrelated ({vc.moto_flow.corr(vc.matched_dB):+.3f}). Only {_vt.split()[0]}, '
+            f'the through-traffic corridor, is positive, and it\nIMPROVES with flow '
+            f'({_rs[_vt]:+.2f} -> {_rf[_vt]:+.2f}) - the direction physics predicts. What is still\n'
+            'missing is SPEED and the source-receiver DISTANCE: the field of view is not\n'
+            'georeferenced. See section 7.\n')
+           if HASFLOW else
+           ('Vehicle density does NOT track noise: the site-wise correlations are weak and of\n'
+            f'inconsistent sign ({_rtxt}), negative on {_neg} of {len(_rs)} sites,\n'
+            f'and {vc.vehicles_mean.corr(vc.matched_dB):+.2f} overall.\n'))
+        + 'Note: small motorbikes are harder to detect than cars and parked vehicles are counted\n'
+          'too, so motorbike shares are a lower bound; the detector was never validated against\n'
+          'manual counts.\n\n'
         'Weather: no robust effect. Raw correlations (temperature +0.26, rain -0.29) vanish '
         'once hour of day and\nsession are controlled: quiet-point campaigns happened to fall on '
         'rainy days. Wind shows no effect on\nreadings (no microphone artefact).')
@@ -338,8 +370,8 @@ if os.path.exists(VC):
 # ================= PAGE 6 : modèle, baselines, ablation =================
 fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(left=.08, right=.92)
 fig.text(.08, .95, '5.  Predictive model', fontsize=14, weight='bold')
-fig.text(.08, .915, 'LightGBM mapping urban morphology (300 m radius, OpenStreetMap) plus '
-         'time of day to level.', fontsize=9.5, va='top')
+fig.text(.08, .915, f'Seven models compared on identical splits. Delivered: {HEAD["label"]}.',
+         fontsize=9.5, va='top')
 
 fig.text(.08, .875, '5.1  How performance is measured (corrected August 2026)',
          fontsize=11.5, weight='bold', color='#34495e')
@@ -355,48 +387,67 @@ fig.text(.08, .84,
 
 fig.text(.08, .715, f'5.2  Model comparison - {REFLABEL}', fontsize=11.5,
          weight='bold', color='#34495e')
-ORDER = ['global_mean', 'site_mean', 'site_hour_mean', 'dist_road', 'idw',
-         'lgbm_time', 'lgbm_morpho', 'lgbm_full']
+# `site_mean` et `lgbm_time` sont omis de CETTE table (place limitée sur la page) : ils
+# restent dans outputs/models/model_comparison.md, cité juste en dessous. `global_mean`
+# est conservé : c'est le plancher qui donne son sens à un R² négatif.
+ORDER = [k for k in ['global_mean', 'site_hour_mean', 'dist_road', 'idw',
+                     'lgbm_morpho', 'lgbm_full', 'lgbm_v2',
+                     'physical', 'hybrid', 'hybrid_lowcap'] if k in MODELS]
 mrows = [['Model', 'R²', '95% CI', 'MAE (dB)', 'r']]
 for k in ORDER:
     m = MODELS[k]
     mrows.append([m['label'], f"{m['r2']:.2f}",
                   f"[{m['r2_ci95'][0]:.2f}, {m['r2_ci95'][1]:.2f}]",
                   f"{m['mae']:.2f}", f"{m['r']:.2f}"])
-ax = fig.add_axes([.08, .44, .84, .26]); ax.axis('off')
+ax = fig.add_axes([.08, .425, .84, .275]); ax.axis('off')
 # On surligne le MEILLEUR modèle sous le protocole de référence, pas le nôtre par défaut :
 # depuis le run d'août 2026 ce n'est plus le LightGBM (cf. negative_results.md §5.z).
 BEST = max(ORDER, key=lambda k: MODELS[k]['r2'])
-styled_table(ax, mrows, highlight=ORDER.index(BEST) + 1, colWidths=[.47, .11, .19, .12, .11])
+styled_table(ax, mrows, highlight=ORDER.index(BEST) + 1, colWidths=[.47, .11, .19, .12, .11],
+             fontsize=8, vscale=1.35)
 
-_dr, _lf, _lm = MODELS['dist_road'], MODELS['lgbm_full'], MODELS['lgbm_morpho']
-fig.text(.08, .415,
-         f"Key figure - a one-variable physical baseline wins. An OLS regression on "
-         f"log(distance to road) scores\nR2 {_dr['r2']:.3f} against {_lf['r2']:.3f} for the "
-         f"six-variable LightGBM: morphology aggregated over 300 m adds nothing\nover the "
-         f"distance term alone (morphology-only ablation: {_lm['r2']:.3f}). Against a (site, "
-         f"hour) lookup table the\nfull model still gains dR2 = {GAIN['delta_r2']:+.3f} / "
-         f"dMAE = {GAIN['delta_mae_dB']:+.2f} dB - but that gain is carried by TIME, not space.",
-         fontsize=9, va='top', linespacing=1.55, color='#8a4b08')
+_dr = MODELS['dist_road']
+_lo = METRICS.get('loso', {}).get('models', {})
+_bcv = METRICS.get('block_cv', {}).get('models', {})
+_v2 = METRICS[REF].get('v2_gains', {})
+# Le fait saillant n'est pas le score du modèle livré : c'est que le CLASSEMENT s'inverse
+# entre le protocole permissif et les protocoles stricts. On l'écrit avec les deux
+# extrêmes du tableau plutôt qu'avec un modèle nommé en dur.
+_hy = MODELS.get('hybrid')
+_key = (f"Key figure - the ranking inverts between protocols. Under the permissive 600 m block "
+        f"split the\nelaborate models lead"
+        + (f" (hybrid physics+ML: {_bcv['hybrid']['r2']:.3f}, LightGBM v2: "
+           f"{_bcv['lgbm_v2']['r2']:.3f}, physical core: {_bcv['physical']['r2']:.3f})"
+           if _bcv and 'hybrid' in _bcv else '')
+        + f".\nUnder {REFLABEL.lower()} - whose exclusion radius equals the feature aggregation "
+          f"radius - the order\nreverses: the 3-parameter physical core reaches {R2_HEAD:.3f}, "
+          f"ahead of the distance regression ({_dr['r2']:.3f})"
+        + (f"\nand of the hybrid ({_hy['r2']:.3f}). The learned residual is a NET LOSS here: "
+           f"dR2 {_v2['residual_ml_gain']['delta_r2']:+.3f}."
+           if _hy and _v2 else '.'))
+fig.text(.08, .405, _key, fontsize=8.5, va='top', linespacing=1.45, color='#8a4b08')
 
-fig.text(.08, .325, '5.3  Generalisation to an unseen typology (leave-one-site-out)',
+fig.text(.08, .305, '5.3  Generalisation to an unseen typology (leave-one-site-out)',
          fontsize=11.5, weight='bold', color='#34495e')
 prows = [['Test site', 'n', 'R²', 'MAE (dB)']]
 for site, v in PERSITE.items():
     prows.append([site, str(v['n']), f"{v['r2']:.2f}", f"{v['mae']:.2f}"])
-ax = fig.add_axes([.08, .20, .84, .11]); ax.axis('off')
-styled_table(ax, prows, colWidths=[.34, .16, .22, .28])
-fig.text(.08, .16,
+ax = fig.add_axes([.08, .185, .84, .105]); ax.axis('off')
+styled_table(ax, prows, colWidths=[.34, .16, .22, .28], fontsize=8.5, vscale=1.4)
+_loso_txt = ''
+if _lo and 'hybrid' in _lo and DELIVERED in _lo:
+    _loso_txt = (f'\nPooled over all sites the delivered model holds R2 '
+                 f'{_lo[DELIVERED]["r2"]:+.3f}, the hybrid falls to '
+                 f'{_lo["hybrid"]["r2"]:+.3f}: the learned residual\nhelps INSIDE sampled '
+                 f'typologies and hurts outside them, so it is not applied to the published map.')
+fig.text(.08, .15,
          'Each site is predicted by a model trained on the other two only. A negative R2 '
-         'means: worse than\npredicting the global mean everywhere. With three sampled '
-         'typologies, the number of independent\nmorphological configurations is close to '
-         'three, whatever the number of points: the model INTERPOLATES\nwithin sampled '
-         'typologies, it does not EXTRAPOLATE. Maps are clipped to the sampled envelope.',
-         fontsize=9, va='top', linespacing=1.55)
+         'means: worse than\npredicting the global mean everywhere. Maps are clipped to the '
+         'sampled envelope regardless.' + _loso_txt,
+         fontsize=8.5, va='top', linespacing=1.5)
 
-fig.text(.08, .045, 'Cross-city transfer (Uganda -> Hanoi) is reported in section 7 as a '
-         'methodological result, not as a method.\nNo comparison is made with published '
-         'scores from other cities: they target a different quantity (long-term L_Aeq).',
+fig.text(.08, .04, 'Cross-city transfer (Uganda -> Hanoi) is reported in section 7 as a '
+         'methodological result, not as a method.',
          fontsize=8.5, va='bottom', color='#555', style='italic', linespacing=1.5)
 footer(fig, 6); pp.savefig(fig); plt.close(fig)
 
@@ -466,13 +517,15 @@ if os.path.exists(VALID_CSV):
 fig = plt.figure(figsize=(8.27, 11.69))
 fig.text(.08, .95, '7.  Limitations, stated plainly', fontsize=14, weight='bold')
 lim_txt = (
-    '•  THE MODEL DOES NOT BEAT ITS OWN PHYSICAL BASELINE. An OLS regression on log(distance to\n'
-    f"   road) - one variable, two parameters - scores R2 {_dr['r2']:.3f} against {_lf['r2']:.3f} "
-    'for the six-variable LightGBM\n   under the reference protocol, and holds '
-    f"{METRICS['loso']['models']['dist_road']['r2']:.3f} against "
-    f"{METRICS['loso']['models']['lgbm_full']['r2']:.3f} under leave-one-site-out. Morphology\n"
-    '   aggregated over 300 m adds no measurable value over that single term. The LightGBM leads only\n'
-    '   under the most permissive split (600 m blocks). This is reported as a result, not hidden.\n\n'
+    '•  THE LEARNED COMPONENT DOES NOT SURVIVE AN HONEST SPATIAL SPLIT. We built the hybrid\n'
+    '   architecture we recommend (physical core + LightGBM on the residual). It leads under the\n'
+    + (f"   permissive 600 m block split ({_bcv['hybrid']['r2']:.3f} against "
+       f"{_bcv['physical']['r2']:.3f} for the bare core) and LOSES under both\n"
+       if _bcv and 'hybrid' in _bcv else '   permissive split and loses under both\n')
+    + f"   strict ones (dR2 {_v2['residual_ml_gain']['delta_r2']:+.3f} under {REFLABEL.lower()}). "
+      f"The delivered model is therefore\n   the bare 3-parameter physical core; the residual is "
+      f"trained but NOT applied. Morphology aggregated\n   over 300 m adds no measurable value "
+      f"over the two distance terms alone.\n\n"
     '•  ABSOLUTE CALIBRATION. The three phones are calibrated against each other, never against a\n'
     f'   reference instrument. A bias common to all three ({BIAS_LO:+.1f} to {BIAS_HI:+.1f} dB, '
     'bounded by anchoring on\n   instrumented Vietnamese campaigns) is invisible in our data. The '
@@ -481,41 +534,48 @@ lim_txt = (
     '•  MEASUREMENT QUANTITY. A 20-30 s sample is not the L_Aeq of any regulatory reference period.\n'
     '   A single horn burst moves it by several dB - horn events reach +17 dB in Vietnamese traffic.\n'
     '   This variance is a property of the quantity and caps the R² any spatial model can reach.\n\n'
-    '•  GENERALISATION. Leave-one-site-out is negative on two of three sites (section 5.3): the model\n'
-    '   does not extrapolate to an unsampled typology. Maps are clipped to the sampled envelope.\n\n'
+    '•  GENERALISATION. With three sampled typologies, the number of independent morphological\n'
+    '   configurations available is close to three, whatever the number of points. The delivered\n'
+    '   physical model extrapolates markedly better than the learned ones (section 5.3), but three\n'
+    '   typologies remain three: maps are clipped to the sampled envelope regardless of the score.\n\n'
     '•  SPATIAL RESOLUTION. Features are aggregated over a 300 m radius, so adjacent 40 m cells share\n'
     '   more than 98% of their disc. The map cannot resolve the facade/courtyard contrast (10-15 dB in\n'
     '   dense fabric): predicted levels are visibly flatter than measured ones.\n\n'
     '•  TEMPORAL COVERAGE. Night (21:00-06:00) holds ~3% of measurements and nothing between 00:00\n'
     '   and 05:00, although that is the period with the strictest threshold. One season only.\n\n'
-    '•  TRAFFIC VIDEOS. Per-frame vehicle DENSITY is not FLOW, and the detector was never validated\n'
-    '   against manual counts. Modal splits are lower bounds on motorcycle share (section 7).')
-fig.text(.08, .905, lim_txt, fontsize=8.5, va='top', linespacing=1.45)
+    '•  TRAFFIC VIDEOS. Counts are now real FLOW (tracking + line crossing), but speed is still\n'
+    '   unobservable without a ground homography and the field of view is not georeferenced, so\n'
+    '   distance is discarded. The detector was never validated against manual counts: modal\n'
+    '   splits remain lower bounds on motorcycle share (section 7).')
+fig.text(.08, .915, lim_txt, fontsize=8, va='top', linespacing=1.4)
 
-fig.text(.08, .46, '8.  Next steps', fontsize=14, weight='bold')
+fig.text(.08, .445, '8.  Next steps', fontsize=14, weight='bold')
 nxt = (
-    '•  HYBRID MODEL. Add a physical propagation core (CNOSSOS-EU via NoiseModelling, OSM inputs)\n'
-    '   and train the statistical model on the RESIDUAL. This restores the fine spatial contrast the\n'
-    '   300 m aggregation destroys, and makes the map extrapolable, since physics does not depend\n'
-    '   on our sample.\n\n'
-    '•  TRAFFIC. Re-derive flow and speed from the videos by object tracking and line crossing, and\n'
-    '   validate the detector against manual counts before any acoustic use.\n\n'
-    '•  DATA PUBLICATION. Deposit measurements, forms and cleaning code with a DOI; add an ethics\n'
-    '   statement covering the public-space video recordings.\n\n'
-    '•  MANUSCRIPT. Methods, the three negative results as contributions, discussion.')
-fig.text(.08, .42, nxt, fontsize=8.5, va='top', linespacing=1.45)
+    '•  RICHER PHYSICS, NOT MORE LEARNING. Our 3-parameter line-source core already beats every\n'
+    '   learned variant. The next gain should come from a real propagation model (CNOSSOS-EU via\n'
+    '   NoiseModelling: screening, reflections, canyon geometry), not from more capacity fitted to\n'
+    '   363 points. A learned residual should be re-tested only once the sample covers more\n'
+    '   typologies - on this one it degrades generalisation.\n\n'
+    '•  TRAFFIC. Flow by class is now measured; SPEED is the missing half. Estimate it from track\n'
+    '   displacement under a ground homography, which also georeferences the field of view and so\n'
+    '   restores the source-receiver distance. Validate the detector against manual counts first.\n\n'
+    '•  MORE TYPOLOGIES. Three sampled districts bound every generalisation claim we can make.\n'
+    '   A fourth and fifth contrasting fabric would do more than any modelling change.\n\n'
+    '•  DATA PUBLICATION. Deposit measurements, forms and code with a DOI; add an ethics statement\n'
+    '   covering the public-space video recordings.')
+fig.text(.08, .405, nxt, fontsize=8, va='top', linespacing=1.4)
 
-fig.text(.08, .22, '9.  Summary', fontsize=14, weight='bold')
+fig.text(.08, .175, '9.  Summary', fontsize=14, weight='bold')
 summ = (
-    f'{len(df)} smartphone measurements across 3 contrasting districts document a consistent exposure\n'
-    f'pattern in space and time. A LightGBM trained directly on them reaches R² {R2_HEAD:.2f} '
-    f'[{CI_HEAD[0]:.2f}, {CI_HEAD[1]:.2f}] / MAE {MAE_HEAD:.2f} dB\nunder {REFLABEL.lower()} - '
-    f"but an OLS regression on log(distance to road) alone reaches {_dr['r2']:.2f}.\n"
-    'Three negative results are reported as contributions: a one-variable physical baseline beats '
-    'the\nsix-variable model and 300 m morphology adds nothing over it; cross-city transfer from '
-    'Uganda fails\neven with identical instruments and invariant features; and per-frame vehicle '
-    'density carries no\nrecoverable acoustic signal. We claim contrasts, not certified absolute levels.')
-fig.text(.08, .18, summ, fontsize=8.5, va='top', linespacing=1.5, color='#222')
+    f'{len(df)} smartphone measurements across 3 districts document a consistent exposure pattern in\n'
+    f'space and time. The delivered model is a 3-parameter PHYSICAL line-source law: R² {R2_HEAD:.2f} '
+    f'[{CI_HEAD[0]:.2f}, {CI_HEAD[1]:.2f}] /\nMAE {MAE_HEAD:.2f} dB under {REFLABEL.lower()}, ahead of '
+    f'a log(distance) regression ({_dr["r2"]:.2f}), a 6-feature\nLightGBM ({MODELS["lgbm_full"]["r2"]:.2f}) '
+    f'and the physics+ML hybrid we built to improve on it ({MODELS["hybrid"]["r2"]:.2f}).\n'
+    'Three negative results are contributions: every learned elaboration gains under a permissive\n'
+    'spatial split and loses under a strict one; cross-city transfer from Uganda fails; and video\n'
+    'counts yield no emission coefficient, as density OR as flow. We claim contrasts, not absolutes.')
+fig.text(.08, .138, summ, fontsize=8, va='top', linespacing=1.45, color='#222')
 footer(fig, 8); pp.savefig(fig); plt.close(fig)
 
 pp.close()
