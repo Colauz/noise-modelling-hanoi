@@ -9,7 +9,7 @@ LIMITE À GARDER EN TÊTE - c'est une validation *en échantillon* : le modèle 
 la grille a été entraîné sur ces mêmes mesures. Les chiffres ci-dessous mesurent donc la
 fidélité de la chaîne (modèle -> grille 40 m -> GAMA), pas la capacité de généralisation.
 Le chiffre honnête de généralisation reste celui de la validation croisée spatiale du
-notebook 08 : R² 0.45 / r 0.69 / MAE 4.2 dB, où le modèle prédit des lieux jamais vus.
+scripts/evaluate_models.py (buffered leave-one-out), où le modèle prédit des lieux jamais vus.
 
 Sorties : outputs/hanoi/validation_simulation.png + outputs/hanoi/validation_simulation.csv
 Usage   : python3 scripts/validate_simulation.py
@@ -128,8 +128,18 @@ def main():
         print(f'  {site:16} n={len(g):3}  biais {g.error.mean():+5.2f}  '
               f'MAE {g.error.abs().mean():4.2f}  r {g.sim_dB.corr(g.noise_dB):.2f}')
     print(f'\nOK -> {OUT_PNG}')
-    print('Rappel : validation en échantillon. Généralisation honnête (notebook 08, '
-          'CV spatiale) : R² 0.45 / r 0.69 / MAE 4.2 dB.')
+    ref = os.path.join(ROOT, 'outputs', 'models', 'metrics.json')
+    if os.path.exists(ref):
+        import json
+        M = json.load(open(ref))
+        k = M['meta']['headline_protocol']
+        v = M[k]['models']['lgbm_full']
+        print(f'Rappel : validation en échantillon. Généralisation ({M[k]["label"]}) : '
+              f'R² {v["r2"]:.2f} [{v["r2_ci95"][0]:.2f}, {v["r2_ci95"][1]:.2f}] / '
+              f'MAE {v["mae"]:.2f} dB.')
+    else:
+        print('Rappel : validation en échantillon. Lancer scripts/evaluate_models.py '
+              'pour le chiffre de généralisation.')
     return s
 
 

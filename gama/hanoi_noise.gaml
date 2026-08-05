@@ -16,9 +16,38 @@
  *     Modèle LightGBM entraîné directement sur nos 363 mesures terrain de Hanoï.
  *     Entrées : morphologie urbaine OSM dans un rayon de 300 m (ratio de surface
  *     bâtie, densité de voirie, nombre d'intersections, distance à la route) +
- *     heure de la journée. Performance : R² 0.45 / r 0.69 / MAE 4.2 dB en
- *     validation croisée spatiale (notebook 08). Une valeur par heure, 5h-21h.
- *     C'est un niveau de type L_eq : une moyenne, pas un instantané.
+ *     heure de la journée et jour ouvré/week-end. Une valeur par heure, 5h-21h.
+ *
+ *     PERFORMANCE RÉELLE (run du 5 août 2026, outputs/models/metrics.json, produit par
+ *     scripts/evaluate_models.py : n = 363, 17 blocs, IC 95 % bootstrap) — R² :
+ *
+ *         modèle                          block-CV 600 m   buffered LOO   leave-one-site-out
+ *         table site x heure                    -0.008        -0.419            -0.058
+ *         régression sur log(dist_road)          0.221         0.200             0.189
+ *         LightGBM morphologie seule             0.153         0.041             0.007
+ *         LightGBM complet (CE MODÈLE)           0.304         0.137             0.029
+ *
+ *     >>> LIRE CE TABLEAU AVANT D'INTERPRÉTER LA CARTE. Une simple régression physique
+ *     sur log(distance à la route) — UNE variable, deux paramètres — généralise MIEUX que
+ *     ce modèle à 6 variables. Le LightGBM ne mène que sous le protocole le plus permissif
+ *     (block-CV 600 m) ; dès que le découpage teste la généralisation, l'ordre s'inverse,
+ *     et sous leave-one-site-out le LightGBM s'effondre (0.029) alors que la régression
+ *     tient (0.189). La morphologie agrégée à 300 m n'apporte AUCUN gain au-delà du seul
+ *     terme de distance : lui ajouter ratio bâti, densité de voirie et intersections fait
+ *     PERDRE 0.07 à 0.18 de R² selon le protocole.
+ *
+ *     Conséquence pratique pour cette simulation : les contrastes spatiaux affichés sont
+ *     à lire comme essentiellement pilotés par la distance aux axes routiers. Ce que le
+ *     modèle apporte en plus, c'est le cycle horaire — un effet réel mais NON SPATIAL.
+ *     Voir paper/sections/negative_results.md §5.z.
+ *
+ *     Le R² 0.45 affiché jusqu'en juillet 2026 venait d'une CV groupée sur des cellules de
+ *     110 m, plus petites que le rayon de 300 m des features : il fuyait et surestimait la
+ *     performance. Il ne doit plus être cité.
+ *
+ *     C'est un niveau de type L_eq : une moyenne, pas un instantané. Il est calibré en
+ *     RELATIF (contrastes entre lieux et entre heures), pas en absolu : nos capteurs sont
+ *     des smartphones non certifiés — voir paper/sections/metrology.md.
  *
  *  2. TRAFIC (véhicules) - MESURÉ
  *     Densité et composition issues de 147 vidéos horodatées, comptées par YOLOv8
@@ -33,8 +62,9 @@
  *     (scripts/calibrate_emissions.py, régression en énergie sous contrainte de
  *     non-négativité sur les 147 vidéos appariées). Les trois coefficients sont
  *     ressortis NULS : à site donné, le nombre de véhicules visibles n'explique pas
- *     le niveau mesuré (R² 0.008 à 0.042 selon le site, corrélations de signe
- *     incohérent). Causes probables : les véhicules garés sont comptés, la distance
+ *     le niveau mesuré (R² 0.008 à 0.044 selon le site ; corrélations de signe
+ *     incohérent : Hoan Kiem -0.09, Ocean Park -0.19, Vinh Tuy +0.21, et -0.15 sur
+ *     les 147 vidéos appariées). Causes probables : les véhicules garés sont comptés, la distance
  *     de chaque véhicule est ignorée, et la vitesse - qui domine le bruit de
  *     roulement - n'est pas observable sur un comptage. Plutôt que d'injecter des
  *     valeurs inventées, on s'abstient : le niveau reste piloté par le modèle validé
@@ -47,14 +77,24 @@
  *     simulation ajoute cette énergie avec l'atténuation géométrique
  *     L(d) = 64,7 − 20·log10(d / 56), en somme ÉNERGÉTIQUE avec le fond.
  *
- *  4. SCÉNARIO DE TRAFIC (slider) - LOI PHYSIQUE
- *     Multiplier le débit par k décale le niveau de 10·log10(k) : doubler le
- *     trafic = +3 dB. Le slider agit conjointement sur le nombre de véhicules
- *     affichés et sur le niveau de fond, pour que le visuel et le chiffre restent
- *     cohérents.
+ *  4. SCÉNARIO DE TRAFIC (slider) - LOI PHYSIQUE, APPLIQUÉE À LA SEULE PART TRAFIC
+ *     Multiplier le débit par k décale de 10·log10(k) la part d'énergie ATTRIBUABLE AU
+ *     TRAFIC : doubler le trafic = +3 dB là où le trafic domine, quasiment rien dans une
+ *     cour intérieure. Chaque cellule est décomposée en
+ *           E_cellule = E_résiduel + E_trafic,
+ *     E_résiduel étant estimé par le 5e percentile des niveaux prédits de la zone à cette
+ *     heure (les cellules les plus calmes = celles où le trafic contribue le moins).
+ *     Idem pour la mitigation : la « zone 30 » retire 3 dB à la SOURCE, et seulement dans
+ *     un rayon de 150 m d'une route.
+ *     CORRECTION D'AOÛT 2026 : auparavant, 10·log10(k) et le -3 dB étaient ajoutés
+ *     UNIFORMÉMENT à toutes les cellules, ce qui est physiquement faux et surestimait
+ *     l'effet des scénarios loin des voiries.
+ *     Invariant : à k = 1 sans mitigation, la carte est identique à la carte prédite.
  *
- *  Seuils réglementaires affichés : QCVN 26:2010/BTNMT (Vietnam, zone ordinaire)
- *  70 dB le jour · recommandation OMS trafic routier 53 dB.
+ *  Seuils réglementaires affichés : QCVN 26:2010/BTNMT (Vietnam, zone ordinaire),
+ *  70 dB de 6h à 21h · 55 dB de 21h à 6h. La recommandation OMS 53 dB a été retirée :
+ *  c'est un L_den (moyenne annuelle, pénalités soir/nuit), non comparable à notre
+ *  grandeur — voir paper/sections/metrology.md.
  *
  *  Entrées : générées par `python3 scripts/export_gama_zones.py`
  * ============================================================================
@@ -96,13 +136,20 @@ global {
     // ---------------- constantes ----------------
     int   HMIN <- 5;
     int   HMAX <- 21;
-    float qcvn_day <- 70.0;    // QCVN 26:2010/BTNMT, zone ordinaire, jour
-    float who_road <- 53.0;    // recommandation OMS, bruit routier
+    // Seuils affichés. Les deux sont des seuils VIETNAMIENS, portant sur la même grandeur
+    // que la nôtre (un niveau, pas un indicateur long terme). La référence OMS 53 dB a été
+    // RETIRÉE : c'est un L_den, moyenne ANNUELLE avec pénalités soir/nuit, non comparable à
+    // un niveau horaire prédit depuis des échantillons de 25 s (paper/sections/metrology.md).
+    float qcvn_day   <- 70.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 6h-21h
+    float qcvn_night <- 55.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 21h-6h
     int   veh_density_scale <- 22;   // véhicules affichés par unité de "véhicules/image"
 
+    // Décomposition fond / trafic (voir la correction physique dans `reflex scenario`).
+    float AMBIENT_PCT   <- 0.05;  // percentile bas pris comme ambiance résiduelle non routière
+    float MITIG_RADIUS  <- 150.0; // portée d'une mesure de mitigation autour d'une route (m)
+    float Z30_DB        <- -3.0;  // zone 30 : -3 dB à la SOURCE (littérature -2 à -4)
+
     // Chantiers : source équivalente calibrée sur NOS mesures.
-    // scripts/calibrate_emissions.py : +2,0 dB médian sur les 32 points signalant un
-    // chantier proche (vs 152 sans), à une distance médiane mesurée de 56 m.
     float L_CONSTR_REF <- 64.7;   // source équivalente à D_CONSTR_REF (calcul sur médianes)
     float D_CONSTR_REF <- 56.0;   // distance de référence, médiane observée (m)
     float D_MIN        <- 25.0;   // plancher = 1er quartile des distances observees (32 m)
@@ -111,7 +158,8 @@ global {
     // ---------------- indicateurs ----------------
     float mean_dB     <- 0.0;
     float exceed_qcvn <- 0.0;
-    float exceed_who  <- 0.0;
+    float exceed_night <- 0.0;   // % de la zone au-dessus du seuil QCVN NUIT (55 dB)
+    float ambient_dB   <- 0.0;   // ambiance résiduelle non routière de la zone, à cette heure
     float peak_dB     <- 0.0;
     int   n_vehicles  <- 0;
     string traffic_source <- "-";
@@ -164,6 +212,14 @@ global {
             create Measure from: file(meas_path) with: [dB::float(read("dB")), m_hour::int(read("hour"))];
         }
 
+        // Distance de chaque cellule à la route la plus proche : figée ici une fois pour
+        // toutes, elle sert à borner spatialement les scénarios de mitigation (une zone 30
+        // n'a aucun effet sur une cour intérieure située à 300 m de toute rue).
+        ask NoisePoint {
+            Road r <- Road closest_to self;
+            d_road <- (r = nil) ? 1e6 : (self distance_to r);
+        }
+
         write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cellules, "
             + string(length(Road)) + " routes, " + string(length(Building)) + " batiments, "
             + string(n_constr) + " chantiers, " + string(length(Measure)) + " mesures terrain.";
@@ -198,20 +254,67 @@ global {
         traffic_source <- (fleet_meas[hour_of_day] = 1) ? "mesure (videos)" : "interpole";
     }
 
+    // ---- plancher ambiant NON ROUTIER de la zone à l'heure courante ----
+    // Percentile bas des niveaux prédits : les cellules les plus calmes de la zone sont
+    // celles où le trafic contribue le moins. On s'en sert comme estimation de l'ambiance
+    // résiduelle (ventilation, activités, avifaune, bruit lointain), qu'un scénario de
+    // trafic ne doit PAS faire bouger.
+    action compute_ambient {
+        list<float> lv <- (NoisePoint collect each.base_dB) sort_by each;
+        int i <- max([0, min([length(lv) - 1, int(length(lv) * AMBIENT_PCT)])]);
+        ambient_dB <- empty(lv) ? 0.0 : lv[i];
+    }
+
     reflex scenario {
-        // mitigation -> trafic effectif et/ou décalage en dB
-        mitigation_dB <- (mitigation = "zone 30") ? -3.0 : 0.0;
         eff_traffic   <- (mitigation = "pietonnisation")
                             ? traffic_multiplier * 0.2 : traffic_multiplier;
         constr_active <- construction_on and hour_of_day >= work_start and hour_of_day <= work_end;
 
         do sync_fleet;
-        // niveau de fond de l'heure + loi de volume de trafic 10*log10(k) + mitigation
-        float shift <- 10 * log(eff_traffic) / log(10);
+
+        // Niveau de fond prédit pour l'heure, AVANT scénario.
+        ask NoisePoint { base_dB <- db_by_hour[hour_of_day - HMIN]; }
+        do compute_ambient;
+        float e_amb_zone <- 10 ^ (ambient_dB / 10);
+
+        // ------------------------------------------------------------------------------
+        //  CORRECTION PHYSIQUE (août 2026) — décomposition énergétique fond / trafic
+        // ------------------------------------------------------------------------------
+        //  AVANT : background_dB <- base_dB + 10*log10(k) + mitigation_dB, appliqué
+        //  UNIFORMÉMENT à toutes les cellules. Physiquement faux : 10*log10(k) ne vaut que
+        //  pour la part d'énergie ATTRIBUABLE AU TRAFIC. Tripler le trafic ajoutait +4,8 dB
+        //  jusque dans les cours intérieures, où le trafic ne contribue quasiment pas ; et
+        //  la « zone 30 » retirait 3 dB à des cellules qu'aucune rue ne dessert.
+        //
+        //  MAINTENANT : chaque cellule est décomposée en
+        //        E_cellule = E_résiduel + E_trafic
+        //  avec E_résiduel = min(E_ambiant_zone, E_cellule)  (jamais plus que la cellule).
+        //  Seul E_trafic subit le facteur de volume et la mitigation.
+        //
+        //  Invariant vérifiable : à k = 1 sans mitigation, background_dB == base_dB
+        //  exactement pour toutes les cellules — la carte de référence est inchangée.
+        //
+        //  La mitigation « zone 30 » (-3 dB sur la source, fourchette littérature -2 à -4)
+        //  est en outre bornée à MITIG_RADIUS autour d'une route : au-delà, une réduction
+        //  de vitesse n'a pas de sens physique.
+        // ------------------------------------------------------------------------------
+        float k     <- eff_traffic;
+        float f_z30 <- 10 ^ (Z30_DB / 10);             // -3 dB -> facteur d'énergie ~0.50
+
         ask NoisePoint {
-            background_dB <- db_by_hour[hour_of_day - HMIN] + shift + mitigation_dB;
+            float e_tot     <- 10 ^ (base_dB / 10);
+            float e_res     <- min([e_amb_zone, e_tot]);
+            float e_traffic <- e_tot - e_res;
+            float f         <- k;
+            if (mitigation = "zone 30" and d_road <= MITIG_RADIUS) { f <- f * f_z30; }
+            background_dB <- 10 * log(e_res + f * e_traffic) / log(10);
             constr_energy <- 0.0;
         }
+        // Décalage EFFECTIF moyen sur la zone (remplace l'ancien -3 dB affiché en dur).
+        // Il est désormais toujours plus faible en valeur absolue que le décalage "source",
+        // puisque les cellules dominées par l'ambiance résiduelle bougent peu : c'est
+        // exactement ce que l'ancienne formule uniforme surestimait.
+        mitigation_dB <- mean(NoisePoint collect (each.background_dB - each.base_dB));
     }
 
     // chantiers actifs : énergie ajoutée, atténuation géométrique depuis la source
@@ -235,7 +338,7 @@ global {
         mean_dB     <- mean(NoisePoint collect each.effective_dB);
         peak_dB     <- max(NoisePoint collect each.effective_dB);
         exceed_qcvn <- (NoisePoint count (each.effective_dB > qcvn_day)) / length(NoisePoint) * 100;
-        exceed_who  <- (NoisePoint count (each.effective_dB > who_road)) / length(NoisePoint) * 100;
+        exceed_night <- (NoisePoint count (each.effective_dB > qcvn_night)) / length(NoisePoint) * 100;
         // effet local des chantiers : la moyenne de zone le masque (4 sites / plusieurs
         // milliers de cellules), on suit donc le voisinage immediat des chantiers.
         if (n_constr > 0) {
@@ -258,6 +361,8 @@ species Building {
 
 species NoisePoint {
     list<float> db_by_hour;
+    float base_dB       <- 55.0;  // niveau prédit pour l'heure courante, AVANT scénario
+    float d_road        <- 0.0;   // distance à la route la plus proche (m), figée à l'init
     float background_dB <- 55.0;
     float constr_energy <- 0.0;   // énergie apportée par les chantiers actifs
     float effective_dB <- 55.0;
@@ -374,7 +479,7 @@ experiment hanoi_noise_sim type: gui {
                 draw "NIVEAU PREDIT  L (dB)" at: {14 #px, 88 #px} color: rgb(20, 20, 20)
                      font: font("Helvetica", 9, #bold);
                 draw "= < 50" at: {14 #px, 106 #px} color: rgb(26, 152, 80) font: font("Helvetica", 10, #bold);
-                draw "= 50 - 55    (OMS 53 dB)" at: {14 #px, 122 #px} color: rgb(102, 189, 99) font: font("Helvetica", 10, #bold);
+                draw "= 50 - 55    (< QCVN nuit)" at: {14 #px, 122 #px} color: rgb(102, 189, 99) font: font("Helvetica", 10, #bold);
                 draw "= 55 - 60" at: {14 #px, 138 #px} color: rgb(150, 200, 80) font: font("Helvetica", 10, #bold);
                 draw "= 60 - 65" at: {14 #px, 154 #px} color: rgb(225, 195, 60) font: font("Helvetica", 10, #bold);
                 draw "= 65 - 70" at: {14 #px, 170 #px} color: rgb(253, 174, 60) font: font("Helvetica", 10, #bold);
@@ -391,7 +496,7 @@ experiment hanoi_noise_sim type: gui {
                 draw "Chantiers: " + string(n_constr) + (constr_active ? " actifs" : " arretes")
                      + "   Mitigation: " + mitigation
                      at: {14 #px, 274 #px} color: rgb(60, 60, 60) font: font("Helvetica", 9, #plain);
-                draw "Fond : modele ML R2 0.45 · trafic : 147 videos"
+                draw "Fond : modele ML (cf. metrics.json) · trafic : 147 videos"
                      at: {14 #px, 286 #px} color: rgb(130, 130, 130) font: font("Helvetica", 8, #plain);
             }
         }
@@ -400,7 +505,7 @@ experiment hanoi_noise_sim type: gui {
             chart "Exposition (% de la zone)" type: series size: {1.0, 0.5} position: {0.0, 0.0}
                   y_range: [0, 100] {
                 data "> QCVN jour 70 dB" value: exceed_qcvn color: rgb(200, 40, 40) marker: false thickness: 2.5;
-                data "> OMS 53 dB" value: exceed_who color: rgb(80, 80, 80) marker: false thickness: 2.0;
+                data "> QCVN nuit 55 dB" value: exceed_night color: rgb(80, 80, 80) marker: false thickness: 2.0;
             }
             chart "Niveau moyen de la zone (dB)" type: series size: {1.0, 0.5} position: {0.0, 0.5} {
                 data "L moyen" value: mean_dB color: rgb(30, 110, 180) marker: false thickness: 2.5;
@@ -419,7 +524,8 @@ experiment hanoi_noise_sim type: gui {
         monitor "L moyen (dB)" value: mean_dB with_precision 1;
         monitor "L max (dB)" value: peak_dB with_precision 1;
         monitor "% zone > QCVN jour (70 dB)" value: exceed_qcvn with_precision 1;
-        monitor "% zone > OMS (53 dB)" value: exceed_who with_precision 1;
+        monitor "% zone > QCVN nuit (55 dB)" value: exceed_night with_precision 1;
+        monitor "Ambiance residuelle (dB)" value: ambient_dB with_precision 1;
     }
 }
 
@@ -440,7 +546,7 @@ experiment check type: gui {
         monitor "L_moyen" value: mean_dB with_precision 2;
         monitor "L_max" value: peak_dB with_precision 2;
         monitor "pct_qcvn" value: exceed_qcvn with_precision 2;
-        monitor "pct_who" value: exceed_who with_precision 2;
+        monitor "pct_qcvn_night" value: exceed_night with_precision 2;
         monitor "source" value: traffic_source;
     }
 }

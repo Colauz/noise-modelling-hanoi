@@ -5,11 +5,23 @@ collecte + reproduction Sunbird), analyse de données (patterns temporels,
 sources, dépassements QCVN/OMS), modèle prédictif (transfert vs entraînement
 direct), limitations & prochaines étapes.
 
-Données descriptives recalculées depuis measurements.csv ; métriques modèle
-recopiées du notebook 08 (dicts MODEL et PERSITE ci-dessous - à mettre à jour
-si les scores du notebook changent).
+Données descriptives recalculées depuis measurements.csv ; métriques modèle LUES
+DEPUIS outputs/models/metrics.json (produit par scripts/evaluate_models.py).
+Plus aucune métrique n'est recopiée à la main : le rapport ne peut plus se
+désynchroniser du modèle réellement livré.
+
+Deux corrections de fond (août 2026) :
+  - les valeurs guides OMS (L_den 53 / L_night 45) ont été RETIRÉES du rapport.
+    Ce sont des moyennes ANNUELLES avec pénalités soir/nuit, non comparables à
+    nos échantillons de 25 s (cf. paper/sections/metrology.md) ;
+  - les dépassements QCVN sont présentés comme une STATISTIQUE DESCRIPTIVE de
+    notre échantillon, assortie d'une analyse de sensibilité au biais de
+    calibration, et non comme un constat de non-conformité réglementaire.
+
 Usage : python3 scripts/build_report.py
+  (lancer avant : prepare_field_data.py, evaluate_models.py)
 """
+import json
 import os
 import warnings; warnings.filterwarnings('ignore')
 import numpy as np, pandas as pd, matplotlib
@@ -17,8 +29,28 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-QCVN_D, QCVN_N, WHO_D, WHO_N = 70, 55, 53, 45
-df = pd.read_csv('data/raw/hanoi/measurements.csv', parse_dates=['timestamp'])
+# Seuils QCVN 26:2010/BTNMT, zone ordinaire. Aucune valeur OMS : voir docstring.
+QCVN_D, QCVN_N = 70, 55
+# Fourchette de biais absolu plausible de nos smartphones, estimée par ancrage sur la
+# littérature instrumentée (scripts/literature_anchoring.py). Sert à borner la sensibilité
+# des taux de dépassement. Mise à jour automatique si le CSV d'ancrage existe.
+BIAS_LO, BIAS_HI = -3.0, 3.0
+_anch = 'outputs/hanoi/literature_anchoring.csv'
+if os.path.exists(_anch):
+    _a = pd.read_csv(_anch)
+    _u = _a[(_a.status != 'grey') & _a.gap_after_metric_correction_dB.notna()
+            & (_a.comparable != 'night_all')]
+    if len(_u):
+        BIAS_LO = float(_u.gap_after_metric_correction_dB.min())
+        BIAS_HI = float(_u.gap_after_metric_correction_dB.max())
+
+MEAS = 'data/raw/hanoi/measurements.csv'
+if not os.path.exists(MEAS):
+    raise SystemExit(
+        f'Manque {MEAS}.\n'
+        '  -> déposer l\'export Kobo brut dans data/raw/hanoi/, puis :\n'
+        '     python3 scripts/prepare_field_data.py')
+df = pd.read_csv(MEAS, parse_dates=['timestamp'])
 df['hour'] = df.timestamp.dt.hour
 df['dow'] = df.timestamp.dt.day_name()
 df['period'] = np.where((df.hour >= 21) | (df.hour < 6), 'night', 'day')
@@ -31,13 +63,23 @@ date_min, date_max = df.timestamp.min().strftime('%d %b'), df.timestamp.max().st
 exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
-# métriques modèle - recopiées de la sortie du notebook 08 (CV spatiale honnête)
-MODEL = {
-    'Direct training, spatial CV (honest)': ('0.69', '0.45', '4.2'),
-    'Direct training, random split (optimistic)': ('0.70', '0.48', '4.1'),
-    'Uganda to Hanoi transfer (comparison)': ('0.07', '−1.26', '7.9'),
-}
-PERSITE = {'Ocean Park': '0.21', 'Vinh Tuy area': '−0.68', 'Hoan Kiem lake': '−0.37'}
+# ---- métriques modèle : LUES depuis metrics.json (scripts/evaluate_models.py) ----
+MPATH = 'outputs/models/metrics.json'
+if not os.path.exists(MPATH):
+    raise SystemExit(
+        f'Manque {MPATH}.\n'
+        '  -> python3 scripts/evaluate_models.py\n'
+        '     (le rapport ne contient plus de métriques codées en dur : elles doivent\n'
+        '      venir d\'une évaluation réellement exécutée)')
+METRICS = json.load(open(MPATH))
+REF = METRICS['meta']['headline_protocol']          # 'bloo' de préférence
+REFLABEL = METRICS[REF]['label']
+MODELS = METRICS[REF]['models']
+GAIN = METRICS[REF]['morphology_gain']
+PERSITE = METRICS['loso_per_site']
+R2_HEAD = MODELS['lgbm_full']['r2']
+MAE_HEAD = MODELS['lgbm_full']['mae']
+CI_HEAD = MODELS['lgbm_full']['r2_ci95']
 
 FOOT = 'Hanoi Urban Noise · Data Collection Report'
 def footer(fig, n, total=8):
@@ -66,8 +108,8 @@ fig.text(.5, .882, f'{len(df)} smartphone measurements · 3 sites · {date_min} 
          ha='center', fontsize=10, color='#777')
 
 kpis = [('Measurements', f'{len(df)}'), ('Sites', '3'),
-        ('dB range', f'{df.noise_dB.min():.0f}-{df.noise_dB.max():.0f}'),
-        ('Model R²', '0.45'), ('Exceed QCVN', f'{exc_glob:.0f}%')]
+        ('L_A,25s range', f'{df.noise_dB.min():.0f}-{df.noise_dB.max():.0f}'),
+        ('Model R²', f'{R2_HEAD:.2f}'), ('> QCVN day', f'{exc_glob:.0f}%')]
 for i, (k, v) in enumerate(kpis):
     x = .10 + i * .163
     fig.patches.append(plt.Rectangle((x, .80), .15, .055, transform=fig.transFigure,
@@ -81,6 +123,14 @@ obj = (
     'urban morphology. We follow the Sunbird AI methodology (Urban Noise Uganda 61K, Nsumba et al.,\n'
     '2026): smartphone field collection plus a morphology-to-noise model, reproduced then applied here.')
 fig.text(.08, .71, obj, fontsize=9.5, va='top', linespacing=1.6)
+fig.text(.08, .655,
+         'Measurement status: our target is a 20-30 s A-weighted level from consumer '
+         'smartphones (denoted L_A,25s),\nnot a certified L_Aeq. The three phones are '
+         'cross-calibrated against each other, never against a reference\ninstrument: '
+         'CONTRASTS between places and hours are supported, ABSOLUTE levels are indicative '
+         f'(plausible bias\n{BIAS_LO:+.1f} to {BIAS_HI:+.1f} dB, section 3.4). '
+         'No compliance claim is made anywhere in this report.',
+         fontsize=8.5, va='top', color='#8a4b08', style='italic', linespacing=1.5)
 
 fig.text(.08, .615, '2.  Data collection summary', fontsize=13, weight='bold')
 rows = [['Site', 'n', 'Median dB', 'Min-Max', '% < 60 dB', '% roadside']]
@@ -101,9 +151,11 @@ fig.text(.08, .39, 'Zones: Ocean Park = new high-rise development (shielding, co
          '(narrow streets, pedestrian zones).\n'
          'QC: site labels cross-checked against GPS (6 mislabelled submissions reassigned).',
          fontsize=8.5, color='#555', style='italic', va='top', linespacing=1.5)
-fig.text(.08, .315, f'Headline findings: median {df.noise_dB.median():.0f} dB, {exc_glob:.0f}% of '
-         f'measurements exceed the QCVN limit, noise peaks at {peak_h}:00.\nA model trained directly '
-         'on our data reaches R² 0.45 (honest cross-validation, section 5).',
+fig.text(.08, .315, f'Headline findings: median {df.noise_dB.median():.0f} dB; {exc_glob:.0f}% of '
+         f'short samples sit above the QCVN daytime threshold value;\nlevels peak at {peak_h}:00. '
+         f'A model trained directly on our data reaches R² {R2_HEAD:.2f} '
+         f'[{CI_HEAD[0]:.2f}, {CI_HEAD[1]:.2f}] under\n{REFLABEL.lower()} (section 5), '
+         'against baselines reported in the same table.',
          fontsize=9.5, va='top', linespacing=1.6)
 footer(fig, 1); pp.savefig(fig); plt.close(fig)
 
@@ -133,12 +185,25 @@ feat = (
     'intersection count, distance to nearest road; plus hour of day and weekend flag. Model: LightGBM.')
 fig.text(.08, .58, feat, fontsize=9.5, va='top', linespacing=1.55)
 
-fig.text(.08, .50, '3.4  Standards used', fontsize=11.5, weight='bold', color='#34495e')
-std = [['Standard', 'Day (6-21h)', 'Night (21-6h)'],
-       ['QCVN 26:2010/BTNMT (Vietnam, ordinary area)', '70 dB', '55 dB'],
-       ['WHO (road-traffic guideline)', '53 dB', '45 dB']]
-ax = fig.add_axes([.08, .39, .84, .08]); ax.axis('off')
+fig.text(.08, .50, '3.4  Reference values and measurement status', fontsize=11.5,
+         weight='bold', color='#34495e')
+std = [['Reference value', 'Day (6-21h)', 'Night (21-6h)'],
+       ['QCVN 26:2010/BTNMT (Vietnam, ordinary area)', '70 dB', '55 dB']]
+ax = fig.add_axes([.08, .425, .84, .055]); ax.axis('off')
 styled_table(ax, std, colWidths=[.5, .25, .25])
+fig.text(.08, .405,
+         'The WHO road-traffic guideline values (53 / 45 dB) have been WITHDRAWN from this '
+         'report. They are\nL_den and L_night: ANNUAL averages with +5 dB evening and +10 dB '
+         'night penalties. Comparing them to a\n25 s daytime sample compares different '
+         'statistics of different processes. QCVN is retained because it\nregulates a level, '
+         'but it regulates an L_Aeq measured with a class 1-2 meter under TCVN 7878-2:2010:\n'
+         'our instrument does not meet that specification either.',
+         fontsize=8.5, va='top', color='#555', style='italic', linespacing=1.5)
+fig.text(.08, .30, 'Consequence for every exceedance figure in this report: it is a '
+         'DESCRIPTIVE STATISTIC of our\nsample - the share of short samples above a threshold '
+         'value - and never a finding of regulatory\nnon-compliance. Sensitivity to the '
+         f'calibration bias ({BIAS_LO:+.1f} to {BIAS_HI:+.1f} dB) is given on page 4.',
+         fontsize=9, va='top', color='#8a4b08', linespacing=1.55)
 footer(fig, 2); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 3 : patterns temporels =================
@@ -148,10 +213,10 @@ ax1 = fig.add_subplot(2, 1, 1)
 for s in SITES:
     g = df[df.site == s].groupby('hour').noise_dB.median()
     ax1.plot(g.index, g.values, marker='o', lw=2, color=COL[s], label=s)
-ax1.axhline(QCVN_D, ls='--', c='red', alpha=.6, label='QCVN day 70'); ax1.axhline(QCVN_N, ls='--', c='darkred', alpha=.6, label='QCVN night 55')
-ax1.axhline(WHO_D, ls=':', c='gray', alpha=.6, label='WHO day 53')
+ax1.axhline(QCVN_D, ls='--', c='red', alpha=.6, label='QCVN day 70')
+ax1.axhline(QCVN_N, ls='--', c='darkred', alpha=.6, label='QCVN night 55')
 ax1.set_title('Hourly pattern within a day (capture window 05:00-23:00)', fontsize=11)
-ax1.set_xlabel('Hour'); ax1.set_ylabel('Median dB')
+ax1.set_xlabel('Hour'); ax1.set_ylabel(r'Median $L_{A,25s}$ (dB)')
 ax1.set_xlim(4.5, 23.5); ax1.set_xticks(range(5, 24, 2))
 ax1.legend(fontsize=7.5, ncol=2); ax1.grid(alpha=.3)
 ax2 = fig.add_subplot(2, 1, 2)
@@ -161,7 +226,12 @@ for s in SITES:
     ax2.plot(range(7), g.values, marker='s', lw=2, color=COL[s], label=s)
 ax2.axhline(QCVN_D, ls='--', c='red', alpha=.6)
 ax2.set_title('Day-of-week pattern', fontsize=11); ax2.set_xticks(range(7))
-ax2.set_xticklabels(['Mon','Tue','Wed','Thu','Fri','Sat','Sun']); ax2.set_ylabel('Median dB'); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
+ax2.set_xticklabels(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])
+ax2.set_ylabel(r'Median $L_{A,25s}$ (dB)'); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
+fig.text(.08, .045, 'Night coverage is very thin (n = '
+         f'{int((df.period == "night").sum())} of {len(df)}, none between 00:00 and 05:00): '
+         'the night curve and the night\nexceedance rates below are indicative only.',
+         fontsize=8, color='#8a4b08', style='italic', va='bottom', linespacing=1.4)
 footer(fig, 3); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 4 : sources + dépassements =================
@@ -180,11 +250,27 @@ for i, s in enumerate(SITES):
 ax2.axhline(QCVN_D, ls='--', c='red', alpha=.6); ax2.set_xticks(range(len(SITES)))
 ax2.set_xticklabels([s.split()[0] for s in SITES], fontsize=8); ax2.set_title('Median dB by site', fontsize=10); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
 ax3 = fig.add_subplot(2, 1, 2)
-pe = df.groupby('hour').apply(lambda g: (g.noise_dB > np.where((g.hour>=21)|(g.hour<6), QCVN_N, QCVN_D)).mean()*100)
+# (calculé sans groupby.apply : le comportement de apply sur la colonne de
+#  groupement a changé en pandas 3.0 et cassait le rapport)
+pe = (100 * df.assign(_ex=df.noise_dB > df['limit']).groupby('hour')['_ex'].mean())
 ax3.bar(pe.index, pe.values, color=['#c0392b' if v>50 else '#e67e22' if v>0 else '#27ae60' for v in pe.values])
 ax3.set_xlabel('Hour'); ax3.set_ylabel('% measurements > QCVN')
 ax3.set_xlim(4.5, 23.5); ax3.set_xticks(range(5, 24, 2))
-ax3.set_title('Frequency of QCVN exceedance by hour (peak periods)', fontsize=11); ax3.grid(alpha=.3)
+ax3.set_title('Share of short samples above the QCVN threshold value, by hour', fontsize=11)
+ax3.grid(alpha=.3)
+
+# Sensibilité au biais de calibration : le seuil de 70 dB tombe au milieu de notre
+# distribution, un décalage de quelques dB change fortement le pourcentage.
+exc_lo = 100 * ((df.noise_dB + BIAS_LO) > df['limit']).mean()
+exc_hi = 100 * ((df.noise_dB + BIAS_HI) > df['limit']).mean()
+fig.text(.08, .045,
+         f'Sensitivity to calibration bias: {exc_glob:.0f}% of samples sit above the '
+         f'threshold at face value, but {min(exc_lo, exc_hi):.0f}% to {max(exc_lo, exc_hi):.0f}%\n'
+         f'once the plausible instrumental bias ({BIAS_LO:+.1f} to {BIAS_HI:+.1f} dB, '
+         'section 3.4) is applied. The exposure PATTERN - which hours and\nwhich sites are '
+         'loudest - is unaffected by a common bias; the exceedance LEVEL is. We report the '
+         'pattern as a\nfinding and the level as an indication.',
+         fontsize=8.5, va='bottom', color='#8a4b08', linespacing=1.5)
 footer(fig, 4); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 5 : vidéos trafic (CV) + météo =================
@@ -197,7 +283,8 @@ if os.path.exists(VC):
     fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.86, bottom=.42, wspace=.30)
     fig.text(.08, .955, '4.  Data analysis: traffic videos & weather', fontsize=14, weight='bold')
     fig.text(.08, .925, f'{len(vc)} traffic videos (~25 s each) matched to their measurement by '
-             'timestamp (median gap 15 s).\nVehicles counted with YOLOv8 at ~1 frame/s '
+             f'timestamp (median gap {vc.match_gap_s.median():.0f} s).\nVehicles counted with '
+             'YOLOv8 at ~1 frame/s '
              f'({vc.n_frames.sum()} frames analysed): average vehicles visible per frame.',
              fontsize=9.5, va='top', linespacing=1.55)
 
@@ -220,55 +307,97 @@ if os.path.exists(VC):
     ax2.set_xlabel('Vehicles per frame'); ax2.set_ylabel('Measured dB')
     ax2.set_title('Traffic density vs noise, by site', fontsize=10); ax2.legend(fontsize=8); ax2.grid(alpha=.3)
 
+    # Aucun de ces chiffres n'est écrit à la main : ils sont recalculés depuis vehicle_counts.csv
+    # à chaque build, sinon le texte se désynchronise du run YOLO (cf. règle du ROADMAP).
+    _sh = 100 * comp.div(comp.sum(axis=1), axis=0)
+    _mx = vc.groupby('site').vehicles_mean.max()
+    _rs = {s: g.vehicles_mean.corr(g.matched_dB) for s, g in vc.groupby('site')}
+    _hk = next((s for s in _sh.index if 'Hoan' in s), _sh.index[0])
+    _op = next((s for s in _sh.index if 'Ocean' in s), _sh.index[0])
+    _vt = next((s for s in _sh.index if 'Vinh' in s), _sh.index[-1])
+    _rtxt = ', '.join(f'{s.split()[0]} {_rs[s]:+.2f}' for s in _sh.index)
+    _neg = sum(1 for v in _rs.values() if v < 0)
     findings = (
-        'Findings: traffic composition matches the zone typologies: Hoan Kiem is motorbike-'
-        'dominated (65%),\nOcean Park car-dominated (84%), Vinh Tuy the densest corridor (up to '
-        '14 vehicles/frame). The link\nbetween density and noise is site- and congestion-dependent, '
-        'not a simple rule: in most sessions more\nvehicles means more noise, but the two most '
-        'congested Ocean Park sessions (7-8 vehicles/frame,\nnear-gridlock) show the opposite '
-        '(r about -0.35) - slow, jammed traffic can be quieter than a\nfaster, sparser flow. Note: '
-        'small motorbikes are harder to detect than cars and parked vehicles are\ncounted too (no '
-        'motion filter yet), so motorbike shares are a lower bound.\n\n'
+        'Findings: traffic composition matches the zone typologies: '
+        f'{_hk.split()[0]} is motorbike-dominated\n({_sh.loc[_hk, "moto_mean"]:.0f}%), '
+        f'{_op.split()[0]} car-dominated ({_sh.loc[_op, "car_mean"]:.0f}%), '
+        f'{_vt.split()[0]} the densest corridor (up to {_mx[_vt]:.0f} vehicles/frame).\n'
+        'Vehicle density does NOT track noise: the site-wise correlations are weak and of\n'
+        f'inconsistent sign ({_rtxt}), negative on {_neg} of {len(_rs)} sites,\n'
+        f'and {vc.vehicles_mean.corr(vc.matched_dB):+.2f} overall. Density is a stock; emission '
+        'is driven by flow and speed, which a\nper-frame count cannot observe - see section 7. '
+        'Note: small motorbikes are harder to\ndetect than cars and parked vehicles are counted '
+        'too (no motion filter yet), so motorbike\nshares are a lower bound, and the detector was '
+        'never validated against manual counts.\n\n'
         'Weather: no robust effect. Raw correlations (temperature +0.26, rain -0.29) vanish '
         'once hour of day and\nsession are controlled: quiet-point campaigns happened to fall on '
         'rainy days. Wind shows no effect on\nreadings (no microphone artefact).')
     fig.text(.08, .36, findings, fontsize=9.5, va='top', linespacing=1.55)
     footer(fig, 5); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 6 : modèle (transfert vs direct) =================
+# ================= PAGE 6 : modèle, baselines, ablation =================
 fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(left=.08, right=.92)
 fig.text(.08, .95, '5.  Predictive model', fontsize=14, weight='bold')
-fig.text(.08, .915, 'LightGBM mapping urban morphology + time of day to noise level (dB).',
-         fontsize=9.5, va='top')
+fig.text(.08, .915, 'LightGBM mapping urban morphology (300 m radius, OpenStreetMap) plus '
+         'time of day to level.', fontsize=9.5, va='top')
 
-fig.text(.08, .87, '5.1  Key finding: transfer fails, direct training works', fontsize=11.5, weight='bold', color='#34495e')
-finding = (
-    'The Uganda-pretrained model transfers poorly to Hanoi even after offset calibration (R² < 0):\n'
-    'the noise-morphology relationship learned in Kampala does not hold here, as in the Barcelona\n'
-    'cross-city experiment. Training directly on our own measurements works, and is our method.')
-fig.text(.08, .835, finding, fontsize=9.5, va='top', linespacing=1.55)
+fig.text(.08, .875, '5.1  How performance is measured (corrected August 2026)',
+         fontsize=11.5, weight='bold', color='#34495e')
+fig.text(.08, .84,
+         'Earlier versions of this report grouped cross-validation on ~110 m cells. The '
+         'model features are\naggregates over a 300 m RADIUS, so two points 110 m apart '
+         'share more than 85% of their disc: the model\nsaw near-twins of its test points '
+         'and the reported score was not out-of-sample. That protocol is\nreplaced by '
+         f'{REFLABEL.lower()}, and every model below - including the baselines - is scored '
+         'on\nexactly the same splits, with bootstrap confidence intervals resampled by '
+         'spatial block.',
+         fontsize=9, va='top', linespacing=1.55)
 
-mrows = [['Method', 'r', 'R²', 'MAE (dB)']] + [[k, v[0], v[1], v[2]] for k, v in MODEL.items()]
-mrows.append(['Barcelona reference (for context)', '0.66', '0.61', 'n/a'])
-ax = fig.add_axes([.08, .59, .84, .14]); ax.axis('off')
-styled_table(ax, mrows, highlight=1, colWidths=[.48, .14, .14, .18])
-fig.text(.08, .565, 'Spatial CV: tested on locations the model never saw in training (the honest number). '
-         'Random split: test points can\nsit metres from training points, which inflates scores; kept '
-         'as an optimistic upper bound.', fontsize=8.5, color='#555', style='italic', va='top', linespacing=1.5)
+fig.text(.08, .715, f'5.2  Model comparison - {REFLABEL}', fontsize=11.5,
+         weight='bold', color='#34495e')
+ORDER = ['global_mean', 'site_mean', 'site_hour_mean', 'dist_road', 'idw',
+         'lgbm_time', 'lgbm_morpho', 'lgbm_full']
+mrows = [['Model', 'R²', '95% CI', 'MAE (dB)', 'r']]
+for k in ORDER:
+    m = MODELS[k]
+    mrows.append([m['label'], f"{m['r2']:.2f}",
+                  f"[{m['r2_ci95'][0]:.2f}, {m['r2_ci95'][1]:.2f}]",
+                  f"{m['mae']:.2f}", f"{m['r']:.2f}"])
+ax = fig.add_axes([.08, .44, .84, .26]); ax.axis('off')
+# On surligne le MEILLEUR modèle sous le protocole de référence, pas le nôtre par défaut :
+# depuis le run d'août 2026 ce n'est plus le LightGBM (cf. negative_results.md §5.z).
+BEST = max(ORDER, key=lambda k: MODELS[k]['r2'])
+styled_table(ax, mrows, highlight=ORDER.index(BEST) + 1, colWidths=[.47, .11, .19, .12, .11])
 
-fig.text(.08, .51, '5.2  Per-site generalization (leave-one-site-out)', fontsize=11.5, weight='bold', color='#34495e')
-prows = [['Test site', 'R²', 'Comment'],
-         ['Ocean Park', PERSITE['Ocean Park'], 'best case (largest, most varied sample)'],
-         ['Vinh Tuy', PERSITE['Vinh Tuy area'], 'distinct transport-corridor typology'],
-         ['Hoan Kiem', PERSITE['Hoan Kiem lake'], 'distinct old-quarter morphology']]
-ax = fig.add_axes([.08, .39, .84, .11]); ax.axis('off')
-styled_table(ax, prows, colWidths=[.24, .14, .52])
-fig.text(.08, .35, 'A stress test: each site is predicted by a model trained on the other two only. '
-         'Per-site R² on such\nsmall samples is noisy; the spatial CV above is the reliable number.',
-         fontsize=9.5, va='top', linespacing=1.55)
-fig.text(.08, .285, 'Reading the metrics: r = does the model rank places correctly; R² = are predicted '
-         'dB values accurate.\nDirect training delivers both: r 0.69, R² 0.45.',
-         fontsize=9.5, va='top', linespacing=1.55)
+_dr, _lf, _lm = MODELS['dist_road'], MODELS['lgbm_full'], MODELS['lgbm_morpho']
+fig.text(.08, .415,
+         f"Key figure - a one-variable physical baseline wins. An OLS regression on "
+         f"log(distance to road) scores\nR2 {_dr['r2']:.3f} against {_lf['r2']:.3f} for the "
+         f"six-variable LightGBM: morphology aggregated over 300 m adds nothing\nover the "
+         f"distance term alone (morphology-only ablation: {_lm['r2']:.3f}). Against a (site, "
+         f"hour) lookup table the\nfull model still gains dR2 = {GAIN['delta_r2']:+.3f} / "
+         f"dMAE = {GAIN['delta_mae_dB']:+.2f} dB - but that gain is carried by TIME, not space.",
+         fontsize=9, va='top', linespacing=1.55, color='#8a4b08')
+
+fig.text(.08, .325, '5.3  Generalisation to an unseen typology (leave-one-site-out)',
+         fontsize=11.5, weight='bold', color='#34495e')
+prows = [['Test site', 'n', 'R²', 'MAE (dB)']]
+for site, v in PERSITE.items():
+    prows.append([site, str(v['n']), f"{v['r2']:.2f}", f"{v['mae']:.2f}"])
+ax = fig.add_axes([.08, .20, .84, .11]); ax.axis('off')
+styled_table(ax, prows, colWidths=[.34, .16, .22, .28])
+fig.text(.08, .16,
+         'Each site is predicted by a model trained on the other two only. A negative R2 '
+         'means: worse than\npredicting the global mean everywhere. With three sampled '
+         'typologies, the number of independent\nmorphological configurations is close to '
+         'three, whatever the number of points: the model INTERPOLATES\nwithin sampled '
+         'typologies, it does not EXTRAPOLATE. Maps are clipped to the sampled envelope.',
+         fontsize=9, va='top', linespacing=1.55)
+
+fig.text(.08, .045, 'Cross-city transfer (Uganda -> Hanoi) is reported in section 7 as a '
+         'methodological result, not as a method.\nNo comparison is made with published '
+         'scores from other cities: they target a different quantity (long-term L_Aeq).',
+         fontsize=8.5, va='bottom', color='#555', style='italic', linespacing=1.5)
 footer(fig, 6); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 7 : simulation GAMA + validation =================
@@ -323,8 +452,8 @@ if os.path.exists(VALID_CSV):
              'Caveat: this is an in-sample check - the model that produces\n'
              'the grid was trained on these same points. It measures the\n'
              'fidelity of the chain model -> 40 m grid -> GAMA, not\n'
-             'generalisation. The honest generalisation figure remains the\n'
-             'spatial cross-validation of section 5: R2 0.45 / MAE 4.2 dB.',
+             'generalisation. The generalisation figures are those of\n'
+             f'section 5: R2 {R2_HEAD:.2f} / MAE {MAE_HEAD:.2f} dB under\n{REFLABEL.lower()}.',
              fontsize=8.5, va='top', color='#555', linespacing=1.6)
 
     if os.path.exists(VALID_PNG):
@@ -335,34 +464,58 @@ if os.path.exists(VALID_CSV):
 
 # ================= PAGE 8 : limitations + prochaines étapes =================
 fig = plt.figure(figsize=(8.27, 11.69))
-fig.text(.08, .95, '6.  Limitations', fontsize=14, weight='bold')
+fig.text(.08, .95, '7.  Limitations, stated plainly', fontsize=14, weight='bold')
 lim_txt = (
-    '•  The model interpolates well within the sampled areas but extrapolates poorly to a district\n'
-    '   it has never seen: city-wide prediction would need more urban typologies covered.\n\n'
-    '•  Instantaneous readings carry ±5 dB of irreducible noise (a passing bus), capping the\n'
-    '   achievable R² near 0.6; repeated measurements at fixed points would raise it.\n\n'
-    '•  Consumer sound meters: a constant calibration bias is correctable, clipping above 90 dB and\n'
-    '   wind noise are not. Weekend coverage is still light compared to weekdays.')
-fig.text(.08, .905, lim_txt, fontsize=9.5, va='top', linespacing=1.55)
+    '•  THE MODEL DOES NOT BEAT ITS OWN PHYSICAL BASELINE. An OLS regression on log(distance to\n'
+    f"   road) - one variable, two parameters - scores R2 {_dr['r2']:.3f} against {_lf['r2']:.3f} "
+    'for the six-variable LightGBM\n   under the reference protocol, and holds '
+    f"{METRICS['loso']['models']['dist_road']['r2']:.3f} against "
+    f"{METRICS['loso']['models']['lgbm_full']['r2']:.3f} under leave-one-site-out. Morphology\n"
+    '   aggregated over 300 m adds no measurable value over that single term. The LightGBM leads only\n'
+    '   under the most permissive split (600 m blocks). This is reported as a result, not hidden.\n\n'
+    '•  ABSOLUTE CALIBRATION. The three phones are calibrated against each other, never against a\n'
+    f'   reference instrument. A bias common to all three ({BIAS_LO:+.1f} to {BIAS_HI:+.1f} dB, '
+    'bounded by anchoring on\n   instrumented Vietnamese campaigns) is invisible in our data. The '
+    'field campaign is closed and this\n   cannot be repaired retrospectively. Contrasts are '
+    'supported; absolute levels are indicative.\n\n'
+    '•  MEASUREMENT QUANTITY. A 20-30 s sample is not the L_Aeq of any regulatory reference period.\n'
+    '   A single horn burst moves it by several dB - horn events reach +17 dB in Vietnamese traffic.\n'
+    '   This variance is a property of the quantity and caps the R² any spatial model can reach.\n\n'
+    '•  GENERALISATION. Leave-one-site-out is negative on two of three sites (section 5.3): the model\n'
+    '   does not extrapolate to an unsampled typology. Maps are clipped to the sampled envelope.\n\n'
+    '•  SPATIAL RESOLUTION. Features are aggregated over a 300 m radius, so adjacent 40 m cells share\n'
+    '   more than 98% of their disc. The map cannot resolve the facade/courtyard contrast (10-15 dB in\n'
+    '   dense fabric): predicted levels are visibly flatter than measured ones.\n\n'
+    '•  TEMPORAL COVERAGE. Night (21:00-06:00) holds ~3% of measurements and nothing between 00:00\n'
+    '   and 05:00, although that is the period with the strictest threshold. One season only.\n\n'
+    '•  TRAFFIC VIDEOS. Per-frame vehicle DENSITY is not FLOW, and the detector was never validated\n'
+    '   against manual counts. Modal splits are lower bounds on motorcycle share (section 7).')
+fig.text(.08, .905, lim_txt, fontsize=8.5, va='top', linespacing=1.45)
 
-fig.text(.08, .71, '7.  Next steps', fontsize=14, weight='bold')
+fig.text(.08, .46, '8.  Next steps', fontsize=14, weight='bold')
 nxt = (
-    '•  Add weekend sessions and repeated measurements at fixed locations to average out\n'
-    '   instantaneous variation.\n\n'
-    '•  Vehicle counting from the 83 traffic videos via computer vision, each matched to its\n'
-    '   measurement point (transport composition as a model feature).\n\n'
-    '•  GAMA simulation: import the noise map, add a traffic-volume slider and what-if scenarios\n'
-    '   (pedestrianisation, peak-hour traffic).\n\n'
-    '•  Manuscript: methods (Sunbird reproduction + transferability study), results, discussion.')
-fig.text(.08, .665, nxt, fontsize=9.5, va='top', linespacing=1.55)
+    '•  HYBRID MODEL. Add a physical propagation core (CNOSSOS-EU via NoiseModelling, OSM inputs)\n'
+    '   and train the statistical model on the RESIDUAL. This restores the fine spatial contrast the\n'
+    '   300 m aggregation destroys, and makes the map extrapolable, since physics does not depend\n'
+    '   on our sample.\n\n'
+    '•  TRAFFIC. Re-derive flow and speed from the videos by object tracking and line crossing, and\n'
+    '   validate the detector against manual counts before any acoustic use.\n\n'
+    '•  DATA PUBLICATION. Deposit measurements, forms and cleaning code with a DOI; add an ethics\n'
+    '   statement covering the public-space video recordings.\n\n'
+    '•  MANUSCRIPT. Methods, the three negative results as contributions, discussion.')
+fig.text(.08, .42, nxt, fontsize=8.5, va='top', linespacing=1.45)
 
-fig.text(.08, .45, '8.  Summary', fontsize=14, weight='bold')
+fig.text(.08, .22, '9.  Summary', fontsize=14, weight='bold')
 summ = (
-    f'{len(df)} calibrated measurements across 3 districts confirm high exposure ({exc_glob:.0f}% exceed\n'
-    'QCVN). A model trained on our data reaches R² 0.45 / r 0.69 / MAE 4.2 dB (spatial CV), solid\n'
-    'for instantaneous smartphone data. Cross-city transfer from Uganda fails: a documented,\n'
-    'useful methodological result.')
-fig.text(.08, .405, summ, fontsize=9.5, va='top', linespacing=1.6, color='#222')
+    f'{len(df)} smartphone measurements across 3 contrasting districts document a consistent exposure\n'
+    f'pattern in space and time. A LightGBM trained directly on them reaches R² {R2_HEAD:.2f} '
+    f'[{CI_HEAD[0]:.2f}, {CI_HEAD[1]:.2f}] / MAE {MAE_HEAD:.2f} dB\nunder {REFLABEL.lower()} - '
+    f"but an OLS regression on log(distance to road) alone reaches {_dr['r2']:.2f}.\n"
+    'Three negative results are reported as contributions: a one-variable physical baseline beats '
+    'the\nsix-variable model and 300 m morphology adds nothing over it; cross-city transfer from '
+    'Uganda fails\neven with identical instruments and invariant features; and per-frame vehicle '
+    'density carries no\nrecoverable acoustic signal. We claim contrasts, not certified absolute levels.')
+fig.text(.08, .18, summ, fontsize=8.5, va='top', linespacing=1.5, color='#222')
 footer(fig, 8); pp.savefig(fig); plt.close(fig)
 
 pp.close()

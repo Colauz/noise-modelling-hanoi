@@ -5,15 +5,34 @@ Produit dans outputs/gama_inputs/ :
   - {zone}_roads.shp      réseau routier de la zone
   - {zone}_buildings.shp  bâtiments de la zone
   - fleet_by_hour.csv     densité et composition du trafic par site ET par heure
+  - noise_map.csv         format plat (x, y, noise_dB) à l'heure de référence REF_HOUR
   - (+ noise_points/roads/buildings.shp : les 3 zones réunies, vue d'ensemble)
+et dans outputs/hanoi/ :
+  - hanoi_noise_map.csv   grille complète, 3 zones x 17 heures (livrable cartographique)
 
 zones : hoankiem · oceanpark · vinhtuy
+
+EMPRISE — POINT MÉTHODOLOGIQUE IMPORTANT
+----------------------------------------
+La grille est bornée à l'emprise des mesures de chaque site + MARGIN_M (400 m), et à rien
+de plus. Les anciennes sorties du notebook 08/09 couvraient un disque de 1500 m autour de
+Bach Khoa, quartier SANS AUCUNE MESURE : c'était une extrapolation vers une typologie non
+vue, par un modèle dont le leave-one-site-out est négatif sur 2 sites sur 3. Ces artefacts
+sont archivés dans outputs/deprecated/. Ne pas réintroduire de prédiction hors emprise
+mesurée sans, au minimum, un masque de domaine d'applicabilité.
 
 Sources et statut scientifique de chaque sortie
 ----------------------------------------------
   grille de bruit  : PRÉDITE par le modèle LightGBM entraîné sur nos 363 mesures terrain
                      (features morphologiques OSM dans 300 m + heure + weekend).
-                     R² 0.45 en validation croisée spatiale (notebook 08).
+                     R² = 0.137 sous buffered leave-one-out 300 m (protocole de référence),
+                     0.304 sous block-CV 600 m, 0.029 sous leave-one-site-out
+                     (outputs/models/metrics.json). Le R² 0.45 du notebook 08 était un
+                     artefact de CV groupée sur cellules de 110 m : ne plus le citer.
+                     ATTENTION : une simple régression sur log(dist_road) fait mieux
+                     (0.200 / 0.221 / 0.189) — cf. negative_results.md §5.z. Les contrastes
+                     spatiaux de cette grille sont à lire comme pilotés par la distance
+                     aux axes routiers.
   trafic par heure : MESURÉ - comptages YOLO sur nos 147 vidéos horodatées, agrégés par
                      site et par heure de la journée. Les heures sans vidéo sont
                      interpolées et signalées par measured=0.
@@ -34,6 +53,7 @@ import pandas as pd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, 'outputs', 'gama_inputs')
+MAP_DIR = os.path.join(ROOT, 'outputs', 'hanoi')
 PROC = os.path.join(ROOT, 'data', 'processed', 'hanoi')
 MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
 MODEL = os.path.join(ROOT, 'outputs', 'models', 'surrogate_lgbm_hanoi_direct.txt')
@@ -47,6 +67,7 @@ MARGIN_M = 400                 # marge autour de l'emprise des mesures de chaque
 FEATURES = ['built_area_ratio', 'road_density_km_km2', 'intersection_count',
             'dist_road_m', 'hour', 'is_weekend']
 HOURS = list(range(5, 22))     # 5h-21h : fenêtre de collecte réelle
+REF_HOUR = 17                  # heure de référence du format plat (pointe du soir)
 SLUGS = {'Hoan Kiem lake': 'hoankiem', 'Ocean Park': 'oceanpark', 'Vinh Tuy area': 'vinhtuy'}
 
 
@@ -217,6 +238,19 @@ def main():
     pts.to_file(os.path.join(OUT_DIR, 'noise_points.shp'))
     roads.to_file(os.path.join(OUT_DIR, 'roads.shp'))
     blds.to_file(os.path.join(OUT_DIR, 'buildings.shp'))
+
+    # --- exports tabulaires, sur la MÊME emprise que les shapefiles ---
+    flat = pd.DataFrame({
+        'site': pts.site.values,
+        'longitude': pts.geometry.x.values.round(7),
+        'latitude': pts.geometry.y.values.round(7),
+        **{f'h{h}': pts[f'h{h}'].values for h in HOURS},
+    })
+    os.makedirs(MAP_DIR, exist_ok=True)
+    flat.to_csv(os.path.join(MAP_DIR, 'hanoi_noise_map.csv'), index=False)
+    (flat.rename(columns={'longitude': 'x', 'latitude': 'y', f'h{REF_HOUR}': 'noise_dB'})
+         .assign(hour=REF_HOUR)[['x', 'y', 'noise_dB', 'site', 'hour']]
+         .to_csv(os.path.join(OUT_DIR, 'noise_map.csv'), index=False))
     for site, slug in SLUGS.items():
         pts[pts.site == site].to_file(os.path.join(OUT_DIR, f'{slug}_noise.shp'))
         roads[roads.site == site].to_file(os.path.join(OUT_DIR, f'{slug}_roads.shp'))

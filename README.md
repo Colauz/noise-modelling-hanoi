@@ -6,22 +6,47 @@ Smartphone-based urban noise mapping for Hanoi. We reproduce the methodology of
 then apply it to Hanoi with our own field campaign (363 measurements, 3 districts),
 a LightGBM model trained directly on our data, and a GAMA agent-based simulation.
 
-**Key result so far**: cross-city transfer (Uganda → Hanoi) fails (R² < 0); training
-directly on our measurements works - **R² 0.45 · r 0.69 · MAE 4.2 dB** under honest
-spatial cross-validation. See `outputs/report.pdf` and `ROADMAP.md`.
+**Key results.** Three of them are negative, and they are the most transferable:
+1. **A one-variable physical baseline beats the ML model.** An OLS regression on
+   `log(dist_road)` — two parameters — generalises better than our six-variable LightGBM:
+   R² = **0.200 vs 0.137** under buffered leave-one-out, **0.189 vs 0.029** under
+   leave-one-site-out. Urban morphology aggregated over a 300 m radius adds *no* measurable
+   value over that single distance term; adding it costs 0.07–0.18 R² depending on the
+   protocol. The LightGBM leads only under the most permissive split (600 m block-CV, 0.304
+   vs 0.221). See `paper/sections/negative_results.md` §5.z.
+2. **Cross-city transfer fails.** A morphology→noise model pretrained on Uganda gives R² < 0
+   on Hanoi even with convention-invariant features. Local measurement is a prerequisite,
+   not a refinement.
+3. **Per-frame vehicle density carries no acoustic signal.** Non-negative energy regression
+   on 147 matched videos returns three zero coefficients: density is not flow, and speed is
+   not observable in a frame count.
+
+Full table with baselines, ablation and bootstrap CIs under all three protocols:
+`outputs/models/model_comparison.md`.
+
+> ⚠️ **Measurement status.** Our target is a 20–30 s A-weighted level from consumer
+> smartphones (`L_A,25s`), not a certified `L_Aeq`. The three phones are cross-calibrated
+> **against each other, never against a reference instrument**: contrasts between places and
+> hours are supported, absolute levels are indicative. No compliance claim is made anywhere.
+> See `paper/sections/metrology.md`.
+
+> ⚠️ **Superseded figure.** The "R² 0.45 under honest spatial cross-validation" advertised
+> until July 2026 came from a `GroupKFold` grouped on ~110 m cells, smaller than the 300 m
+> radius over which the features are aggregated. It leaked. See `audit_noise_modeling.md`
+> and `scripts/evaluate_models.py`.
 
 ## Repository layout
 
 | Folder | Content |
 |---|---|
 | `notebooks/` | The project spine, numbered in execution order (see below) |
-| `scripts/` | Reusable pipeline: `prepare_field_data.py`, `build_field_map.py`, `build_report.py` |
+| `scripts/` | Reusable pipeline: `prepare_field_data.py`, `evaluate_models.py`, `export_gama_zones.py`, `literature_anchoring.py`, `build_field_map.py`, `build_report.py` |
 | `scripts/experiments/` | One-shot studies: `train_large.py` (Uganda 59K), `train_v2_invariant.py` (v2 features), `barcelona_transfer.py` (Barcelona diagnostics) |
 | `field/` | Field protocol (README) + Kobo/ODK forms (noise survey v2, construction-sites log) |
-| `paper/` | Q1 paper material: `figures/`, `references/` (incl. the Sunbird paper PDF) |
+| `paper/` | Q1 paper material: `bibliography.bib`, `sections/` (metrology, negative results), `figures/`, `references/` |
 | `gama/` | Simulation plan (`PLAN.md`) and GAMA model |
 | `data/` | **Not in git.** `raw/{barcelona,hanoi}` + `processed/{uganda,barcelona,hanoi}`; field videos in `raw/hanoi/videos/` (Sunbird data is auto-downloaded from HuggingFace into `cache/`) |
-| `outputs/` | `report.pdf`, `sunbird/` (reproduction figures), `hanoi/` (maps + analyses), `gama_inputs/` (shapefiles), `models/` |
+| `outputs/` | `report.pdf`, `models/metrics.json` + `model_comparison.md`, `sunbird/`, `hanoi/` (maps + analyses), `gama_inputs/` (shapefiles), `deprecated/` (withdrawn Bach Khoa artefacts) |
 
 ## Notebooks
 
@@ -33,21 +58,28 @@ spatial cross-validation. See `outputs/report.pdf` and `ROADMAP.md`.
 | `04_morphology_features` | Morphology features in a 300 m radius (OSM) |
 | `05_reproduce_figures` | Reproduce the paper's figures 8-10 |
 | `06_train_surrogate_model` | LightGBM morphology → dB on Uganda |
-| `07_hanoi_field_data` | **Hanoi**: clean field data (via `scripts/prepare_field_data.py`), 4 analyses (hourly, day-of-week, sources, QCVN exceedances), interactive map |
-| `08_predict_hanoi` | **Hanoi**: direct training + honest spatial CV, transfer comparison, predicted noise grid |
-| `09_export_gama` | Shapefiles + noise grid CSV for GAMA |
+| `07_hanoi_field_data` | **Hanoi**: clean field data (via `scripts/prepare_field_data.py`), 5 analyses (hourly, day-of-week, sources, QCVN, weather), interactive map |
+| `08_predict_hanoi` | **Hanoi**: OSM features, evaluation via `scripts/evaluate_models.py`, transfer comparison, final model |
+| `09_export_gama` | ⚠️ neutralised — superseded by `scripts/export_gama_zones.py` |
 
 ## Pipeline after each Kobo export
 
 ```bash
 # 1. drop the new CSV in data/raw/hanoi/ (archive the old one in data/raw/hanoi/old/)
 python3 scripts/prepare_field_data.py        # clean -> measurements.csv
-# 2. run notebooks 07 then 08 (Run All, or:)
+# 2. notebooks 07 (EDA + map) then 08 (OSM features, once, to build the caches)
 python3 -m nbconvert --to notebook --execute --inplace notebooks/07_hanoi_field_data.ipynb
 python3 -m nbconvert --to notebook --execute --inplace notebooks/08_predict_hanoi.ipynb
-# 3. copy the notebook-08 scores into MODEL/PERSITE at the top of scripts/build_report.py, then:
-python3 scripts/build_report.py              # -> outputs/report.pdf
+# 3. evaluation, anchoring, map, simulation inputs, report
+python3 scripts/evaluate_models.py           # -> outputs/models/metrics.json (+ .md)
+python3 scripts/literature_anchoring.py      # -> outputs/hanoi/literature_anchoring.md
+python3 scripts/export_gama_zones.py         # -> outputs/gama_inputs/ + hanoi_noise_map.csv
+python3 scripts/validate_simulation.py       # -> in-sample check of the chain
+python3 scripts/build_report.py              # -> outputs/report.pdf (reads metrics.json)
 ```
+
+No metric is ever copied by hand: `build_report.py` reads `outputs/models/metrics.json` and
+refuses to run without it.
 
 Interactive map of field points: `outputs/hanoi/hanoi_field_points.html`.
 
@@ -64,8 +96,10 @@ https://huggingface.co/settings/tokens, and paste it in the first cell of notebo
 ## Field protocol (summary)
 
 ODK Collect → KoboToolbox; 20-30 s spot measurements with ≥10 s audio; phones at ≈1.2 m,
-varied distances from the road; 3 cross-calibrated collectors; 05:00-23:00 with rush-hour
-emphasis; traffic videos timestamped to match measurements. Details in `field/`.
+varied distances from the road; 3 collectors cross-calibrated **against each other only**;
+05:00-23:00 with rush-hour emphasis; traffic videos timestamped to match measurements.
+Details in `field/`. **The campaign is closed** — the project has pivoted to a methodological
+study on the data in hand (see `audit_noise_modeling.md`).
 
 ## Paper draft
 

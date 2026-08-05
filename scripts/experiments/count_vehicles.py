@@ -71,7 +71,18 @@ def main():
     ap.add_argument('--limit', type=int, default=None, help='ne traiter que N vidéos (test)')
     args = ap.parse_args()
 
-    videos = sorted(glob.glob(f'{VID_DIR}/*.mov') + glob.glob(f'{VID_DIR}/*.mp4'))
+    # Recherche RÉCURSIVE sous data/raw/hanoi/ : selon la façon dont les vidéos ont été
+    # rapatriées (Drive, téléphone, clé USB) elles atterrissent dans des sous-dossiers
+    # variés (ex. drive-download-2026.../). On ne déplace pas les fichiers de l'utilisateur.
+    roots = [VID_DIR, os.path.join(ROOT, 'data', 'raw', 'hanoi')]
+    seen, videos = set(), []
+    for r in roots:
+        for ext in ('mov', 'mp4', 'MOV', 'MP4'):
+            for f in glob.glob(f'{r}/**/*.{ext}', recursive=True):
+                key = os.path.basename(f)
+                if key not in seen:          # un même nom = une même vidéo
+                    seen.add(key); videos.append(f)
+    videos = sorted(videos, key=os.path.basename)
     if args.limit:
         videos = videos[:args.limit]
     meas = pd.read_csv(MEASURES, parse_dates=['timestamp'])

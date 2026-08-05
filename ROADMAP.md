@@ -1,61 +1,126 @@
 # Roadmap
 
-*Mis à jour : 29 juillet 2026 - intègre la feuille de route officielle du projet*
+*Mise à jour : 5 août 2026 — pivot vers une étude méthodologique*
 
-**État** : 363 mesures / 3 sites · modèle direct **R² 0.45 / r 0.69 / MAE 4.2 dB** (CV spatiale) ·
-le transfert inter-villes échoue, l'entraînement direct fonctionne · 147 vidéos comptées par YOLO
-(caveat : véhicules garés inclus, motos sous-détectées) · pas d'effet météo robuste ·
-survey paper Q1 dans `paper/references/` · rapport 7 pages, carte et analyses à jour ·
-repo restructuré, commité et pushé.
+## Le pivot (5 août 2026)
 
-**Pipeline après chaque export Kobo** : CSV dans `data/raw/hanoi/` (ancien dans `old/`)
-→ `python3 scripts/prepare_field_data.py` → notebooks 07 → 08 → `python3 scripts/build_report.py`
-(recopier les scores du notebook 08 dans `MODEL`/`PERSITE` avant).
+Pas de sonomètre professionnel disponible, **campagne de terrain définitivement close**.
+Le projet ne cherche donc plus à produire une carte de bruit de référence pour Hanoï — il ne
+peut pas, et le prétendre serait indéfendable. Il devient une **étude méthodologique** sur les
+données en main : ce qu'un protocole smartphone à bas coût permet d'établir, ce qu'il ne
+permet pas, et pourquoi. Les deux résultats négatifs obtenus deviennent le cœur de la
+contribution.
 
-## Feuille de route officielle
+Base : `audit_noise_modeling.md` (audit du 5 août 2026).
 
-### 1. Gestion de projet & infrastructure
-- [x] **Restructuration du git** : architecture claire, commitée et pushée (juillet 2026)
+**État** : 363 mesures / 3 sites · 147 vidéos comptées par YOLO · pas d'effet météo robuste ·
+grille de bruit sur les 3 zones mesurées × 17 heures · simulation GAMA corrigée · rapport
+8 pages branché sur `metrics.json`.
 
-### 2. État de l'art & R&D
-- [x] **Ancrage scientifique Q1** : survey paper (`paper/references/Survey_Paper_Noise_Modelling.pdf`)
-  + papier Sunbird - pose explicitement la question du benchmark ci-dessous
-- [ ] **Benchmark de modèles** : tester nos données sur plusieurs modèles de l'état de l'art,
-  **dont les modèles de l'équipe de Barcelone** (LSTM baseline, ST-GNN) - en plus de LightGBM
+## Le résultat central (5 août 2026)
 
-### 3. Collecte & analyse de données
-- [ ] **Audio démolition : minimum 10 h** d'enregistrements de sons de démolition
-- [x] **100-200 séquences vidéo+audio horizontales** : 147 vidéos acquises, dans la fourchette
-- [x] **Cartographie/EDA** : 5 analyses (heures, jours, sources, QCVN, météo+trafic) + carte
-  interactive complète + composition du trafic par site (147 vidéos, cohérent avec le survey paper)
+Les scripts ont tourné sur les vraies données. Le verdict de l'ablation est le suivant, et
+c'est lui que défend le papier :
 
-### 4. Rédaction scientifique
-- [ ] **Papier de recherche complet** (→ `paper/`) : méthodologie + illustrations, architecture
-  du modèle, protocole d'entraînement, tests, résultats
-  (note : positionner notre métrique dB face à Leq/L_dn/L_max, cf. survey paper §V)
+> **Une simple régression physique sur `log(dist_road)` — deux paramètres, une variable —
+> généralise mieux que notre modèle LightGBM à 6 variables. La morphologie urbaine agrégée
+> dans un rayon de 300 m n'apporte aucun gain mesurable au-delà de ce seul terme de distance.**
 
-## Ce qu'il reste concrètement (5 chantiers) - priorisé 31 juillet 2026
+R² par protocole (n = 363, 17 blocs, IC 95 % bootstrap, `outputs/models/model_comparison.md`) :
 
-1. 🔴 **PRIORITÉ - Diaporama de présentation** (deadline proche)
-2. 🟡 **GAMA** (en cours) - Phase 4 couverte : 3 zones importées, données terrain injectées, trafic et
-   chantiers calibrés sur les mesures, scénarios (heure, volume de trafic, horaires de chantier,
-   zone 30, piétonnisation), validation simulé vs mesuré (`scripts/validate_simulation.py`,
-   page 7 du rapport). Émissions calibrées sur nos données (`scripts/calibrate_emissions.py`) :
-   les chantiers le sont (+2 dB à 56 m), les véhicules NON - non identifiables, ils sont donc
-   visuels et n'ajoutent pas de bruit. Reste possible : agents piétons (exposition individuelle),
-   filtre de mouvement sur le comptage vidéo.
-3. ⏸️ **Manuscrit** - repoussé à la fin
-4. ⏸️ **Benchmark de modèles** (LightGBM vs autres, dont LSTM/ST-GNN Barcelone) - mis de côté,
-   statut à reclarifier avec le prof (à qui revient cette tâche ?)
-5. ⏸️ **Audio démolition** (10 h à enregistrer) - skip pour l'instant
+| Modèle | entrées | Block-CV 600 m | **Buffered LOO 300 m** | Leave-one-site-out |
+|---|---|---|---|---|
+| Table site × heure | 0 spatiale | −0,008 | −0,419 | −0,058 |
+| **Régression sur log(dist_road)** | **1** | 0,221 | **0,200** | **0,189** |
+| LightGBM morphologie seule | 4 | 0,153 | 0,041 | 0,007 |
+| LightGBM morphologie + temps | 6 | **0,304** | 0,137 | 0,029 |
 
-## Reliquat technique (à caser dans les chantiers ci-dessus)
+Trois lectures :
 
-- Filtre de mouvement dans `count_vehicles.py` (exclure véhicules garés) → benchmark (1) + papier (4)
-- Propagation dB vs distance + lecture santé/OMS → candidat pour approfondir l'EDA (3) ou le papier (4)
-- Téléphone posé 1 journée → séries temporelles Hanoï, utile au benchmark LSTM (1) et à l'audio (2)
+1. **L'avance du ML est un artefact du protocole permissif.** Le LightGBM ne mène que sous
+   block-CV 600 m. Sous buffered LOO (protocole de référence, rayon d'exclusion = rayon des
+   features) l'ordre s'inverse ; sous leave-one-site-out le ML s'effondre d'un facteur 6
+   (0,029) quand la régression bouge de 0,03 sur les trois protocoles. C'est le seul modèle
+   dont l'IC exclut zéro partout.
+2. **Les agrégats morphologiques à 300 m ont un apport marginal NÉGATIF.** Ajouter ratio bâti,
+   densité de voirie et intersections à `dist_road` fait perdre 0,07 / 0,16 / 0,18 de R² selon
+   le protocole. Le disque de 300 m moyenne la géométrie de canyon qui gouverne la propagation
+   et reste autocorrélé entre points voisins : il apporte de la variance, pas de l'information.
+3. **Ce qui reste du ML, c'est le temps, pas l'espace.** L'écart modèle complet / morphologie
+   seule sous block-CV (0,304 vs 0,153) est porté par l'heure. Effet réel, mais non spatial :
+   il n'aide pas à prédire un lieu non mesuré, ce qui est précisément l'objet d'une carte.
+   Sous leave-one-site-out l'ablation « temps seul » est elle-même négative (−0,139).
+
+Rédigé en §5.z de `paper/sections/negative_results.md`. **Le R² 0,45 affiché jusqu'en juillet
+2026 est un artefact de la CV groupée sur cellules de 110 m** (plus petites que le rayon de
+300 m des features) : il ne doit plus apparaître nulle part.
+
+## Corrections appliquées (5 août 2026)
+
+| # | Correction | Livrable |
+|---|---|---|
+| 1 | **CV honnête** : blocs spatiaux 600 m + buffered leave-one-out 300 m + leave-one-site-out, en remplacement du `GroupKFold` sur cellules de 110 m qui fuyait | `scripts/evaluate_models.py` |
+| 2 | **Baselines + ablation** : 8 modèles sur les mêmes découpages, dont la table `site × heure` sans aucune variable spatiale ; IC 95 % bootstrap par bloc | `outputs/models/model_comparison.md` |
+| 3 | **Fin des métriques recopiées à la main** : le rapport lit `metrics.json` et refuse de tourner sans | `scripts/build_report.py` |
+| 4 | **Recadrage métrologique** : cible renommée `L_A,25s`, statut « relatif, pas absolu » assumé, valeurs OMS `L_den`/`L_night` retirées partout, dépassements QCVN présentés comme statistique descriptive + sensibilité au biais | `paper/sections/metrology.md`, `build_report.py`, `hanoi_noise.gaml` |
+| 5 | **Ancrage sur la littérature instrumentée** : bornage du biais absolu plausible par comparaison stratifiée à Phan et al. 2010 (Hanoï, RION NL-21/22) et Gelb & Apparicio 2019 (HCMV, dosimètres) | `scripts/literature_anchoring.py`, `paper/bibliography.bib` |
+| 6 | **Physique GAMA corrigée** : `10·log10(k)` et le −3 dB « zone 30 » ne s'appliquent plus qu'à la part d'énergie attribuable au trafic, et la zone 30 est bornée à 150 m d'une route | `gama/hanoi_noise.gaml` |
+| 7 | **Carte recadrée sur la zone étudiée** : les artefacts « Bach Khoa » (quartier sans aucune mesure) sont archivés ; un seul producteur pour `outputs/gama_inputs/` | `outputs/deprecated/`, notebook 09 neutralisé |
+| 8 | **Résultats négatifs valorisés** : trois sous-sections de Discussion rédigées, dont §5.z (`dist_road` > ML) qui devient l'argument central | `paper/sections/negative_results.md` |
+| 9 | **Trafic recompté** : les 147 vidéos repassées sous YOLOv8, `vehicle_counts.csv` régénéré, `fleet_by_hour.csv` reconstruit, page 5 du rapport rétablie | `scripts/experiments/count_vehicles.py`, `outputs/report.pdf` |
+
+### Vérification de la correction GAMA (Ocean Park, 17 h)
+
+| Cellule | Base | Trafic ×3, ancien | Trafic ×3, corrigé |
+|---|---|---|---|
+| la plus calme | 53,3 dB | 58,1 dB | **53,3 dB** |
+| médiane | 65,4 dB | 70,2 dB | 69,4 dB |
+| la plus bruyante | 78,6 dB | 83,4 dB | 83,3 dB |
+
+L'ancienne formule annonçait −7,0 dB en moyenne de zone pour la piétonnisation ; la formule
+corrigée donne **−3,5 dB**. Le bénéfice des scénarios était surestimé d'un facteur 2.
+Invariant vérifié : à k = 1 sans mitigation, la carte est identique à la carte prédite.
+
+## Ce qu'il reste
+
+### 🔴 Bloquant avant toute diffusion
+
+- [x] **Lancer les scripts sur les vraies données.** Fait le 5 août 2026 :
+      `count_vehicles.py` (147 vidéos) → `evaluate_models.py` → `literature_anchoring.py` →
+      `export_gama_zones.py` → `build_report.py`. Toutes les métriques publiées viennent
+      maintenant d'un run réel.
+- [x] **Reporter les vrais chiffres** dans `paper/sections/negative_results.md` : fait, §5.z
+      contient le tableau complet des trois protocoles.
+- [ ] **Vérifier Phan et al. 2010 sur le PDF** (bibliothèque VinUni) : les valeurs `L_den`
+      70-83 dB viennent de sources secondaires, statut `to_check` dans
+      `literature_anchoring.py`. Basculer en `verified` une fois confirmé.
+
+### 🟡 Pour le manuscrit
+
+- [ ] **Rédaction** : Methods (protocole + métrologie), Results (comparaison de modèles),
+      Discussion (les deux résultats négatifs), Limitations.
+- [ ] **Déclaration éthique** : statut IRB VinUni pour les 147 vidéos filmées dans l'espace
+      public (visages, plaques). Exigé par une revue Q1.
+- [ ] **Dépôt des données** : `measurements.csv` (collecteurs pseudonymisés) dans le dépôt +
+      Zenodo avec DOI. Licence CC-BY-4.0 données / MIT code.
+- [ ] **Validation du détecteur YOLO** : comptage manuel de référence sur ~10 vidéos,
+      précision/rappel/MAPE par classe. **Sans cela, ne pas publier les parts modales.**
+
+### ⏸️ Reporté ou abandonné
+
+- **Benchmark LSTM / ST-GNN (Barcelone)** — prérequis manquant : ces modèles exigent des
+  séries temporelles continues, que nous n'avons pas. À reclarifier avec l'encadrant.
+- **Audio démolition (10 h)** — hors périmètre du pivot.
+- **Couche physique CNOSSOS / NoiseModelling** — reste hors budget temps, mais **le résultat
+  central ci-dessus en fait la suite logique du projet, plus une simple option** : si un terme
+  de distance à deux paramètres bat déjà le ML, un vrai noyau de propagation physique corrigé
+  par un résidu appris localement est l'architecture indiquée. À porter en *future work* en
+  tête de liste, pas en fin de section.
+- **Agents piétons GAMA (palier 2 du PLAN)** — non implémenté.
 
 ## Règles
 
 - Vidéos et données brutes hors git (`data/raw/` ignoré).
 - Aucun commit / push sans demande explicite.
+- Aucune métrique codée en dur dans un livrable : tout passe par `metrics.json`.
+- Aucune prédiction publiée hors de l'emprise réellement échantillonnée.
