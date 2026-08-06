@@ -124,8 +124,20 @@ model hanoi_noise
 global {
     // ---------------- zone d'étude ----------------
     // Les 3 sites sont distants de ~10 km : on cadre sur un site à la fois.
-    // Changer la zone puis relancer l'expérimentation.
-    string zone <- "oceanpark" among: ["oceanpark", "hoankiem", "vinhtuy"];
+    //
+    // POURQUOI IL FAUT APPUYER SUR RELANCER (⟳) ET PAS SEULEMENT SUR PLAY
+    // Les `file` ci-dessous sont des variables GLOBALES : GAMA ne les évalue qu'UNE fois,
+    // à la création de la simulation. Changer la zone dans le panneau de paramètres ne les
+    // recalcule donc pas — il faut relancer l'expérimentation.
+    // Ce n'est pas un blocage du modèle : vérifié en headless, `zone=hoankiem` charge bien
+    // Hoan Kiem (1763 cellules, 673 routes, 10241 bâtiments, 99 mesures terrain). C'est le
+    // cycle de vie des globales GAMA, pas un chemin de fichier figé.
+    string target_zone <- "Ocean Park" among: ["Ocean Park", "Hoan Kiem", "Vinh Tuy"];
+
+    // Slug de fichier correspondant : les shapefiles sont nommés en minuscules, sans espace.
+    // On garde `zone` comme variable dérivée pour ne pas réécrire tous les chemins.
+    string zone <- (target_zone = "Ocean Park") ? "oceanpark"
+                    : ((target_zone = "Hoan Kiem") ? "hoankiem" : "vinhtuy");
 
     file roads_file     <- file('../outputs/gama_inputs/' + zone + '_roads.shp');
     file buildings_file <- file('../outputs/gama_inputs/' + zone + '_buildings.shp');
@@ -163,7 +175,24 @@ global {
     // un niveau horaire prédit depuis des échantillons de 25 s (paper/sections/metrology.md).
     float qcvn_day   <- 70.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 6h-21h
     float qcvn_night <- 55.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 21h-6h
-    int   veh_density_scale <- 22;   // véhicules affichés par unité de "véhicules/image"
+    // ---------------- trafic piloté par les données (v2.1, août 2026) ----------------
+    // AVANT : le nombre de véhicules affichés était `densité x 22`, une population FIXE
+    // d'agents immortels qui erraient au hasard. Le facteur 22 ne venait de nulle part, et
+    // aucun véhicule n'entrait ni ne sortait : c'est ce qui donnait un trafic « artificiel ».
+    //
+    // MAINTENANT : les véhicules sont créés à un TAUX égal au DÉBIT MESURÉ par le suivi
+    // vidéo ByteTrack pour (zone, heure), ils traversent le réseau, puis DISPARAISSENT.
+    // La population affichée n'est plus imposée : elle ÉMERGE du débit et du temps de
+    // traversée, ce qui est exactement la loi de Little (N = débit x temps de présence).
+    //
+    // FLOW_LINES_EQUIV : le débit est mesuré sur UNE section de comptage (une ligne dans
+    // une vidéo), alors que la zone simulée compte des centaines de rues. Ce facteur dit
+    // combien de sections équivalentes la zone est censée représenter. 1.0 = lecture
+    // conservatrice « toute la zone porte le débit mesuré en un point ». C'est un choix de
+    // mise à l'échelle ASSUMÉ, pas une mesure : le monter densifie l'affichage sans rien
+    // changer au niveau sonore, qui ne dépend pas des agents (voir en-tête, point 3).
+    float FLOW_LINES_EQUIV <- 1.0 min: 0.2 max: 20.0;
+    int   VEH_MAX_HOPS     <- 3;     // segments parcourus avant de sortir du réseau
 
     // Décomposition fond / trafic (voir la correction physique dans `reflex scenario`).
     float AMBIENT_PCT   <- 0.05;  // percentile bas pris comme ambiance résiduelle non routière
@@ -220,6 +249,14 @@ global {
     map<int, int>   fleet_meas   <- [];
     map<int, float> fleet_flow      <- [];
     map<int, float> fleet_moto_flow <- [];
+    map<int, float> fleet_car_flow  <- [];
+
+    // composition du FLUX à l'heure courante (parts calculées sur les débits, pas sur la
+    // densité : on crée des véhicules à un taux, le mélange doit donc être celui du flux)
+    float moto_share_now <- 0.5;
+    float car_share_now  <- 0.35;
+    float spawn_debt     <- 0.0;   // fraction de véhicule reportée d'un pas au suivant
+    int   spawned_total  <- 0;
 
     init {
         zone_label <- (zone = "oceanpark") ? "Ocean Park (nouveau tissu urbain)"
@@ -272,9 +309,10 @@ global {
                 fleet_meas[h]  <- int(fl[3, i]);
                 fleet_moto[h]  <- float(fl[5, i]);
                 fleet_car[h]   <- float(fl[6, i]);
-                if (fl.columns > 10) {
+                if (fl.columns > 11) {
                     fleet_flow[h]      <- float(fl[9, i]);
                     fleet_moto_flow[h] <- float(fl[10, i]);
+                    fleet_car_flow[h]  <- float(fl[11, i]);
                 }
             }
         }
@@ -298,41 +336,65 @@ global {
         write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cellules, "
             + string(length(Road)) + " routes, " + string(length(Building)) + " batiments, "
             + string(n_constr) + " chantiers, " + string(length(Measure)) + " mesures terrain.";
+        // Trace de démarrage : dit tout de suite si le noyau physique et les débits ont
+        // bien été chargés. Sans elle, un CSV manquant se traduisait par un repli
+        // silencieux (share 50/50, débit nul) impossible à distinguer d'un vrai résultat.
+        write "  physique : " + (phys_ok
+                ? "A_hw=" + string(A_HW with_precision 0) + " A_res=" + string(A_RES with_precision 0)
+                  + " B=" + string(B_BG) + " -> part grands axes moyenne "
+                  + string((mean(NoisePoint collect each.share_hw)) with_precision 3)
+                : "NON CHARGEE (repli 50/50) - lancer scripts/export_gama_zones.py");
         do sync_fleet;
+        write "  trafic   : debit mesure " + string(flow_now with_precision 1) + " veh/min a "
+            + string(hour_of_day) + "h (dont motos " + string(flow_moto_now with_precision 1)
+            + ", part " + string(moto_share_now with_precision 2) + ") - source "
+            + traffic_source;
     }
 
-    // ---- ajuste le parc au (heure x facteur de trafic) courant ----
+    // ---- lit le DÉBIT mesuré pour (zone, heure) et en déduit la composition du flux ----
+    // N'ajuste plus aucune population : le nombre d'agents est désormais une CONSÉQUENCE
+    // du débit (voir `reflex spawn_traffic`), plus une cible imposée.
     action sync_fleet {
-        float base  <- (fleet_total[hour_of_day] = nil) ? 0.0 : fleet_total[hour_of_day];
-        int target  <- int(base * eff_traffic * veh_density_scale);
-        float mshare <- (fleet_moto[hour_of_day] = nil) ? 0.5 : fleet_moto[hour_of_day];
-        float cshare <- (fleet_car[hour_of_day] = nil) ? 0.4 : fleet_car[hour_of_day];
-
-        int diff <- target - length(Vehicle);
-        if (diff > 0) {
-            create Vehicle number: diff {
-                my_road <- one_of(Road);
-                pts <- copy(my_road.shape.points);
-                idx <- 0;
-                location <- first(pts);
-                float d <- rnd(1.0);
-                // vitesses differenciees pour le rendu ; aucune emission sonore associee
-                // (non identifiable sur nos donnees, cf. en-tete point 3)
-                if (d < mshare)               { v_type <- "moto";  speed <- 9.0; }
-                else if (d < mshare + cshare) { v_type <- "car";   speed <- 11.0; }
-                else                          { v_type <- "heavy"; speed <- 8.0; }
-            }
-        } else if (diff < 0) {
-            ask (-diff) among Vehicle { do die; }
-        }
-        n_vehicles <- length(Vehicle);
         traffic_source <- (fleet_meas[hour_of_day] = 1) ? "mesure (videos)" : "interpole";
-        // débit mesuré à cette heure, mis à l'échelle du scénario : c'est la grandeur
-        // à citer quand on parle d'intensité de trafic, pas le nombre d'agents affichés.
+        // débit mesuré à cette heure, mis à l'échelle du scénario : c'est LA grandeur
+        // qui pilote la simulation, et celle à citer quand on parle d'intensité de trafic.
         flow_now      <- (fleet_flow[hour_of_day] = nil) ? 0.0
                             : fleet_flow[hour_of_day] * eff_traffic;
         flow_moto_now <- (fleet_moto_flow[hour_of_day] = nil) ? 0.0
                             : fleet_moto_flow[hour_of_day] * eff_traffic;
+        float f_car   <- (fleet_car_flow[hour_of_day] = nil) ? 0.0
+                            : fleet_car_flow[hour_of_day] * eff_traffic;
+        // parts du FLUX (et non de la densité) ; repli sur des valeurs neutres si le CSV
+        // est une version v1 sans colonnes de débit.
+        moto_share_now <- (flow_now > 0) ? min([1.0, flow_moto_now / flow_now]) : 0.5;
+        car_share_now  <- (flow_now > 0) ? min([1.0 - moto_share_now, f_car / flow_now]) : 0.35;
+        n_vehicles <- length(Vehicle);
+    }
+
+    // ---- CRÉATION DES VÉHICULES AU DÉBIT MESURÉ ----
+    // Coeur du pilotage par les données : sur un pas de `step` secondes, il faut créer
+    //     débit(véh/min) / 60 * step * FLOW_LINES_EQUIV
+    // véhicules. Ce nombre est presque toujours fractionnaire ; on reporte la fraction dans
+    // `spawn_debt` d'un pas au suivant, ce qui reproduit le débit EXACTEMENT en moyenne au
+    // lieu d'arrondir (arrondir à 0 tuerait tout trafic sous 60/step véh/min).
+    reflex spawn_traffic {
+        spawn_debt <- spawn_debt + (flow_now / 60.0) * step * FLOW_LINES_EQUIV;
+        int n <- int(spawn_debt);
+        if (n > 0) {
+            spawn_debt <- spawn_debt - n;
+            spawned_total <- spawned_total + n;
+            create Vehicle number: n {
+                do enter_network;
+                float d <- rnd(1.0);
+                // Vitesses différenciées pour le RENDU uniquement. Aucune émission sonore
+                // n'est associée aux véhicules : elle n'est pas identifiable sur nos
+                // données, ni en densité ni en débit (en-tête, point 3).
+                if (d < moto_share_now)                       { v_type <- "moto";  speed <- 9.0; }
+                else if (d < moto_share_now + car_share_now)  { v_type <- "car";   speed <- 11.0; }
+                else                                          { v_type <- "heavy"; speed <- 8.0; }
+            }
+        }
+        n_vehicles <- length(Vehicle);
     }
 
     // ---- plancher ambiant NON ROUTIER de la zone à l'heure courante ----
@@ -512,20 +574,46 @@ species Vehicle skills: [moving] {
     string v_type <- "moto";
     Road my_road;
     list<point> pts;
-    int idx <- 0;
+    int idx  <- 0;
+    int hops <- 0;              // segments déjà parcourus : borne la durée de vie
+
+    // ENTRÉE DANS LE RÉSEAU. Le véhicule apparaît à une EXTRÉMITÉ d'une route tirée au
+    // hasard, dans un sens ou dans l'autre (flip), et non plus toujours au premier sommet :
+    // sinon tout le trafic circulait dans la même direction sur chaque rue.
+    action enter_network {
+        my_road <- one_of(Road);
+        hops <- 0;
+        idx <- 0;
+        if (my_road != nil) {
+            pts <- copy(my_road.shape.points);
+            if (flip(0.5)) { pts <- reverse(pts); }   // les deux sens de circulation
+            if (!empty(pts)) { location <- first(pts); }
+        }
+    }
 
     // Déplacement le long des sommets de la polyligne de la route puis passage à une
     // route voisine. On n'utilise pas `goto ... on: graph` : le réseau OSM exporté est
     // fragmenté (peu de nœuds partagés), le pathfinding échoue et les agents restent figés.
+    //
+    // SORTIE DU RÉSEAU après VEH_MAX_HOPS segments. C'est ce qui rend la population
+    // ÉMERGENTE : les véhicules entrent au débit mesuré et sortent après un temps de
+    // traversée fini, donc N se stabilise autour de débit x temps de présence (loi de
+    // Little) au lieu d'être fixé à la main. Sans cette sortie, les agents s'accumulaient
+    // indéfiniment et erraient au hasard.
     action pick_road {
-        list<Road> nearby <- Road at_distance 30.0;
-        my_road <- empty(nearby) ? one_of(Road) : one_of(nearby);
-        if (my_road != nil) {
-            pts <- copy(my_road.shape.points);
-            if (length(pts) > 1 and (location distance_to last(pts)) < (location distance_to first(pts))) {
-                pts <- reverse(pts);
+        hops <- hops + 1;
+        if (hops > VEH_MAX_HOPS) {
+            do die;
+        } else {
+            list<Road> nearby <- Road at_distance 30.0;
+            my_road <- empty(nearby) ? one_of(Road) : one_of(nearby);
+            if (my_road != nil) {
+                pts <- copy(my_road.shape.points);
+                if (length(pts) > 1 and (location distance_to last(pts)) < (location distance_to first(pts))) {
+                    pts <- reverse(pts);
+                }
+                idx <- 0;
             }
-            idx <- 0;
         }
     }
 
@@ -548,13 +636,16 @@ species Vehicle skills: [moving] {
 
 // ============================================================================
 experiment hanoi_noise_sim type: gui {
-    parameter "Zone d'étude (relancer après changement)" var: zone category: "1 · Zone";
+    parameter "Site (APPUYER SUR ⟳ RELANCER après changement)" var: target_zone
+              category: "1 · Zone";
     parameter "Heure de la journée" var: hour_of_day category: "2 · Scénario";
     parameter "Facteur de trafic (1.0 = observé)" var: traffic_multiplier category: "2 · Scénario";
     parameter "Mitigation" var: mitigation category: "2 · Scénario";
     parameter "Chantiers actifs" var: construction_on category: "2 · Scénario";
     parameter "Chantier : début" var: work_start category: "2 · Scénario";
     parameter "Chantier : fin (horaires étendus)" var: work_end category: "2 · Scénario";
+    parameter "Densité d'affichage du trafic (sections équivalentes)" var: FLOW_LINES_EQUIV
+              category: "2 · Scénario";
     parameter "Afficher les véhicules" var: show_vehicles category: "3 · Affichage";
     parameter "Afficher nos points de mesure" var: show_measures category: "3 · Affichage";
 
@@ -620,9 +711,17 @@ experiment hanoi_noise_sim type: gui {
         monitor "Mitigation" value: mitigation;
         monitor "Chantiers (actifs ?)" value: string(n_constr) + (constr_active ? " · actifs" : " · arretes");
         monitor "L moyen < 200 m d'un chantier" value: constr_zone_dB with_precision 1;
-        monitor "Véhicules simulés (densité)" value: n_vehicles;
-        monitor "Débit mesuré (véh/min)" value: flow_now with_precision 1;
+        monitor "Débit MESURÉ (véh/min)" value: flow_now with_precision 1;
         monitor "dont motos (véh/min)" value: flow_moto_now with_precision 1;
+        monitor "Part motos dans le FLUX" value: moto_share_now with_precision 2;
+        // Contraste instructif : la part de motos dans la DENSITÉ (ce qu'on voit sur une
+        // image) diffère de leur part dans le FLUX (ce qui traverse réellement). À Hoan
+        // Kiem : 0,64 en densité contre 0,82 en flux — les motos circulent, les voitures
+        // stationnent ou avancent moins vite. C'est le coeur de la distinction v2.
+        monitor "  (rappel) part motos en DENSITÉ" value: (fleet_moto[hour_of_day] = nil)
+                ? 0.0 : fleet_moto[hour_of_day] with_precision 2;
+        monitor "Véhicules présents (émergent)" value: n_vehicles;
+        monitor "Véhicules créés (cumul)" value: spawned_total;
         monitor "L moyen (dB)" value: mean_dB with_precision 1;
         monitor "L max (dB)" value: peak_dB with_precision 1;
         monitor "% zone > QCVN jour (70 dB)" value: exceed_qcvn with_precision 1;
