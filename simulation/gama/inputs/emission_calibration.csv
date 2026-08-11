@@ -1,0 +1,5 @@
+category,energy,level_dB,ref_distance_m,identifiable,source
+moto,0.0,,,0,estimated on our 147 videos and 363 field measurements
+car,0.0,,,0,estimated on our 147 videos and 363 field measurements
+heavy,0.0,,,0,estimated on our 147 videos and 363 field measurements
+construction,2931410.010970096,64.67076566663752,56.0,1,estimated on our 147 videos and 363 field measurements

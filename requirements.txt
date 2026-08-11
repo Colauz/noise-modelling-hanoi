@@ -1,21 +1,39 @@
-datasets>=2.18.0
-huggingface_hub>=0.22.0
+# Lock file: the exact versions the published results were produced with, on
+# 2026-08-11. Version RANGES live in pyproject.toml; this file exists so that
+# `pip install -r requirements.txt` reproduces the environment bit for bit.
+#
+# Preferred install:  pip install -e .          (or: make setup)
+# Reproduce exactly:  pip install -r requirements.txt && pip install -e . --no-deps
+#
+# Python 3.14.4 was used. pyproject.toml declares >=3.11; nothing here is known
+# to require 3.14 specifically, but that is the only version the chain has run on.
 
-librosa>=0.10.0
-soundfile>=0.12.0
+# --- core pipeline ----------------------------------------------------------
+folium==0.20.0
+geopandas==1.1.4
+joblib==1.5.3
+lightgbm==4.7.0
+matplotlib==3.11.1
+numpy==2.4.6
+osmnx==2.1.1
+pandas==3.0.5
+pyarrow==25.0.0
+python-dotenv==1.2.2
+requests==2.34.2
+scikit-learn==1.9.0
+scipy==1.18.0
+seaborn==0.13.2
+shapely==2.1.2
 
-osmnx>=1.9.0
-geopandas>=0.14.0
-shapely>=2.0.0
+# --- video counting (extra "vision"): only to rebuild vehicle_counts.csv -----
+opencv-python==5.0.0.93
+ultralytics==8.4.115
 
-lightgbm>=4.3.0
-scikit-learn>=1.4.0
-numpy>=1.26.0
-pandas>=2.2.0
+# --- Sunbird / Uganda reproduction (extra "sunbird"), notebooks 01-06 --------
+datasets==5.0.1
+librosa==0.11.0
+soundfile==0.14.0
 
-matplotlib>=3.8.0
-seaborn>=0.13.0
-folium>=0.16.0
-
-jupyter>=1.0.0
-python-dotenv>=1.0.0
+# --- notebooks and tests ----------------------------------------------------
+ipykernel==7.3.0
+jupyter==1.1.1

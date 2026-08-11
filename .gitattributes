@@ -1,0 +1,36 @@
+# Normalise line endings so the next team gets LF regardless of platform.
+* text=auto eol=lf
+
+# Text formats that git should never guess about.
+*.gaml   text
+*.gaml   linguist-language=Java
+*.py     text diff=python
+*.md     text
+*.csv    text
+*.bib    text
+*.yaml   text
+*.yml    text
+*.cff    text
+*.tex    text diff=tex
+
+# Binary formats: never diffed, never end-of-line converted.
+*.shp    binary
+*.shx    binary
+*.dbf    binary
+*.prj    binary
+*.cpg    binary
+*.gpkg   binary
+*.parquet binary
+*.pkl    binary
+*.pdf    binary
+*.png    binary
+*.jpg    binary
+*.xlsx   binary
+*.pt     binary
+
+# GitHub language statistics: this is an acoustics research project, not a
+# Jupyter project. Notebooks are narrative, generated artefacts are not code.
+notebooks/*.ipynb    linguist-documentation
+results/**           linguist-generated
+simulation/gama/inputs/** linguist-generated
+docs/archive/**      linguist-documentation

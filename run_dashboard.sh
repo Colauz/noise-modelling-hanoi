@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Construit et ouvre le tableau de bord du projet.
+# Build and open the project dashboard.
 #
-#   ./run_dashboard.sh              construit puis ouvre outputs/dashboard/index.html
-#   ./run_dashboard.sh --no-open    construit seulement (utile en CI ou sur un serveur)
-#   ./run_dashboard.sh --serve      sert le dossier sur http://localhost:8000 au lieu
-#                                   d'ouvrir un file:// (utile si le navigateur bloque
-#                                   les iframes locales)
+#   ./run_dashboard.sh              build, then open results/report/dashboard/index.html
+#   ./run_dashboard.sh --no-open    build only (useful in CI or on a server)
+#   ./run_dashboard.sh --serve      serve the folder on http://localhost:8000 instead
+#                                   of opening a file:// URL (useful if the browser blocks
+#                                   local iframes)
 #
-# Le script ne réentraîne rien et ne relance pas YOLO : il lit les sorties déjà
-# produites par la chaîne evaluate_models.py -> export_gama_zones.py -> build_report.py.
-# S'il manque une entrée, build_dashboard.py dit laquelle et quelle commande la produit.
+# The script retrains nothing and does not rerun YOLO: it reads the outputs already
+# produced by the chain 04_evaluate_models.py -> 07_export_gama_inputs.py -> 10_build_report.py.
+# If an input is missing, 11_build_dashboard.py says which one and what produces it.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -21,51 +21,51 @@ for a in "$@"; do
     --no-open) OPEN=0 ;;
     --serve)   SERVE=1 ;;
     -h|--help) sed -n '2,14p' "$0" | sed 's/^# \?//'; exit 0 ;;
-    *) echo "option inconnue : $a (voir --help)" >&2; exit 2 ;;
+    *) echo "unknown option: $a (see --help)" >&2; exit 2 ;;
   esac
 done
 
-# --- environnement virtuel ---------------------------------------------------------
+# --- virtual environment -----------------------------------------------------------
 if [ ! -d .venv ]; then
-  echo "==> .venv absent, création"
+  echo "==> .venv missing, creating it"
   python3 -m venv .venv
 fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-# --- dépendances -------------------------------------------------------------------
-# On teste l'IMPORT plutôt que la présence dans pip list : c'est ce dont le script a
-# réellement besoin, et cela évite un appel réseau quand tout est déjà en place.
+# --- dependencies ------------------------------------------------------------------
+# We test the IMPORT rather than presence in pip list: that is what the script actually
+# needs, and it avoids a network call when everything is already in place.
 MISSING=""
 for mod in pandas numpy folium; do
   python -c "import $mod" 2>/dev/null || MISSING="$MISSING $mod"
 done
 if [ -n "$MISSING" ]; then
-  echo "==> installation des dépendances manquantes :$MISSING"
+  echo "==> installing missing dependencies:$MISSING"
   pip install --quiet $MISSING
 fi
 
-# --- construction ------------------------------------------------------------------
-echo "==> construction du tableau de bord"
-python scripts/build_dashboard.py
+# --- build ---------------------------------------------------------------------------
+echo "==> building the dashboard"
+python scripts/11_build_dashboard.py
 
-PAGE="outputs/dashboard/index.html"
-[ -f "$PAGE" ] || { echo "échec : $PAGE non généré" >&2; exit 1; }
+PAGE="results/report/dashboard/index.html"
+[ -f "$PAGE" ] || { echo "failed: $PAGE was not generated" >&2; exit 1; }
 
-# --- ouverture ---------------------------------------------------------------------
+# --- open ----------------------------------------------------------------------------
 if [ "$SERVE" -eq 1 ]; then
-  echo "==> http://localhost:8000/index.html   (Ctrl+C pour arrêter)"
+  echo "==> http://localhost:8000/index.html   (Ctrl+C to stop)"
   [ "$OPEN" -eq 1 ] && { (sleep 1 && xdg-open "http://localhost:8000/index.html" >/dev/null 2>&1 || true) & }
-  exec python -m http.server 8000 --directory outputs/dashboard
+  exec python -m http.server 8000 --directory results/report/dashboard
 fi
 
 if [ "$OPEN" -eq 1 ]; then
   URL="file://$(pwd)/$PAGE"
-  echo "==> ouverture de $URL"
-  # xdg-open sous Linux, open sous macOS ; si aucun des deux, on affiche le chemin.
+  echo "==> opening $URL"
+  # xdg-open on Linux, open on macOS; if neither exists, print the path.
   if command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1 &
   elif command -v open   >/dev/null 2>&1; then open "$URL" >/dev/null 2>&1 &
-  else echo "    (aucun ouvreur détecté — ouvrir manuellement : $PAGE)"; fi
+  else echo "    (no opener detected - open manually: $PAGE)"; fi
 else
-  echo "==> construit : $PAGE"
+  echo "==> built: $PAGE"
 fi
