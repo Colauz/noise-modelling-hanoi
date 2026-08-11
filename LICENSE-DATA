@@ -1,0 +1,35 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Laurian Jamin and Lucas Zborowski
+
+This licence covers the DATA, DOCUMENTATION, FIGURES and MAPS in this
+repository -- everything under data/, docs/, results/ and the model artefacts in
+models/. The source code is licensed separately under the MIT License; see
+LICENSE.
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit, link to the licence, and
+indicate if changes were made.
+
+Full text: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary:   https://creativecommons.org/licenses/by/4.0/
+
+Suggested attribution:
+    Jamin, L. and Zborowski, L. (2026). Noise Modelling Hanoi: smartphone-based
+    urban noise measurements and modelling. VinUniversity, Hanoi.
+    https://github.com/Colauz/noise-modelling-hanoi
+
+THIRD-PARTY MATERIAL, NOT COVERED BY THIS LICENCE
+-------------------------------------------------
+Road and building geometry derived from OpenStreetMap, including the shapefiles
+in simulation/gama/inputs/, is (c) OpenStreetMap contributors and licensed under
+the Open Database Licence (ODbL) 1.0: https://www.openstreetmap.org/copyright
+Redistribution of those derived layers must comply with ODbL, which requires
+attribution and share-alike on the database.
+
+Weather data is from Open-Meteo (CC BY 4.0).
+
+NOT INCLUDED IN THIS REPOSITORY
+-------------------------------
+The 147 traffic videos and the raw KoboToolbox exports are not distributed under
+this or any licence. See docs/data-sources.md.

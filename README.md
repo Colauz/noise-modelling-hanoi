@@ -1,112 +1,196 @@
 # Noise Modelling Hanoi
 
-Smartphone-based urban noise mapping for Hanoi. We reproduce the methodology of
-[Nsumba et al. 2026 (Scientific Data)](https://doi.org/10.1038/s41597-026-06658-w) - the
-[Sunbird Urban Noise Uganda 61K dataset](https://huggingface.co/datasets/Sunbird/urban-noise-uganda-61k) -
-then apply it to Hanoi with our own field campaign (363 measurements, 3 districts),
-a LightGBM model trained directly on our data, and a GAMA agent-based simulation.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC--BY--4.0-blue.svg)](LICENSE-DATA)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-14%20passing-brightgreen.svg)](tests/)
 
-**Key results.** Three of them are negative, and they are the most transferable:
-1. **A three-parameter physical model beats every learned model we built.** The delivered
-   model is a line-source attenuation law (`E = A_hw/d_hw + A_res/d_res + B`), R² = **0.246**
-   under buffered leave-one-out and **0.222** under leave-one-site-out — ahead of a
-   six-variable LightGBM (0.137 / 0.029) and of the physics+ML **hybrid** we built to improve
-   on it (0.123 / 0.035). The learned residual gains ΔR² +0.140 under the permissive 600 m
-   block split and loses −0.123 / −0.187 under the two strict ones: the ranking of the seven
-   models inverts almost exactly between protocols. Morphology aggregated over 300 m adds no
-   measurable value. See `paper/sections/negative_results.md` §5.z.
-2. **Cross-city transfer fails.** A morphology→noise model pretrained on Uganda gives R² < 0
-   on Hanoi even with convention-invariant features. Local measurement is a prerequisite,
-   not a refinement.
-3. **Per-frame vehicle density carries no acoustic signal.** Non-negative energy regression
-   on 147 matched videos returns three zero coefficients: density is not flow, and speed is
-   not observable in a frame count. V2 replaces density with **real flow** (YOLOv8 +
-   ByteTrack line-crossing counts, veh/min) and re-tests the emission fit on the physically
-   correct formulation, energy per *pass*.
+**What a low-cost smartphone protocol can and cannot establish about urban noise —
+363 field measurements in Hanoi, and three negative results that hold up better
+than the positive one.**
 
-Full table with baselines, ablation and bootstrap CIs under all three protocols:
-`outputs/models/model_comparison.md`.
+![Predicted noise map, Ocean Park, 17:00](results/figures/noise-map-oceanpark-17h.png)
 
-**Interactive dashboard**: `./run_dashboard.sh` builds `outputs/dashboard/index.html` (map,
-model comparison, traffic flow, link to the report, GAMA instructions) and opens it.
+*Predicted level over Ocean Park at 17:00, in the GAMA simulation. 40 m grid,
+delivered physical model, measured traffic flow. Colour bands are QCVN 26:2010
+day and night references, shown descriptively — this study makes no compliance
+claim.*
 
-> ⚠️ **Measurement status.** Our target is a 20–30 s A-weighted level from consumer
-> smartphones (`L_A,25s`), not a certified `L_Aeq`. The three phones are cross-calibrated
-> **against each other, never against a reference instrument**: contrasts between places and
-> hours are supported, absolute levels are indicative. No compliance claim is made anywhere.
-> See `paper/sections/metrology.md`.
+---
 
-> ⚠️ **Superseded figure.** The "R² 0.45 under honest spatial cross-validation" advertised
-> until July 2026 came from a `GroupKFold` grouped on ~110 m cells, smaller than the 300 m
-> radius over which the features are aggregated. It leaked. See `audit_noise_modeling.md`
-> and `scripts/evaluate_models.py`.
+## Context and goal
+
+Hanoi is dense, motorcycle-dominated and growing fast, and has little routine
+noise monitoring. Professional sound level meters and commercial noise models are
+out of reach for most local research budgets. So: **how far does a protocol built
+from three consumer smartphones and open data actually get you?**
+
+We ran a three-month campaign, built the full chain from field form to agent-based
+simulation, and then evaluated it honestly enough to find out where it breaks.
+
+## Research questions
+
+1. Can urban morphology from OpenStreetMap predict measured noise at an
+   **unmeasured location** in Hanoi?
+2. Does a model trained in one city **transfer** to another?
+3. Does vehicle **flow extracted from video** explain measured levels?
+4. What can a smartphone protocol claim, given that it has **no absolute
+   reference**?
+
+**Out of scope:** night-time noise (10 measurements after 21:00), compliance
+assessment against any standard, and any prediction outside the three measured
+sites.
+
+## Data
+
+| Dataset | Size | Published | Licence |
+|---|---|---|---|
+| Field measurements | 363 points, 3 sites | **yes**, `data/processed/measurements.csv` | CC-BY-4.0 |
+| Vehicle counts from video | 147 videos | **yes**, `data/processed/vehicle_counts.csv` | CC-BY-4.0 |
+| Survey forms (XLSForm) | 2 forms | **yes**, `data/forms/` | CC-BY-4.0 |
+| Traffic videos | 147, 6.0 GB | **no** — faces and plates, see ethics | not distributed |
+| Raw Kobo exports | — | **no** — collector identities | not distributed |
+| OpenStreetMap extract | 49 146 buildings | **no** — regenerable, dated snapshot | ODbL |
+| Sunbird Urban Noise Uganda 61K | 61 k clips | **no** — gated upstream | [DOI](https://doi.org/10.1038/s41597-026-06658-w) |
+
+No ethics review was requested for the video collection, and none is claimed.
+Only non-identifying aggregates are released. Full statement:
+[`docs/data-sources.md`](docs/data-sources.md).
+
+## Method in brief
+
+```mermaid
+flowchart LR
+    A["ODK / Kobo<br/>363 measurements"] --> B["01 prepare<br/>clean + weather"]
+    V["147 traffic videos"] --> C["02 count<br/>YOLOv8 + ByteTrack"]
+    O["OpenStreetMap<br/>buildings + roads"] --> D["03 features<br/>morphology, 300 m"]
+    B --> D
+    D --> E["04 evaluate<br/>8 models x 3 CV protocols"]
+    E -->|"metrics.json<br/>delivered model"| F["07 export<br/>40 m grid x 17 h"]
+    C --> F
+    F --> G["results/<br/>maps, report, dashboard"]
+    F --> H["GAMA simulation<br/>receiver agents"]
+```
+
+Every model is scored under three splits: 600 m spatial blocks, **buffered
+leave-one-out with a 300 m exclusion** (the reference — it matches the feature
+radius), and leave-one-site-out. The delivered model is picked **by code** under
+the reference protocol and written into `metrics.json`; nothing downstream can
+silently substitute another. Details: [`docs/methodology.md`](docs/methodology.md).
+
+## Install
+
+```bash
+git clone https://github.com/Colauz/noise-modelling-hanoi
+cd noise-modelling-hanoi
+make setup          # pip install -e .
+```
+
+## Reproduce the results
+
+```bash
+make features       # OSM morphology, 300 m radius
+make models         # 8 models x 3 CV protocols -> models/metrics.json
+make results        # grid, maps, figures, tables
+make report         # results/report/report.pdf
+```
+
+This runs from the two datasets shipped with the repository. You do **not** need
+the raw Kobo export or the 6 GB of video. `make features` needs the OSM extract —
+see [`docs/data-sources.md`](docs/data-sources.md).
+
+For the simulation, open `simulation/gama/hanoi_noise.gaml` in
+[GAMA](https://gama-platform.org) and run `hanoi_noise_sim`.
 
 ## Repository layout
 
-| Folder | Content |
+| Path | What |
 |---|---|
-| `notebooks/` | The project spine, numbered in execution order (see below) |
-| `scripts/` | Reusable pipeline: `prepare_field_data.py`, `evaluate_models.py`, `export_gama_zones.py`, `literature_anchoring.py`, `build_field_map.py`, `build_report.py` |
-| `scripts/experiments/` | One-shot studies: `train_large.py` (Uganda 59K), `train_v2_invariant.py` (v2 features), `barcelona_transfer.py` (Barcelona diagnostics) |
-| `field/` | Field protocol (README) + Kobo/ODK forms (noise survey v2, construction-sites log) |
-| `paper/` | Q1 paper material: `bibliography.bib`, `sections/` (metrology, negative results), `figures/`, `references/` |
-| `gama/` | Simulation plan (`PLAN.md`) and GAMA model |
-| `data/` | **Not in git.** `raw/{barcelona,hanoi}` + `processed/{uganda,barcelona,hanoi}`; field videos in `raw/hanoi/videos/` (Sunbird data is auto-downloaded from HuggingFace into `cache/`) |
-| `outputs/` | `report.pdf`, `models/metrics.json` + `model_comparison.md`, `sunbird/`, `hanoi/` (maps + analyses), `gama_inputs/` (shapefiles), `deprecated/` (withdrawn Bach Khoa artefacts) |
+| `data/` | Two published datasets and the survey forms; raw data stays local |
+| `src/noise_hanoi/` | The importable core: paths, parameters, features |
+| `scripts/` | `01_`…`11_`, numbered in execution order |
+| `notebooks/` | Exploration and narrative, outputs stripped |
+| `models/` | Fitted artefacts and `metrics.json`, the source of every published number |
+| `simulation/gama/` | The agent-based model and the GIS inputs it reads |
+| `results/` | Figures, maps, tables, the 8-page report and the dashboard |
+| `docs/` | Methodology, data sources, metrology, negative results, handover |
+| `tests/` | Aimed at the failures this project actually had |
 
-## Notebooks
+## Main results
 
-| Notebook | What it does |
-|---|---|
-| `01_explore_sunbird` | Load the Uganda dataset, distributions |
-| `02_clean_sunbird` | Dedup, GPS accuracy filter, dB sanity → `sunbird_clean.csv` |
-| `03_audio_qc` | Audio quality control (silence, band energy, MD5 dedup) |
-| `04_morphology_features` | Morphology features in a 300 m radius (OSM) |
-| `05_reproduce_figures` | Reproduce the paper's figures 8-10 |
-| `06_train_surrogate_model` | LightGBM morphology → dB on Uganda |
-| `07_hanoi_field_data` | **Hanoi**: clean field data (via `scripts/prepare_field_data.py`), 5 analyses (hourly, day-of-week, sources, QCVN, weather), interactive map |
-| `08_predict_hanoi` | **Hanoi**: OSM features, evaluation via `scripts/evaluate_models.py`, transfer comparison, final model |
-| `09_export_gama` | ⚠️ neutralised — superseded by `scripts/export_gama_zones.py` |
+**The three negative results are the contribution.**
 
-## Pipeline after each Kobo export
+**1. A three-parameter physical law beats every learned model we built.** The
+delivered model is a line-source attenuation kernel,
+`E = A_hw/d_hw + A_res/d_res + B`.
 
-```bash
-# 1. drop the new CSV in data/raw/hanoi/ (archive the old one in data/raw/hanoi/old/)
-python3 scripts/prepare_field_data.py        # clean -> measurements.csv
-# 2. notebooks 07 (EDA + map) then 08 (OSM features, once, to build the caches)
-python3 -m nbconvert --to notebook --execute --inplace notebooks/07_hanoi_field_data.ipynb
-python3 -m nbconvert --to notebook --execute --inplace notebooks/08_predict_hanoi.ipynb
-# 3. evaluation, anchoring, map, simulation inputs, report
-python3 scripts/evaluate_models.py           # -> outputs/models/metrics.json (+ .md)
-python3 scripts/literature_anchoring.py      # -> outputs/hanoi/literature_anchoring.md
-python3 scripts/export_gama_zones.py         # -> outputs/gama_inputs/ + hanoi_noise_map.csv
-python3 scripts/validate_simulation.py       # -> in-sample check of the chain
-python3 scripts/build_report.py              # -> outputs/report.pdf (reads metrics.json)
-```
+| Model | Block-CV 600 m | **Buffered LOO** | Leave-one-site-out |
+|---|---|---|---|
+| log(dist_road), 2 parameters | 0.221 | 0.200 | 0.189 |
+| **Physical kernel, 3 parameters — delivered** | 0.255 | **0.246** | **0.222** |
+| LightGBM v1 (6 features) | 0.304 | 0.137 | 0.029 |
+| Hybrid (physics + ML residual) | **0.395** | 0.123 | 0.035 |
 
-No metric is ever copied by hand: `build_report.py` reads `outputs/models/metrics.json` and
-refuses to run without it.
+The ranking **inverts** between the permissive split and the strict ones. The
+hybrid this team had itself recommended is tested and rejected, not deferred. The
+learned residual is computed at every run and deliberately **not applied**.
 
-Interactive map of field points: `outputs/hanoi/hanoi_field_points.html`.
+**2. Cross-city transfer fails.** A morphology→noise model pretrained on Uganda
+scores R² < 0 on Hanoi, even with convention-invariant features. Local
+measurement is a prerequisite, not a refinement.
 
-## Setup
+**3. Vehicle flow does not explain the levels.** Non-negative energy regression on
+147 matched videos returns zero coefficients for motorcycles and cars. Speed and
+source–receiver distance are not observable from a non-georeferenced camera.
 
-```bash
-pip install -r requirements.txt
-```
+Full tables with baselines, ablation and bootstrap CIs:
+[`models/model_comparison.md`](models/model_comparison.md) ·
+[`docs/negative-results.md`](docs/negative-results.md).
 
-Sunbird is gated: accept the terms on its HuggingFace page, create a Read token at
-https://huggingface.co/settings/tokens, and paste it in the first cell of notebooks 01-05
-(never commit a real token).
+## Known limitations
 
-## Field protocol (summary)
+- **Levels are relative, not absolute.** The three phones were cross-calibrated
+  against each other, never against a reference instrument. Contrasts between
+  places and hours are supported; absolute values are indicative.
+  [`docs/metrology.md`](docs/metrology.md)
+- **The target is `L_A,25s`**, a 20–30 s A-weighted level — not a certified
+  `L_Aeq`, `L_den` or `L_night`. No compliance claim is made anywhere.
+- **The night is not sampled.** 10 measurements after 21:00, none 00:00–05:00.
+- **The vehicle detector is unvalidated** against manual counts. Modal shares must
+  not be published until it is.
+- **R² ≈ 0.25** is modest. It is the figure that survives a split excluding the
+  feature support; larger numbers here do not.
+- **An earlier R² = 0.45 was withdrawn** in August 2026 — it came from a
+  cross-validation grouped on cells smaller than the feature radius. See
+  [`docs/audit/scientific-audit.md`](docs/audit/scientific-audit.md).
 
-ODK Collect → KoboToolbox; 20-30 s spot measurements with ≥10 s audio; phones at ≈1.2 m,
-varied distances from the road; 3 collectors cross-calibrated **against each other only**;
-05:00-23:00 with rush-hour emphasis; traffic videos timestamped to match measurements.
-Details in `field/`. **The campaign is closed** — the project has pivoted to a methodological
-study on the data in hand (see `audit_noise_modeling.md`).
+## Future work
 
-## Paper draft
+A **real propagation kernel (CNOSSOS-EU, via NoiseModelling)** is the indicated
+next step, not an optional extra: if a two-parameter distance term already beats a
+six-variable gradient boosting model, then physical propagation corrected by a
+locally learned residual is the architecture the data points at. Then: validate
+the detector, and repeat the campaign with a reference instrument to anchor the
+absolute scale. [`docs/handover.md`](docs/handover.md)
 
-https://www.overleaf.com/project/6a1d529010bdbac6b41da01e
+## Citation
+
+See [`CITATION.cff`](CITATION.cff). Some author metadata is still marked
+`[TO CONFIRM]`; those fields are deliberately unfilled rather than guessed.
+
+## Team
+
+Laurian Jamin and Lucas Zborowski, research interns, ISIMA (Clermont-Ferrand,
+France), at [AFFILIATION TO CONFIRM — CEI or COSMOS Lab], VinUniversity, Hanoi,
+June–August 2026. Supervised by Doanh Nguyen-Ngoc. With Nguyen Thanh Quang,
+VinUniversity.
+
+We reproduce and build on the Sunbird Urban Noise Uganda 61K dataset:
+Nsumba et al., *Scientific Data* (2026),
+[10.1038/s41597-026-06658-w](https://doi.org/10.1038/s41597-026-06658-w).
+Road and building geometry © OpenStreetMap contributors, ODbL.
+
+## Licence
+
+Code MIT ([`LICENSE`](LICENSE)) · data, documentation and figures CC-BY-4.0
+([`LICENSE-DATA`](LICENSE-DATA)).

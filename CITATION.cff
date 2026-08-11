@@ -1,0 +1,65 @@
+cff-version: 1.2.0
+title: "Noise Modelling Hanoi: smartphone-based urban noise measurement, modelling and agent-based simulation"
+message: "If you use this software or these data, please cite them as below."
+type: software
+license: MIT
+repository-code: "https://github.com/Colauz/noise-modelling-hanoi"
+abstract: >-
+  A three-month study of what a low-cost smartphone protocol can and cannot
+  establish about urban noise in Hanoi, Vietnam. 363 field measurements across
+  three urban typologies, morphology features from OpenStreetMap, an evaluation
+  framework using three cross-validation protocols, and an agent-based exposure
+  simulation in GAMA. The delivered model is a three-parameter physical
+  attenuation kernel, which outperforms every learned model tested under the
+  reference protocol.
+keywords:
+  - urban noise
+  - environmental acoustics
+  - Hanoi
+  - Vietnam
+  - agent-based modelling
+  - OpenStreetMap
+  - reproducible research
+  - negative results
+version: "1.0.0"
+date-released: "2026-08-11"
+
+# NOTE: fields marked TO CONFIRM are deliberately left unresolved rather than
+# guessed. See the Open items table at the top of docs/handover.md.
+authors:
+  - family-names: "Jamin"
+    given-names: "Laurian"
+    email: "laurian@laurian-jamin.fr"
+    orcid: "https://orcid.org/0009-0009-0189-7044"
+    affiliation: "ISIMA, Clermont-Ferrand, France / [AFFILIATION TO CONFIRM — CEI or COSMOS Lab], VinUniversity, Hanoi, Vietnam"
+  - family-names: "Zborowski"
+    given-names: "Lucas"
+    # orcid: [ORCID]  -- to be supplied by the author
+    affiliation: "ISIMA, Clermont-Ferrand, France / [AFFILIATION TO CONFIRM — CEI or COSMOS Lab], VinUniversity, Hanoi, Vietnam"
+
+contact:
+  - family-names: "Jamin"
+    given-names: "Laurian"
+    email: "laurian@laurian-jamin.fr"
+
+references:
+  - type: data
+    title: "Noise mapping and ambient sound recordings of the urban environment in Uganda"
+    authors:
+      - family-names: "Nsumba"
+        given-names: "Solomon"
+      - family-names: "Muhanguzi"
+        given-names: "Tibabwetiza"
+      - family-names: "Ouma"
+        given-names: "Evelyn Nafula"
+      - family-names: "Sekalala"
+        given-names: "Imran"
+      - family-names: "Bainomugisha"
+        given-names: "Engineer"
+      - family-names: "Mwebaze"
+        given-names: "Ernest"
+      - family-names: "Quinn"
+        given-names: "John"
+    year: 2026
+    doi: "10.1038/s41597-026-06658-w"
+    notes: "Reproduced and used as the pretraining source for the transfer experiment."
