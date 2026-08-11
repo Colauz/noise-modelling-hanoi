@@ -160,7 +160,7 @@ package now; scripts read inputs, call the package, write outputs.
 | # | Debt | Cost to fix | Consequence of leaving it |
 |---|---|---|---|
 | 1 | `04_evaluate_models.py` is 598 lines and still holds the three CV protocols, the bootstrap and six model definitions | 1–2 days to extract `validation.py` and `physics.py` | The most valuable code in the project is the least testable |
-| 2 | The YOLO detector has **no** validation against manual counts | ~1 day for 10 videos, double-counted | **The modal shares cannot be published.** Currently unquantified precision/recall |
+| 2 | The YOLO detector has **no** validation against manual counts | ~1 day for 10 videos, double-counted | **The modal shares cannot be published.** Precision, recall and MAPE per class are unknown, and two-wheeler under-detection is expected but unquantified. **This is the highest value-per-effort task left in the project**: one day of manual counting turns an open-ended limitation into a quantified uncertainty, and it is the input uncertainty of every downstream number. See `docs/methodology.md` section 2b |
 | 3 | The Uganda chain (notebooks 01–06) is not reproducible: it expects `data/processed/uganda/*` which exists nowhere | Unknown; needs the HF download rerun | One of the three negative results rests on a chain nobody can replay |
 | 4 | Two tests still to write: field cleaning, report guard | Half a day | Schema drift in `measurements.csv` would pass unnoticed |
 | 5 | `run_dashboard.sh` duplicates `make dashboard` | 10 minutes | Two entry points that can disagree |

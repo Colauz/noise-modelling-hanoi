@@ -63,6 +63,13 @@ These documents are **excluded from the number-consistency check** against
 **Everything published is in English**: code, comments, docstrings, documentation,
 commit messages, figure labels, log and error messages.
 
+**Sweeping for leftover French: search accents AND keywords.** An accent-only
+filter has a blind spot — short French sentences in common vocabulary carry none.
+`MAX_CROSS_PER_DIR = 1  # au plus un franchissement par sens` survived several
+accent-based passes and was caught by eye. Combine the two, and run the combined
+filter over the **whole repository**, not only over the files touched in the
+current change.
+
 The project ran in French until 11 August 2026. Commits before that date have
 French messages and are left as they are — history is not rewritten here. From
 that date on, every new commit is in English.

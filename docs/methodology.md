@@ -67,6 +67,67 @@ Kobo export → `data/processed/measurements.csv`:
 
 ---
 
+## 2b. Traffic counting from video — `02_count_vehicles.py`
+
+147 timestamped videos, matched to the measurements by capture time. This step
+sets the **input uncertainty of everything downstream**, so its parameters and its
+weaknesses are stated here rather than left in the code.
+
+**Chain.** YOLOv8**n** detection at `imgsz=640`, `conf=0.3`, on COCO classes mapped
+to motorcycle / car / bus / truck; bicycles are excluded as non-motorised. Object
+tracking with **ByteTrack**, sampled at **10 fps** — tracking needs consecutive
+frames, and at 1 fps no tracker can associate detections. Crossings of a virtual
+line are then counted **in post-processing** over the stored trajectories, which is
+what allows the line orientation to be chosen once the video has been seen in full,
+and makes the counting rule testable without rerunning YOLO.
+
+**Three guards, each established by calibrating on our own videos, each fixing a
+failure that had produced silent nonsense:**
+
+| Guard | The failure it fixes |
+|---|---|
+| Dead band at **5 % of image height**, not a fixed pixel count | Our videos have two resolutions. An absolute dead band was 4 % of the height in one case and 13 % in the other — passing all jitter on one side, blocking every crossing on the other |
+| **At most one crossing per direction per trajectory** | ByteTrack reuses identifiers on sparsely populated scenes; counting every side change gave 109 veh/min on a video showing 0.6 vehicles per frame |
+| **Line orientation chosen per video**, perpendicular to the dominant motion, on amplitudes normalised by the image dimension | A forced horizontal line returned **zero flow on 14 of the 19 `VID_*` videos**, which are filmed across the street. A whole site read as empty for a purely geometric reason |
+
+> **The only independent check on the counting is Little's law.** For a stationary
+> flow, `L = lambda x W`: the mean number of vehicles present equals the flow times
+> the residence time. Density and flow are measured separately here, so their ratio
+> yields an *implied* residence time that can be compared against the residence time
+> *observed* directly on the trajectories. The first counting rule implied 0.3 s,
+> i.e. vehicles crossing the field at 60–90 m/s — physically absurd, and that is how
+> the identifier-reuse bug was found. After correction the implied time is 4.7 s
+> against 7.6 s observed: the same order, which is what this check can establish.
+>
+> This is a **consistency** check, not an accuracy check. It can detect a counting
+> rule that is impossible; it cannot tell us how many motorcycles were missed.
+
+> **Assumption 2b — the flow measured over ~24 s stands for the hour.** Videos have
+> a median duration of **24 s** (p10 20 s, p90 30 s), and their crossing counts are
+> converted to vehicles per minute and then attributed to the (site, hour) pair.
+> That assumes the flow is stationary over the window and representative of the hour.
+>
+> The size of that assumption is measurable from the data we have. Across the 11
+> (site, hour) pairs holding three or more videos, the flow varies between videos of
+> the *same* site and hour with a coefficient of variation of **31 % at the median**
+> (interquartile range 26–47 %). So a single 24 s window estimates its hour's flow to
+> roughly ±30 % (1σ) from sampling alone, before any detector error. That is an
+> order of magnitude, not a calibrated uncertainty: 11 groups is a thin basis, and it
+> conflates genuine within-hour variation with counting noise.
+
+> **Limitation 2b — the detector is not validated.** No manual reference count has
+> been made, on any video. **Precision, recall and MAPE per class are unknown.**
+> Under-detection of two-wheelers by `yolov8n` at 640 px is expected — they are
+> small, densely packed and heavily occluded in Hanoi traffic — but it is **not
+> quantified**. Consequently **the modal shares are not publishable**, and the
+> per-class flows must be read as lower bounds on the two-wheeler share.
+>
+> Closing this is the highest value-per-effort task left in the project: a manual
+> count on ten videos, about one day, turns an open-ended limitation into a
+> quantified uncertainty. See [`handover.md`](handover.md), debt 2.
+
+---
+
 ## 3. Features — `03_build_features.py`
 
 For each measurement point, from the cached OSM extract, within a radius of
@@ -312,4 +373,4 @@ mitigation, the simulated map is identical to the predicted map.
 - Any statement about night-time noise (Limitation 1).
 - Any prediction outside the three measured sites plus 400 m (Assumption 6).
 - Any modal share from the video counts, until the detector is validated against
-  manual counts — see [`handover.md`](handover.md), debt 2.
+  manual counts — see section 2b and [`handover.md`](handover.md), debt 2.

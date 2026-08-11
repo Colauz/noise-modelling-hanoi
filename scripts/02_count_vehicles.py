@@ -23,6 +23,7 @@ by object tracking.
     frame-by-frame classification).
 
 THREE GUARDS, ESTABLISHED BY CALIBRATING ON OUR OWN VIDEOS
+(full reasoning, parameters and limitations: docs/methodology.md section 2b)
 ---------------------------------------------------------
 1. RELATIVE DEAD BAND (DEADBAND_FRAC = 5 % of the image height, not a fixed pixel
    count). Our videos do not all share a resolution: 1080x1920 for the IMG_*,
