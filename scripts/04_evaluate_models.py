@@ -79,16 +79,17 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupKFold
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+from noise_hanoi import config as cfg
 
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-PROC = os.path.join(ROOT, 'data', 'processed', 'hanoi')
-OUT_JSON = os.path.join(ROOT, 'outputs', 'models', 'metrics.json')
-OUT_MD = os.path.join(ROOT, 'outputs', 'models', 'model_comparison.md')
-FINAL_MODEL = os.path.join(ROOT, 'outputs', 'models', 'surrogate_lgbm_hanoi_direct.txt')
-RESID_MODEL = os.path.join(ROOT, 'outputs', 'models', 'hybrid_residual_lgbm.txt')
-PHYS_JSON = os.path.join(ROOT, 'outputs', 'models', 'hybrid_physical.json')
+ROOT = cfg.ROOT
+
+MEASURES = cfg.MEASUREMENTS
+PROC = cfg.INTERIM
+OUT_JSON = cfg.METRICS_JSON
+OUT_MD = cfg.MODEL_COMPARISON_MD
+FINAL_MODEL = cfg.FINAL_MODEL
+RESID_MODEL = cfg.RESID_MODEL
+PHYS_JSON = cfg.PHYS_JSON
 
 CRS_M = 'EPSG:32648'      # UTM 48N (mètres)
 R = 300                   # rayon des features de morphologie (m) - fixe le reste
@@ -131,7 +132,7 @@ def load_points():
             raise SystemExit(f'Manque {os.path.join(PROC, f)}\n'
                              '  -> exécuter le notebook 08 une fois (il télécharge et cache l\'OSM)')
 
-    import export_gama_zones as egz   # réutilise load_osm() et morphology() : pas de duplication
+    from noise_hanoi import features as feat
 
     m = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     m['hour'] = m.timestamp.dt.hour
@@ -141,10 +142,10 @@ def load_points():
     m['is_weekend'] = m.timestamp.dt.dayofweek.isin([5, 6]).astype(int)
     m = m.dropna(subset=['noise_dB', 'latitude', 'longitude']).reset_index(drop=True)
 
-    _, bld_c, nodes, edges = egz.load_osm()
+    _, bld_c, nodes, edges = feat.load_osm()
     pts = gpd.GeoDataFrame(m, geometry=gpd.points_from_xy(m.longitude, m.latitude),
                            crs='EPSG:4326').to_crs(CRS_M)
-    feats = egz.morphology(pts, bld_c, nodes, edges)
+    feats = feat.morphology(pts, bld_c, nodes, edges)
 
     df = pd.concat([m, feats], axis=1)
     df['x'] = pts.geometry.x.values

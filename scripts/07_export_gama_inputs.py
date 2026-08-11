@@ -60,38 +60,28 @@ import numpy as np
 import osmnx as ox
 import pandas as pd
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(ROOT, 'outputs', 'gama_inputs')
-MAP_DIR = os.path.join(ROOT, 'outputs', 'hanoi')
-PROC = os.path.join(ROOT, 'data', 'processed', 'hanoi')
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-MODEL = os.path.join(ROOT, 'outputs', 'models', 'surrogate_lgbm_hanoi_direct.txt')
-RESID_MODEL = os.path.join(ROOT, 'outputs', 'models', 'hybrid_residual_lgbm.txt')
-PHYS_JSON = os.path.join(ROOT, 'outputs', 'models', 'hybrid_physical.json')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+OUT_DIR = cfg.GAMA_INPUTS
+MAP_DIR = cfg.MAPS
+PROC = cfg.INTERIM
+MEASURES = cfg.MEASUREMENTS
+MODEL = cfg.FINAL_MODEL
+RESID_MODEL = cfg.RESID_MODEL
+PHYS_JSON = cfg.PHYS_JSON
 COUNTS = os.path.join(PROC, 'vehicle_counts.csv')
 
-CRS_M = 'EPSG:32648'          # UTM 48N (mètres)
-R = 300                        # rayon des features de morphologie
-AREA_M2 = np.pi * R ** 2
+# Feature construction now lives in the package, so that 04_evaluate_models.py,
+# 03_build_features.py and this script share one definition.
+from noise_hanoi.features import (
+    CRS_M, R, AREA_M2, FEATURES, FEATURES2, MAJOR_HW, FAR_M,
+    load_osm, classify_roads, morphology, add_time_features)
 GRID_M = 40                    # pas de la grille de prédiction (mètres)
 MARGIN_M = 400                 # marge autour de l'emprise des mesures de chaque site
-FEATURES = ['built_area_ratio', 'road_density_km_km2', 'intersection_count',
-            'dist_road_m', 'hour', 'is_weekend']                       # v1 (archivé)
-FEATURES2 = ['built_area_ratio', 'road_density_km_km2', 'intersection_count',
-             'dist_highway_m', 'dist_residential_m',
-             'hour_sin', 'hour_cos', 'is_weekend']                     # v2 (résidu hybride)
 HOURS = list(range(5, 22))     # 5h-21h : fenêtre de collecte réelle
 REF_HOUR = 17                  # heure de référence du format plat (pointe du soir)
 SLUGS = {'Hoan Kiem lake': 'hoankiem', 'Ocean Park': 'oceanpark', 'Vinh Tuy area': 'vinhtuy'}
-
-
-def load_osm():
-    bld = gpd.read_file(os.path.join(PROC, 'hanoi_sites_buildings.gpkg')).to_crs(CRS_M)
-    bld['area_m2'] = bld.geometry.area
-    bld_c = bld.set_geometry(bld.geometry.centroid)
-    G = ox.load_graphml(os.path.join(PROC, 'hanoi_sites_roads.graphml'))
-    nodes, edges = ox.graph_to_gdfs(G)
-    return bld, bld_c, nodes.to_crs(CRS_M).reset_index(drop=True), edges.to_crs(CRS_M).reset_index(drop=True)
 
 
 def site_zones():
@@ -108,77 +98,6 @@ def grid_for(bounds):
     minx, miny, maxx, maxy = bounds
     xx, yy = np.meshgrid(np.arange(minx, maxx, GRID_M), np.arange(miny, maxy, GRID_M))
     return pd.DataFrame({'x': xx.ravel(), 'y': yy.ravel()})
-
-
-# Séparation des voiries en deux classes acoustiques (v2, août 2026).
-# Motivation : `dist_road_m` mélangeait une nationale à 4 voies et une ruelle résidentielle,
-# alors que leur puissance acoustique par mètre linéaire diffère d'un ordre de grandeur.
-# La distance à la source ne veut rien dire si on ne sait pas de quelle source il s'agit.
-# `tertiary` est rangé avec les petites rues : en zone dense hanoïenne c'est un
-# distributeur local, pas un axe traversant. Ce choix est un PARAMÈTRE du modèle, pas une
-# vérité : le déplacer dans MAJOR_HW change la définition des deux variables.
-MAJOR_HW = {'motorway', 'trunk', 'primary', 'secondary',
-            'motorway_link', 'trunk_link', 'primary_link', 'secondary_link'}
-FAR_M = 2000.0     # distance de repli quand une classe est absente de la zone
-
-
-def classify_roads(edges):
-    """Sépare le réseau en (grands axes, petites rues) selon le tag OSM `highway`."""
-    hw = edges['highway'].apply(lambda v: v[0] if isinstance(v, list) else v)
-    is_major = hw.isin(MAJOR_HW)
-    return edges[is_major], edges[~is_major]
-
-
-def _dist_to(pts_gdf, lines):
-    """Distance de chaque point à la ligne la plus proche du jeu `lines`."""
-    if lines is None or len(lines) == 0:
-        return np.full(len(pts_gdf), FAR_M)
-    near = gpd.sjoin_nearest(pts_gdf[['geometry']], lines[['geometry']], distance_col='d')
-    d = near.groupby(near.index)['d'].min().reindex(range(len(pts_gdf))).values
-    return np.nan_to_num(d, nan=FAR_M)
-
-
-def morphology(pts_gdf, bld_c, nodes, edges):
-    """Mêmes features que le notebook 08, plus la séparation des distances par classe
-    de voirie (v2). `dist_road_m` est conservée : les protocoles de comparaison de
-    scripts/evaluate_models.py la référencent comme baseline physique historique."""
-    buf = gpd.GeoDataFrame({'pt_id': range(len(pts_gdf))},
-                           geometry=pts_gdf.geometry.buffer(R), crs=CRS_M)
-    jb = gpd.sjoin(bld_c[['geometry', 'area_m2']], buf, predicate='within')
-    area_sum = jb.groupby('pt_id')['area_m2'].sum()
-    built = np.minimum(np.array([area_sum.get(i, 0) for i in range(len(pts_gdf))]) / AREA_M2, 1.0)
-
-    jr = gpd.sjoin(edges[['geometry']], buf, predicate='intersects')
-    rl = jr.groupby('pt_id').apply(lambda g: g.geometry.length.sum())
-    road_km = np.array([(rl.get(i, 0) / 1000) / (AREA_M2 / 1e6) for i in range(len(pts_gdf))])
-
-    jn = gpd.sjoin(nodes[['geometry']], buf, predicate='within').groupby('pt_id').size()
-    inter = np.array([jn.get(i, 0) for i in range(len(pts_gdf))])
-
-    major, minor = classify_roads(edges)
-    dist = _dist_to(pts_gdf, edges)
-    dist_hw = _dist_to(pts_gdf, major)
-    dist_res = _dist_to(pts_gdf, minor)
-
-    return pd.DataFrame({'built_area_ratio': built, 'road_density_km_km2': road_km,
-                         'intersection_count': inter, 'dist_road_m': dist,
-                         'dist_highway_m': dist_hw, 'dist_residential_m': dist_res})
-
-
-def add_time_features(feats, hour, is_weekend=0):
-    """Heure en variables CYCLIQUES + weekend.
-
-    L'heure brute 0-23 impose au modèle une discontinuité artificielle entre 23 h et 0 h,
-    et force un arbre à découper une variable qui est en réalité circulaire. sin/cos sur
-    24 h rétablit la continuité : 23 h et 0 h deviennent voisines dans l'espace des
-    features. `hour` est conservée pour les baselines (table site x heure) qui s'en servent
-    comme clé de groupement.
-    """
-    feats['hour'] = hour
-    feats['hour_sin'] = np.sin(2 * np.pi * np.asarray(hour) / 24.0)
-    feats['hour_cos'] = np.cos(2 * np.pi * np.asarray(hour) / 24.0)
-    feats['is_weekend'] = is_weekend
-    return feats
 
 
 def fleet_by_hour():
@@ -241,7 +160,7 @@ def construction_sites():
     chantier à proximité sont +2 dB au-dessus des autres (n=32 vs 152) ; pendant
     la session de 15 h où un chantier était actif et bruyant, l'écart atteint +10 dB.
     """
-    files = glob.glob(os.path.join(ROOT, 'data', 'raw', 'hanoi', '*onstruction*.csv'))
+    files = glob.glob(os.path.join(cfg.KOBO_DIR, '*onstruction*.csv'))
     if not files:
         return None
     raw = pd.read_csv(max(files), sep=';')
