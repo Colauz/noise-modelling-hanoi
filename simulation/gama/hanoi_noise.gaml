@@ -158,7 +158,7 @@ global {
     // Mitigation scenarios (Phase 4):
     //   "zone 30"       -> speed reduced 50->30 km/h: -3 dB (literature range -2 to -4)
     //   "pietonnisation"-> traffic reduced to 20%: -7 dB via 10*log10(0.2)
-    string mitigation        <- "aucune" among: ["aucune", "zone 30", "pietonnisation"];
+    string mitigation        <- "none" among: ["none", "zone 30", "pietonnisation"];
     // Construction sites: activity hours (scenario "extended hours" = widen the range)
     bool  construction_on    <- true;
     int   work_start         <- 7  min: 5 max: 12;
@@ -281,8 +281,8 @@ global {
     int   spawned_total  <- 0;
 
     init {
-        zone_label <- (zone = "oceanpark") ? "Ocean Park (nouveau tissu urbain)"
-            : ((zone = "hoankiem") ? "Hoan Kiem (vieux quartier)" : "Vinh Tuy (corridor de transport)");
+        zone_label <- (zone = "oceanpark") ? "Ocean Park (new urban fabric)"
+            : ((zone = "hoankiem") ? "Hoan Kiem (old quarter)" : "Vinh Tuy (transport corridor)");
         string site_key <- (zone = "oceanpark") ? "Ocean Park"
             : ((zone = "hoankiem") ? "Hoan Kiem lake" : "Vinh Tuy area");
 
@@ -355,9 +355,9 @@ global {
             d_road <- (r = nil) ? 1e6 : (self distance_to r);
         }
 
-        write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cellules, "
-            + string(length(Road)) + " routes, " + string(length(Building)) + " batiments, "
-            + string(n_constr) + " chantiers, " + string(length(Measure)) + " mesures terrain.";
+        write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cells, "
+            + string(length(Road)) + " roads, " + string(length(Building)) + " buildings, "
+            + string(n_constr) + " construction sites, " + string(length(Measure)) + " field measurements.";
         // Corridor into which measured flow is injected: the streets near our measurement
         // points, that is, where the videos were actually filmed.
         if (!empty(Measure)) {
@@ -370,25 +370,25 @@ global {
         // Startup trace: says immediately whether the physical kernel and the flows were
         // loaded correctly. Without it, a missing CSV produced a silent
         // fallback (50/50 share, zero flow) indistinguishable from a real result.
-        write "  physique : " + (phys_ok
+        write "  physics  : " + (phys_ok
                 ? "A_hw=" + string(A_HW with_precision 0) + " A_res=" + string(A_RES with_precision 0)
-                  + " B=" + string(B_BG) + " -> part grands axes moyenne "
+                  + " B=" + string(B_BG) + " -> mean major-road share "
                   + string((mean(NoisePoint collect each.share_hw)) with_precision 3)
                 : "NON CHARGEE (repli 50/50) - lancer scripts/export_gama_zones.py");
         do sync_fleet;
-        write "  trafic   : debit mesure " + string(flow_now with_precision 1) + " veh/min a "
-            + string(hour_of_day) + "h (dont motos " + string(flow_moto_now with_precision 1)
-            + ", part " + string(moto_share_now with_precision 2) + ") - source "
+        write "  traffic  : measured flow " + string(flow_now with_precision 1) + " veh/min at "
+            + string(hour_of_day) + "h (of which motorcycles " + string(flow_moto_now with_precision 1)
+            + ", share " + string(moto_share_now with_precision 2) + ") - source "
             + traffic_source;
-        write "  corridor : " + string(length(spawn_roads)) + " rues sur " + string(length(Road))
-            + " portent ce debit (a moins de " + string(int(FLOW_RADIUS)) + " m d'une mesure)";
+        write "  corridor : " + string(length(spawn_roads)) + " of " + string(length(Road)) + " roads"
+            + " carry this flow (within " + string(int(FLOW_RADIUS)) + " m of a measurement)";
     }
 
     // ---- reads the measured FLOW for (zone, hour) and derives the flow composition ----
     // No longer adjusts any population: the number of agents is now a CONSEQUENCE
     // of the flow (see `reflex spawn_traffic`), not an imposed target.
     action sync_fleet {
-        traffic_source <- (fleet_meas[hour_of_day] = 1) ? "mesure (videos)" : "interpole";
+        traffic_source <- (fleet_meas[hour_of_day] = 1) ? "measured (videos)" : "interpolated";
         // flow measured at this hour, scaled by the scenario: this is THE quantity
         // driving the simulation, and the one to quote when speaking of traffic intensity.
         flow_now      <- (fleet_flow[hour_of_day] = nil) ? 0.0
@@ -670,23 +670,23 @@ species Vehicle skills: [moving] {
 
 // ============================================================================
 experiment hanoi_noise_sim type: gui {
-    parameter "Site (APPUYER SUR ⟳ RELANCER après changement)" var: target_zone
-              category: "1 · Zone";
-    parameter "Heure de la journée" var: hour_of_day category: "2 · Scénario";
-    parameter "Facteur de trafic (1.0 = observé)" var: traffic_multiplier category: "2 · Scénario";
-    parameter "Mitigation" var: mitigation category: "2 · Scénario";
-    parameter "Chantiers actifs" var: construction_on category: "2 · Scénario";
-    parameter "Chantier : début" var: work_start category: "2 · Scénario";
-    parameter "Chantier : fin (horaires étendus)" var: work_end category: "2 · Scénario";
-    parameter "Densité d'affichage du trafic (sections équivalentes)" var: FLOW_LINES_EQUIV
-              category: "2 · Scénario";
-    parameter "Rayon du corridor mesuré (m) — relancer" var: FLOW_RADIUS
-              category: "2 · Scénario";
-    parameter "Afficher les véhicules" var: show_vehicles category: "3 · Affichage";
-    parameter "Afficher nos points de mesure" var: show_measures category: "3 · Affichage";
+    parameter "Site (PRESS RELOAD AFTER CHANGING)" var: target_zone
+              category: "1 - Zone";
+    parameter "Hour of day" var: hour_of_day category: "2 - Scenario";
+    parameter "Traffic factor (1.0 = observed)" var: traffic_multiplier category: "2 - Scenario";
+    parameter "Mitigation" var: mitigation category: "2 - Scenario";
+    parameter "Construction sites active" var: construction_on category: "2 - Scenario";
+    parameter "Construction: start hour" var: work_start category: "2 - Scenario";
+    parameter "Construction: end hour (extended hours)" var: work_end category: "2 - Scenario";
+    parameter "Traffic display density (equivalent sections)" var: FLOW_LINES_EQUIV
+              category: "2 - Scenario";
+    parameter "Measured corridor radius (m) - reload" var: FLOW_RADIUS
+              category: "2 - Scenario";
+    parameter "Show vehicles" var: show_vehicles category: "3 · Affichage";
+    parameter "Show our measurement points" var: show_measures category: "3 · Affichage";
 
     output {
-        display "Carte de bruit" type: opengl background: rgb(250, 250, 248) {
+        display "Noise map" type: opengl background: rgb(250, 250, 248) {
             species NoisePoint aspect: default;
             species Building aspect: default;
             species Road aspect: default;
@@ -700,70 +700,70 @@ experiment hanoi_noise_sim type: gui {
                      font: font("Helvetica", 13, #bold);
                 draw zone_label at: {14 #px, 42 #px} color: rgb(80, 80, 80)
                      font: font("Helvetica", 10, #plain);
-                draw string(hour_of_day) + "h00   ·   trafic x" + string(traffic_multiplier with_precision 1)
+                draw string(hour_of_day) + "h00   -   traffic x" + string(traffic_multiplier with_precision 1)
                      at: {14 #px, 62 #px} color: rgb(20, 20, 20) font: font("Helvetica", 12, #bold);
 
-                draw "NIVEAU PREDIT  L (dB)" at: {14 #px, 88 #px} color: rgb(20, 20, 20)
+                draw "PREDICTED LEVEL  L (dB)" at: {14 #px, 88 #px} color: rgb(20, 20, 20)
                      font: font("Helvetica", 9, #bold);
                 draw "= < 50" at: {14 #px, 106 #px} color: rgb(26, 152, 80) font: font("Helvetica", 10, #bold);
-                draw "= 50 - 55    (< QCVN nuit)" at: {14 #px, 122 #px} color: rgb(102, 189, 99) font: font("Helvetica", 10, #bold);
+                draw "= 50 - 55    (< QCVN night)" at: {14 #px, 122 #px} color: rgb(102, 189, 99) font: font("Helvetica", 10, #bold);
                 draw "= 55 - 60" at: {14 #px, 138 #px} color: rgb(150, 200, 80) font: font("Helvetica", 10, #bold);
                 draw "= 60 - 65" at: {14 #px, 154 #px} color: rgb(225, 195, 60) font: font("Helvetica", 10, #bold);
                 draw "= 65 - 70" at: {14 #px, 170 #px} color: rgb(253, 174, 60) font: font("Helvetica", 10, #bold);
-                draw "= 70 - 75    (> QCVN jour)" at: {14 #px, 186 #px} color: rgb(230, 90, 45) font: font("Helvetica", 10, #bold);
+                draw "= 70 - 75    (> QCVN day)" at: {14 #px, 186 #px} color: rgb(230, 90, 45) font: font("Helvetica", 10, #bold);
                 draw "= 75 - 80" at: {14 #px, 202 #px} color: rgb(190, 35, 35) font: font("Helvetica", 10, #bold);
                 draw "= > 80" at: {14 #px, 218 #px} color: rgb(126, 20, 40) font: font("Helvetica", 10, #bold);
 
-                draw "VEHICULES  (mix mesure par video)" at: {14 #px, 244 #px} color: rgb(20, 20, 20)
+                draw "VEHICLES  (mix measured from video)" at: {14 #px, 244 #px} color: rgb(20, 20, 20)
                      font: font("Helvetica", 9, #bold);
-                draw "o moto" at: {14 #px, 262 #px} color: rgb(255, 140, 0) font: font("Helvetica", 10, #bold);
-                draw "o voiture" at: {90 #px, 262 #px} color: rgb(20, 90, 190) font: font("Helvetica", 10, #bold);
-                draw "o bus/camion" at: {175 #px, 262 #px} color: rgb(95, 35, 130) font: font("Helvetica", 10, #bold);
+                draw "o motorcycle" at: {14 #px, 262 #px} color: rgb(255, 140, 0) font: font("Helvetica", 10, #bold);
+                draw "o car" at: {90 #px, 262 #px} color: rgb(20, 90, 190) font: font("Helvetica", 10, #bold);
+                draw "o bus/truck" at: {175 #px, 262 #px} color: rgb(95, 35, 130) font: font("Helvetica", 10, #bold);
 
-                draw "Chantiers: " + string(n_constr) + (constr_active ? " actifs" : " arretes")
+                draw "Construction: " + string(n_constr) + (constr_active ? " active" : " idle")
                      + "   Mitigation: " + mitigation
                      at: {14 #px, 274 #px} color: rgb(60, 60, 60) font: font("Helvetica", 9, #plain);
-                draw "Fond : modele ML (cf. metrics.json) · trafic : 147 videos"
+                draw "Background: model (see metrics.json) - traffic: 147 videos"
                      at: {14 #px, 286 #px} color: rgb(130, 130, 130) font: font("Helvetica", 8, #plain);
             }
         }
 
-        display "Indicateurs" type: java2D background: #white {
-            chart "Exposition (% de la zone)" type: series size: {1.0, 0.5} position: {0.0, 0.0}
+        display "Indicators" type: java2D background: #white {
+            chart "Exposure (% of zone)" type: series size: {1.0, 0.5} position: {0.0, 0.0}
                   y_range: [0, 100] {
-                data "> QCVN jour 70 dB" value: exceed_qcvn color: rgb(200, 40, 40) marker: false thickness: 2.5;
-                data "> QCVN nuit 55 dB" value: exceed_night color: rgb(80, 80, 80) marker: false thickness: 2.0;
+                data "> QCVN day 70 dB" value: exceed_qcvn color: rgb(200, 40, 40) marker: false thickness: 2.5;
+                data "> QCVN night 55 dB" value: exceed_night color: rgb(80, 80, 80) marker: false thickness: 2.0;
             }
-            chart "Niveau moyen de la zone (dB)" type: series size: {1.0, 0.5} position: {0.0, 0.5} {
-                data "L moyen" value: mean_dB color: rgb(30, 110, 180) marker: false thickness: 2.5;
+            chart "Zone mean level (dB)" type: series size: {1.0, 0.5} position: {0.0, 0.5} {
+                data "Mean L" value: mean_dB color: rgb(30, 110, 180) marker: false thickness: 2.5;
                 data "seuil QCVN" value: qcvn_day color: rgb(200, 40, 40) marker: false thickness: 1.0;
             }
         }
 
         monitor "Zone" value: zone_label;
-        monitor "Heure" value: string(hour_of_day) + "h00";
-        monitor "Trafic à cette heure" value: traffic_source;
-        monitor "Facteur de trafic" value: traffic_multiplier;
+        monitor "Hour" value: string(hour_of_day) + "h00";
+        monitor "Traffic at this hour" value: traffic_source;
+        monitor "Traffic factor" value: traffic_multiplier;
         monitor "Mitigation" value: mitigation;
-        monitor "Chantiers (actifs ?)" value: string(n_constr) + (constr_active ? " · actifs" : " · arretes");
-        monitor "L moyen < 200 m d'un chantier" value: constr_zone_dB with_precision 1;
-        monitor "Débit MESURÉ (véh/min)" value: flow_now with_precision 1;
-        monitor "dont motos (véh/min)" value: flow_moto_now with_precision 1;
-        monitor "Part motos dans le FLUX" value: moto_share_now with_precision 2;
+        monitor "Construction sites (active?)" value: string(n_constr) + (constr_active ? " · actifs" : " · arretes");
+        monitor "Mean L within 200 m of a construction site" value: constr_zone_dB with_precision 1;
+        monitor "MEASURED flow (veh/min)" value: flow_now with_precision 1;
+        monitor "of which motorcycles (veh/min)" value: flow_moto_now with_precision 1;
+        monitor "Motorcycle share of FLOW" value: moto_share_now with_precision 2;
         // An instructive contrast: the motorcycle share in DENSITY (what is seen on one
         // frame) differs from their share in the FLOW (what actually passes). At Hoan
         // Kiem: 0.64 in density against 0.82 in flow - motorcycles move, cars
         // are parked or move more slowly. This is the heart of the v2 distinction.
-        monitor "  (rappel) part motos en DENSITÉ" value: (fleet_moto[hour_of_day] = nil)
+        monitor "  (for contrast) motorcycle share of DENSITY" value: (fleet_moto[hour_of_day] = nil)
                 ? 0.0 : fleet_moto[hour_of_day] with_precision 2;
-        monitor "Rues portant le débit (corridor mesuré)" value: length(spawn_roads);
-        monitor "Véhicules présents (émergent)" value: n_vehicles;
-        monitor "Véhicules créés (cumul)" value: spawned_total;
-        monitor "L moyen (dB)" value: mean_dB with_precision 1;
-        monitor "L max (dB)" value: peak_dB with_precision 1;
-        monitor "% zone > QCVN jour (70 dB)" value: exceed_qcvn with_precision 1;
-        monitor "% zone > QCVN nuit (55 dB)" value: exceed_night with_precision 1;
-        monitor "Ambiance residuelle (dB)" value: ambient_dB with_precision 1;
+        monitor "Roads carrying the flow (measured corridor)" value: length(spawn_roads);
+        monitor "Vehicles present (emergent)" value: n_vehicles;
+        monitor "Vehicles created (cumulative)" value: spawned_total;
+        monitor "Mean L (dB)" value: mean_dB with_precision 1;
+        monitor "Max L (dB)" value: peak_dB with_precision 1;
+        monitor "% of zone > QCVN day (70 dB)" value: exceed_qcvn with_precision 1;
+        monitor "% of zone > QCVN night (55 dB)" value: exceed_night with_precision 1;
+        monitor "Residual ambience (dB)" value: ambient_dB with_precision 1;
     }
 }
 
