@@ -1,22 +1,38 @@
-"""
-Expériences de transfert : modèle Uganda → Barcelone (Xarxa de Soroll).
+"""Uganda -> Barcelona transfer experiments. CLOSED DEAD END -- NOT RUNNABLE.
 
-Répétition générale du transfert Kampala → Hanoï, sur une ville où on a la
-vérité terrain (réseau de capteurs municipaux + 4 mois de LAeq à la minute).
+STATUS
+    Not runnable as it stands. It is kept because the reasoning it encodes is
+    reusable, not because it works.
 
-Expériences :
-  A. Transfert brut    : modèle Uganda appliqué tel quel sur Barcelone
-  B. Transfert + offset: calibration sur 30% des capteurs, éval sur les 70% restants
-                         (exactement le protocole prévu pour Hanoï)
-  C. Benchmark direct  : LightGBM entraîné sur Barcelone (split par capteur),
-                         à comparer au R² 0.61 / r 0.66 du pipeline Barcelone
-                         cité par les profs [6]
+MISSING INPUT
+    The Barcelona open data it expects is not in the repository and never was:
+        data/raw/barcelona/XarxaSoroll_EquipsMonitor_Instal.csv
+        data/raw/barcelona/*_XarxaSoroll_EqMonitor_Dades_1Min.zip   (1+ month)
+    Source: Barcelona Open Data, "Xarxa de Soroll" sensor network. Re-downloading
+    it is the first step for anyone reviving this script.
 
-Données attendues :
-  data/raw/barcelona/XarxaSoroll_EquipsMonitor_Instal.csv
-  data/raw/barcelona/*_XarxaSoroll_EqMonitor_Dades_1Min.zip  (1+ mois)
+WHAT WAS ATTEMPTED
+    A dress rehearsal of the Kampala -> Hanoi transfer, on a city where ground
+    truth exists (municipal sensor network, 4 months of minute LAeq):
+      A. Raw transfer      -- the Uganda model applied as is to Barcelona
+      B. Transfer + offset -- calibrate on 30% of sensors, evaluate on the other
+                              70%, the protocol then planned for Hanoi
+      C. Direct benchmark  -- LightGBM trained on Barcelona, split by sensor
 
-Usage : python3 scripts/barcelona_transfer.py   (depuis la racine du repo)
+WHY IT WAS ABANDONED
+    Cross-city transfer failed on its own terms: a morphology -> noise model
+    pretrained on Uganda scores R2 < 0 on Hanoi even with convention-invariant
+    features. Barcelona would have measured how far a transfer can be rescued by
+    an offset; once the Hanoi answer came back negative, and the project pivoted
+    to a methodological study on the data in hand, the question stopped being on
+    the critical path. See docs/negative-results.md.
+
+WHAT IT WOULD TAKE TO REVIVE IT
+    1. Re-download the two Barcelona datasets into data/raw/barcelona/.
+    2. Repoint its paths at noise_hanoi.config like the numbered scripts.
+    3. Load the Uganda model from the text booster, not the removed pickle.
+    4. Decide what the answer would change. If cross-city transfer stays out of
+       scope, this file is documentation, not code.
 """
 import glob
 import os
