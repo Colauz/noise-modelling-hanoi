@@ -34,9 +34,9 @@ from noise_hanoi import config as cfg
 
 # Seuils QCVN 26:2010/BTNMT, zone ordinaire. Aucune valeur OMS : voir docstring.
 QCVN_D, QCVN_N = 70, 55
-# Fourchette de biais absolu plausible de nos smartphones, estimée par ancrage sur la
-# littérature instrumentée (scripts/06_anchor_literature.py). Sert à borner la sensibilité
-# des taux de dépassement. Mise à jour automatique si le CSV d'ancrage existe.
+# Plausible absolute bias range of our smartphones, estimated by anchoring on the
+# instrumented literature (scripts/06_anchor_literature.py). Used to bound the
+# sensitivity of the exceedance rates. Updated automatically if the anchoring CSV exists.
 BIAS_LO, BIAS_HI = -3.0, 3.0
 _anch = os.path.join(cfg.TABLES, 'literature_anchoring.csv')
 if os.path.exists(_anch):
@@ -51,7 +51,7 @@ MEAS = cfg.MEASUREMENTS
 if not os.path.exists(MEAS):
     raise SystemExit(
         f'Manque {MEAS}.\n'
-        '  -> déposer l\'export Kobo brut dans data/raw/hanoi/, puis :\n'
+        '  -> drop the raw Kobo export into data/raw/kobo/, then:\n'
         '     python3 scripts/01_prepare_field_data.py')
 df = pd.read_csv(MEAS, parse_dates=['timestamp'])
 df['hour'] = df.timestamp.dt.hour
@@ -66,23 +66,23 @@ date_min, date_max = df.timestamp.min().strftime('%d %b'), df.timestamp.max().st
 exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
-# ---- métriques modèle : LUES depuis metrics.json (scripts/04_evaluate_models.py) ----
+# ---- model metrics: READ from metrics.json (scripts/04_evaluate_models.py) ----
 MPATH = cfg.METRICS_JSON
 if not os.path.exists(MPATH):
     raise SystemExit(
         f'Manque {MPATH}.\n'
         '  -> python3 scripts/04_evaluate_models.py\n'
-        '     (le rapport ne contient plus de métriques codées en dur : elles doivent\n'
-        '      venir d\'une évaluation réellement exécutée)')
+        '     (the report no longer holds hardcoded metrics: they must come from\n'
+        '      an evaluation that was actually run)')
 METRICS = json.load(open(MPATH))
-REF = METRICS['meta']['headline_protocol']          # 'bloo' de préférence
+REF = METRICS['meta']['headline_protocol']          # 'bloo' when available
 REFLABEL = METRICS[REF]['label']
 MODELS = METRICS[REF]['models']
 GAIN = METRICS[REF]['morphology_gain']
 PERSITE = METRICS['loso_per_site']
-# Le modèle LIVRÉ est l'hybride depuis août 2026 ; on retombe sur le LightGBM v1 si le
-# JSON vient d'un run antérieur, pour que le rapport reste constructible sur d'anciennes
-# sorties archivées.
+# The DELIVERED model is read from meta; we fall back to LightGBM v1 if the JSON
+# comes from an earlier run, so that the report stays buildable on archived
+# outputs.
 DELIVERED = METRICS['meta'].get('delivered_model',
                                 'hybrid' if 'hybrid' in MODELS else 'lgbm_full')
 HEAD = MODELS[DELIVERED]
@@ -111,7 +111,7 @@ def styled_table(ax, rows, highlight=None, foot=False, colWidths=None,
 os.makedirs(cfg.REPORT_DIR, exist_ok=True)
 pp = PdfPages(cfg.REPORT_PDF)
 
-# ================= PAGE 1 : couverture + objectif + données =================
+# ================= PAGE 1: cover + objective + data =================
 fig = plt.figure(figsize=(8.27, 11.69))
 fig.text(.5, .94, 'Hanoi Urban Noise Mapping', ha='center', fontsize=21, weight='bold')
 fig.text(.5, .908, 'Data Collection Report', ha='center', fontsize=14, color='#555')
@@ -170,7 +170,7 @@ fig.text(.08, .315, f'Headline findings: median {df.noise_dB.median():.0f} dB; {
          fontsize=9.5, va='top', linespacing=1.6)
 footer(fig, 1); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 2 : méthodologie =================
+# ================= PAGE 2: methodology =================
 fig = plt.figure(figsize=(8.27, 11.69))
 fig.text(.08, .95, '3.  Methodology', fontsize=14, weight='bold')
 
@@ -245,7 +245,7 @@ fig.text(.08, .045, 'Night coverage is very thin (n = '
          fontsize=8, color='#8a4b08', style='italic', va='bottom', linespacing=1.4)
 footer(fig, 3); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 4 : sources + dépassements =================
+# ================= PAGE 4: sources + exceedances =================
 fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(top=.92, bottom=.10, hspace=.32, wspace=.28)
 fig.text(.08, .955, '4.  Data analysis: sources & exceedances', fontsize=14, weight='bold', transform=fig.transFigure)
 ax1 = fig.add_subplot(2, 2, 1)
@@ -261,8 +261,8 @@ for i, s in enumerate(SITES):
 ax2.axhline(QCVN_D, ls='--', c='red', alpha=.6); ax2.set_xticks(range(len(SITES)))
 ax2.set_xticklabels([s.split()[0] for s in SITES], fontsize=8); ax2.set_title('Median dB by site', fontsize=10); ax2.legend(fontsize=7.5); ax2.grid(alpha=.3)
 ax3 = fig.add_subplot(2, 1, 2)
-# (calculé sans groupby.apply : le comportement de apply sur la colonne de
-#  groupement a changé en pandas 3.0 et cassait le rapport)
+# (computed without groupby.apply: the behaviour of apply on the grouping column
+#  changed in pandas 3.0 and broke the report)
 pe = (100 * df.assign(_ex=df.noise_dB > df['limit']).groupby('hour')['_ex'].mean())
 ax3.bar(pe.index, pe.values, color=['#c0392b' if v>50 else '#e67e22' if v>0 else '#27ae60' for v in pe.values])
 ax3.set_xlabel('Hour'); ax3.set_ylabel('% measurements > QCVN')
@@ -270,8 +270,8 @@ ax3.set_xlim(4.5, 23.5); ax3.set_xticks(range(5, 24, 2))
 ax3.set_title('Share of short samples above the QCVN threshold value, by hour', fontsize=11)
 ax3.grid(alpha=.3)
 
-# Sensibilité au biais de calibration : le seuil de 70 dB tombe au milieu de notre
-# distribution, un décalage de quelques dB change fortement le pourcentage.
+# Sensitivity to the calibration bias: the 70 dB threshold falls in the middle of our
+# distribution, so a shift of a few dB changes the percentage substantially.
 exc_lo = 100 * ((df.noise_dB + BIAS_LO) > df['limit']).mean()
 exc_hi = 100 * ((df.noise_dB + BIAS_HI) > df['limit']).mean()
 fig.text(.08, .045,
@@ -284,7 +284,7 @@ fig.text(.08, .045,
          fontsize=8.5, va='bottom', color='#8a4b08', linespacing=1.5)
 footer(fig, 4); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 5 : vidéos trafic (CV) + météo =================
+# ================= PAGE 5: traffic videos (CV) + weather =================
 VC = cfg.VEHICLE_COUNTS
 if os.path.exists(VC):
     vc = pd.read_csv(VC, parse_dates=['video_start', 'matched_timestamp'])
@@ -316,8 +316,8 @@ if os.path.exists(VC):
     ax1.set_ylabel('Mean vehicles per frame'); ax1.set_title('Traffic composition by site', fontsize=10)
     ax1.legend(fontsize=8); ax1.grid(alpha=.3, axis='y')
 
-    # On trace le DÉBIT dès qu'il est disponible : c'est la grandeur physiquement liée à
-    # l'émission, donc celle sur laquelle le lecteur doit juger l'absence de relation.
+    # We plot FLOW whenever it is available: it is the quantity physically linked to
+    # emission, so it is the one on which the reader should judge the absence of a relation.
     _xcol = 'vehicles_flow' if HASFLOW else 'vehicles_mean'
     ax2 = fig.add_subplot(1, 2, 2)
     for s in vc.site.dropna().unique():
@@ -330,8 +330,8 @@ if os.path.exists(VC):
                   fontsize=10)
     ax2.legend(fontsize=8); ax2.grid(alpha=.3)
 
-    # Aucun de ces chiffres n'est écrit à la main : ils sont recalculés depuis vehicle_counts.csv
-    # à chaque build, sinon le texte se désynchronise du run YOLO (cf. règle du ROADMAP).
+    # None of these figures is written by hand: they are recomputed from vehicle_counts.csv
+    # at every build, otherwise the text drifts from the YOLO run (see CONTRIBUTING.md).
     _sh = 100 * comp.div(comp.sum(axis=1), axis=0)
     _mx = vc.groupby('site').vehicles_mean.max()
     _rs = {s: g.vehicles_mean.corr(g.matched_dB) for s, g in vc.groupby('site')}
@@ -371,7 +371,7 @@ if os.path.exists(VC):
     fig.text(.08, .36, findings, fontsize=9.5, va='top', linespacing=1.55)
     footer(fig, 5); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 6 : modèle, baselines, ablation =================
+# ================= PAGE 6: model, baselines, ablation =================
 fig = plt.figure(figsize=(8.27, 11.69)); fig.subplots_adjust(left=.08, right=.92)
 fig.text(.08, .95, '5.  Predictive model', fontsize=14, weight='bold')
 fig.text(.08, .915, f'Seven models compared on identical splits. Delivered: {HEAD["label"]}.',
@@ -391,9 +391,9 @@ fig.text(.08, .84,
 
 fig.text(.08, .715, f'5.2  Model comparison - {REFLABEL}', fontsize=11.5,
          weight='bold', color='#34495e')
-# `site_mean` et `lgbm_time` sont omis de CETTE table (place limitée sur la page) : ils
-# restent dans outputs/models/model_comparison.md, cité juste en dessous. `global_mean`
-# est conservé : c'est le plancher qui donne son sens à un R² négatif.
+# `site_mean` and `lgbm_time` are omitted from THIS table (limited space on the page);
+# they remain in models/model_comparison.md, cited just below. `global_mean`
+# is kept: it is the floor that gives a negative R2 its meaning.
 ORDER = [k for k in ['global_mean', 'site_hour_mean', 'dist_road', 'idw',
                      'lgbm_morpho', 'lgbm_full', 'lgbm_v2',
                      'physical', 'hybrid', 'hybrid_lowcap'] if k in MODELS]
@@ -404,8 +404,8 @@ for k in ORDER:
                   f"[{m['r2_ci95'][0]:.2f}, {m['r2_ci95'][1]:.2f}]",
                   f"{m['mae']:.2f}", f"{m['r']:.2f}"])
 ax = fig.add_axes([.08, .425, .84, .275]); ax.axis('off')
-# On surligne le MEILLEUR modèle sous le protocole de référence, pas le nôtre par défaut :
-# depuis le run d'août 2026 ce n'est plus le LightGBM (cf. negative_results.md §5.z).
+# We highlight the BEST model under the reference protocol, not ours by default:
+# since the August 2026 run that is no longer the LightGBM (see negative-results.md 5.z).
 BEST = max(ORDER, key=lambda k: MODELS[k]['r2'])
 styled_table(ax, mrows, highlight=ORDER.index(BEST) + 1, colWidths=[.47, .11, .19, .12, .11],
              fontsize=8, vscale=1.35)
@@ -414,9 +414,9 @@ _dr = MODELS['dist_road']
 _lo = METRICS.get('loso', {}).get('models', {})
 _bcv = METRICS.get('block_cv', {}).get('models', {})
 _v2 = METRICS[REF].get('v2_gains', {})
-# Le fait saillant n'est pas le score du modèle livré : c'est que le CLASSEMENT s'inverse
-# entre le protocole permissif et les protocoles stricts. On l'écrit avec les deux
-# extrêmes du tableau plutôt qu'avec un modèle nommé en dur.
+# The salient fact is not the delivered model's score: it is that the RANKING inverts
+# between the permissive protocol and the strict ones. We state it with the table's two
+# extremes rather than with a hardcoded model name.
 _hy = MODELS.get('hybrid')
 _key = (f"Key figure - the ranking inverts between protocols. Under the permissive 600 m block "
         f"split the\nelaborate models lead"
@@ -517,7 +517,7 @@ if os.path.exists(VALID_CSV):
         ax.imshow(img)
     footer(fig, 7); pp.savefig(fig); plt.close(fig)
 
-# ================= PAGE 8 : limitations + prochaines étapes =================
+# ================= PAGE 8: limitations + next steps =================
 fig = plt.figure(figsize=(8.27, 11.69))
 fig.text(.08, .95, '7.  Limitations, stated plainly', fontsize=14, weight='bold')
 lim_txt = (
