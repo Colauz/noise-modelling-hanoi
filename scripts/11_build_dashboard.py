@@ -66,7 +66,7 @@ def bar_emphasis(rows, highlight, width=880, row_h=30, pad_l=286, pad_r=64):
     bar: with R2 values near zero, an attached label overlaps the model name and
     becomes unreadable. The zero axis is drawn because negative R2 values exist --
     a negative R2 means "worse than predicting the mean everywhere",
-    c'est une information, pas un artefact.
+    that is information, not an artefact.
     """
     if not rows:
         return ''
@@ -93,7 +93,7 @@ def bar_emphasis(rows, highlight, width=880, row_h=30, pad_l=286, pad_r=64):
         out.append(f'<text x="{width-8}" y="{y+12}" text-anchor="end" '
                    f'class="val{sfx}">{v:+.3f}</text>')
     out.append(f'<text x="{x0:.1f}" y="{h-8}" text-anchor="middle" class="cap">R² = 0 '
-               f'(niveau « moyenne globale »)</text>')
+               f'("global mean" level)</text>')
     out.append('</svg>')
     return '\n'.join(out)
 
@@ -119,7 +119,7 @@ def line_by_hour(fleet, value_col, width=760, height=250):
 
     Three series only, which is the "all pairs" limit validated for the reference
     palette. UNFILMED hours are interpolated: they are drawn
-    en trait discontinu pour que la distinction mesure/estimation reste visible.
+    as a dashed line so the measurement/estimate distinction stays visible.
     """
     if fleet is None or value_col not in fleet.columns:
         return '<p class="note">Flow unavailable: rerun 02_count_vehicles.py then 07_export_gama_inputs.py.</p>'
@@ -131,7 +131,7 @@ def line_by_hour(fleet, value_col, width=760, height=250):
     Y = lambda v: pt + (1 - v / vmax) * (height - pt - pb)
 
     out = [f'<svg viewBox="0 0 {width} {height}" role="img" class="chart" '
-           f'aria-label="Debit de vehicules par heure et par site">']
+           f'aria-label="Vehicle flow by hour and by site">']
     for frac in (0, .5, 1):
         v = vmax * frac
         out.append(f'<line x1="{pl}" y1="{Y(v):.1f}" x2="{width-pr}" y2="{Y(v):.1f}" class="grid"/>')
@@ -147,7 +147,7 @@ def line_by_hour(fleet, value_col, width=760, height=250):
         for _, r in g[g.measured == 1].iterrows():   # points = hours actually filmed
             out.append(f'<circle cx="{X(r.hour):.1f}" cy="{Y(r[value_col]):.1f}" r="4" '
                        f'class="dot s{i+1}"><title>{esc(s)} · {int(r.hour)}h · '
-                       f'{r[value_col]:.1f} veh/min (mesure)</title></circle>')
+                       f'{r[value_col]:.1f} veh/min (measured)</title></circle>')
         last = g.iloc[-1]
         out.append(f'<text x="{width-pr+8}" y="{Y(last[value_col])+4:.1f}" '
                    f'class="dlbl s{i+1}">{esc(s.split()[0])}</text>')
@@ -175,7 +175,7 @@ def build_map(meas, grid):
                 radius=9, blur=12, min_opacity=.30,
                 name=f'Predicted noise (delivered model, {REF_HOUR}h)').add_to(m)
 
-    fg = folium.FeatureGroup(name='Mesures terrain (363 points)')
+    fg = folium.FeatureGroup(name='Field measurements (363 points)')
     lo, hi = meas.noise_dB.quantile([.05, .95])
     for _, r in meas.iterrows():
         t = float(np.clip((r.noise_dB - lo) / ((hi - lo) or 1), 0, 1))
@@ -297,7 +297,7 @@ def main():
             f"[{D['r2_ci95'][0]:.2f}, {D['r2_ci95'][1]:.2f}] · {esc(reflabel)}"),
         kpi(f"{D['mae']:.2f} dB", 'MAE',
             f"IC 95 % [{D['mae_ci95'][0]:.2f}, {D['mae_ci95'][1]:.2f}]"),
-        kpi(f"{M['meta']['n_measurements']}", 'mesures terrain',
+        kpi(f"{M['meta']['n_measurements']}", 'field measurements',
             f"{len(M['meta']['sites'])} sites · {M['meta']['date_min']} → {M['meta']['date_max']}"),
         kpi(f'{len(vc) if vc is not None else 0}', 'videos tracked',
             'YOLOv8 + ByteTrack, franchissement de ligne'),
@@ -345,7 +345,7 @@ def main():
                 f'<em>leave-one-site-out</em> -- generalisation to an urban typology never '
                 f'seen -- the delivered model falls to R2 {loso[delivered]["r2"]:+.3f}, while '
                 f'"{esc(loso[bl]["label"])}" holds at {loso[bl]["r2"]:+.3f}. The physical kernel '
-                f'seul extrapole donc mieux que l\'hybride complet : la correction apprise '
+                f'alone therefore extrapolates better than the full hybrid: the learned correction '
                 f'improves interpolation within the sampled typologies, not '
                 f'extrapolation beyond them. Every published map stays bounded to '
                 f'the measured envelope.</div>')
@@ -376,7 +376,7 @@ def main():
                'reference protocol and writes the <code>apply_residual</code> flag.</p>')
             + '</div>')
 
-    # --- trafic --------------------------------------------------------------------
+    # --- traffic -------------------------------------------------------------------
     flow_col = 'total_flow_per_min' if (
         fleet is not None and 'total_flow_per_min' in fleet.columns) else None
     traffic = ''
@@ -396,7 +396,7 @@ def main():
     except Exception as e:      # the map is a bonus: its failure must not kill the page
         print(f'  map not generated: {e}')
 
-    map_html = (f'<div class="card"><iframe src="{map_src}" title="Carte du bruit" '
+    map_html = (f'<div class="card"><iframe src="{map_src}" title="Noise map" '
                 f'loading="lazy"></iframe><p class="note">Fond de carte CartoDB / '
                 f'OpenStreetMap. The predicted grid is bounded to the envelope actually '
                 f'measured (+400 m): no extrapolation to an unsampled '
@@ -409,7 +409,7 @@ def main():
 <style>{CSS}</style></head><body><div class="wrap">
 
 <h1>Hanoi Urban Noise — tableau de bord</h1>
-<p class="sub">Cartographie du bruit urbain par smartphones · Center for Environmental
+<p class="sub">Smartphone-based urban noise mapping - [AFFILIATION TO CONFIRM],
 Intelligence, VinUniversity</p>
 <p class="meta">Generated on {date.today().isoformat()} - reference protocol:
 {esc(reflabel)} - every metric is read from

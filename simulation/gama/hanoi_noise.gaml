@@ -781,7 +781,7 @@ experiment check type: gui {
         monitor "flow_veh_min" value: flow_now with_precision 2;
         monitor "flow_moto_min" value: flow_moto_now with_precision 2;
         monitor "share_hw_moy" value: mean(NoisePoint collect each.share_hw) with_precision 3;
-        monitor "chantiers" value: n_constr;
+        monitor "construction sites" value: n_constr;
         monitor "constr_actifs" value: constr_active;
         monitor "L_constr_200m" value: constr_zone_dB with_precision 2;
         monitor "L_moyen" value: mean_dB with_precision 2;

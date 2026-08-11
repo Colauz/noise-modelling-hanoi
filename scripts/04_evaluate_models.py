@@ -177,8 +177,8 @@ def m_site_mean(tr, te):
 
 
 def m_site_hour_mean(tr, te):
-    """Table de correspondance (site, heure), repli sur la moyenne du site puis globale.
-    Aucune variable spatiale fine : c'est le baseline que la morphologie doit battre."""
+    """Lookup table (site, hour), falling back to the site mean then the global mean.
+    No fine spatial variable: this is the baseline morphology has to beat."""
     g = tr.groupby(['site', 'hour']).noise_dB.mean()
     site_mu = tr.groupby('site').noise_dB.mean()
     idx = pd.MultiIndex.from_arrays([te.site, te.hour])
@@ -273,7 +273,7 @@ def m_hybrid_lowcap(tr, te):
     question: `hybrid` maximises interpolation within the sampled typologies,
     `hybrid_lowcap` better preserves extrapolation to an unseen typology. Choosing
     one or the other on the CV then used to publish it would be selection on the
-    test : on les rapporte donc toutes les deux, avec leurs deux profils.
+    test set, so both are reported, each with its own profile.
     """
     return m_hybrid(tr, te, cols=RESID_RESTRICTED,
                     params=dict(LGB_RESID, num_leaves=5, n_estimators=120))
@@ -298,7 +298,7 @@ def m_hybrid(tr, te, cols=None, params=None):
 MODELS = {
     'global_mean':    (m_global_mean, 'Moyenne globale'),
     'site_mean':      (m_site_mean, 'Moyenne par site'),
-    'site_hour_mean': (m_site_hour_mean, 'Moyenne par (site, heure)'),
+    'site_hour_mean': (m_site_hour_mean, 'Mean per (site, hour)'),
     'dist_road':      (m_dist_road, 'Regression on log(distance to road)'),
     'idw':            (m_idw, 'Distance inverse (k=8, p=2)'),
     'lgbm_time':      (_lgbm(TIME), 'LightGBM — temps seul (ablation)'),
@@ -388,7 +388,7 @@ def main():
 
     df = load_points()
     y = df.noise_dB.values
-    print(f'{len(df)} mesures · {df.block.nunique()} blocs de {BLOCK_M} m · '
+    print(f'{len(df)} measurements - {df.block.nunique()} blocks of {BLOCK_M} m - '
           f'{df.site.nunique()} sites · dB {y.min():.0f}-{y.max():.0f} (sd {y.std():.1f})')
     print(f'  points per block: median {df.groupby("block").size().median():.0f}, '
           f'max {df.groupby("block").size().max()}')
@@ -477,7 +477,7 @@ def main():
     # It is the one that wins under the REFERENCE PROTOCOL, among a candidate list
     # fixed BEFORE seeing the scores. The August 2026 run showed why that guard
     # is necessary: the full hybrid dominates under block-CV 600 m (the most permissive
-    # permissif) et perd sous les deux protocoles stricts. Le livrer parce qu'il est le
+    # permissive) and loses under both strict protocols. Delivering it because it is the
     # more elaborate one would be exactly the error documented in negative-results.md 5.z.
     print(f'\n=== Delivered model ' + '=' * 47)
     print(f'  choisi sous « {results[REF_PROTO]["label"]} » parmi {len(DELIVERABLE)} candidats')
@@ -571,7 +571,7 @@ def write_markdown(res):
                      f'[{m["mae_ci95"][0]:.2f}, {m["mae_ci95"][1]:.2f}] | {m["r"]:.2f} |')
         g = blk['morphology_gain']
         v2 = blk['v2_gains']
-        L += ['', f'**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : '
+        L += ['', f'**Net contribution of morphology** (LightGBM v1 vs site x hour table): '
                   f'ΔR² = {g["delta_r2"]:+.3f}, ΔMAE = {g["delta_mae_dB"]:+.2f} dB.',
               '', '**Architecture hybride (v2)** :', '',
               f'- ML on the residual vs physical kernel alone: dR2 = '
@@ -596,7 +596,7 @@ def write_markdown(res):
         L += ['## Fitted physical kernel', '',
               f'`{p["form"]}`', '',
               f'- `A_highway` = {p["A_highway"]:.4g} (power per unit length, major roads)',
-              f'- `A_residential` = {p["A_residential"]:.4g} (petites rues)',
+              f'- `A_residential` = {p["A_residential"]:.4g} (minor streets)',
               f'- `B_background` = {p["B_background"]:.4g} (fond non routier)',
               f'- `D0` = {p["D0_m"]:.0f} m (plancher de distance)', '']
     L += ['_A negative R2 means: worse than predicting the global mean everywhere._', '']

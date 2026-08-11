@@ -300,7 +300,7 @@ def main():
             sub = constr.cx[minx:maxx, miny:maxy]
             if len(sub):
                 sub.to_file(os.path.join(OUT_DIR, f'{slug}_construction.shp'))
-                print(f'  {slug:10} {len(sub)} chantier(s)')
+                print(f'  {slug:10} {len(sub)} construction site(s)')
         sm = meas[meas.site == site]
         if len(sm):
             sm.to_file(os.path.join(OUT_DIR, f'{slug}_measurements.shp'))

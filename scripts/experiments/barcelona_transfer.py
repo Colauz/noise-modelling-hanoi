@@ -71,7 +71,7 @@ def energetic_mean(db_series):
 
 # ---------- 1. Measurements: LAeq aggregated by sensor x hour x day type ----------
 zips = sorted(glob.glob('data/raw/barcelona/*Dades_1Min.zip'))
-log(f'{len(zips)} mois de mesures : {[os.path.basename(z) for z in zips]}')
+log(f'{len(zips)} months of measurements: {[os.path.basename(z) for z in zips]}')
 
 aggs = []
 for z in zips:

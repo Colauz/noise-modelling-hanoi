@@ -202,7 +202,7 @@ def main():
     n0 = len(load_raw(path))
     df = build_dataframe(path)
     save_measurements(df)
-    print(f'{n0} brutes → {len(df)} mesures propres → {OUT}')
+    print(f'{n0} raw -> {len(df)} clean measurements -> {OUT}')
     print(f'  sites              : {df["site"].value_counts().to_dict()}')
     print(f'  with vehicle counts: {df["count_motorbikes"].notna().sum()}')
     print(f'  construction (reported/derived): {(df["construction_nearby"].astype(str).str.lower() == "yes").sum()}')

@@ -48,7 +48,7 @@
           4.205638113669449,
           6.482792619551137
         ],
-        "label": "Moyenne par (site, heure)"
+        "label": "Mean per (site, hour)"
       },
       "dist_road": {
         "n": 363,
@@ -267,7 +267,7 @@
           4.894043252991727,
           7.942807796696907
         ],
-        "label": "Moyenne par (site, heure)"
+        "label": "Mean per (site, hour)"
       },
       "dist_road": {
         "n": 363,
@@ -486,7 +486,7 @@
           5.287626020923769,
           6.716164826142038
         ],
-        "label": "Moyenne par (site, heure)"
+        "label": "Mean per (site, hour)"
       },
       "dist_road": {
         "n": 363,

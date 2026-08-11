@@ -32,7 +32,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from noise_hanoi import config as cfg
 
-# Seuils QCVN 26:2010/BTNMT, zone ordinaire. Aucune valeur OMS : voir docstring.
+# QCVN 26:2010/BTNMT thresholds, ordinary zone. No WHO value: see the docstring.
 QCVN_D, QCVN_N = 70, 55
 # Plausible absolute bias range of our smartphones, estimated by anchoring on the
 # instrumented literature (scripts/06_anchor_literature.py). Used to bound the

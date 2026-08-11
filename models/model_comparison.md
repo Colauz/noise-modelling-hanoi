@@ -10,7 +10,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 |---|---|---|---|---|---|
 | Moyenne globale | -0.019 | [-0.10, -0.00] | 5.99 | [5.20, 6.66] | -0.18 |
 | Moyenne par site | -0.027 | [-0.21, 0.06] | 6.05 | [5.27, 6.76] | 0.07 |
-| Moyenne par (site, heure) | -0.008 | [-0.18, 0.29] | 5.50 | [4.21, 6.48] | 0.38 |
+| Mean per (site, hour) | -0.008 | [-0.18, 0.29] | 5.50 | [4.21, 6.48] | 0.38 |
 | Regression on log(distance to road) | 0.221 | [0.09, 0.29] | 5.17 | [4.39, 5.81] | 0.47 |
 | Distance inverse (k=8, p=2) | 0.117 | [-0.14, 0.31] | 5.25 | [4.34, 6.17] | 0.44 |
 | LightGBM — temps seul (ablation) | 0.230 | [0.02, 0.45] | 4.87 | [3.75, 5.80] | 0.51 |
@@ -21,7 +21,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 | HYBRID - physics + LightGBM on the residual | 0.395 | [0.18, 0.53] | 4.46 | [3.94, 5.02] | 0.63 |
 | Conservative HYBRID - constrained residual (morphology+time) | 0.378 | [0.20, 0.51] | 4.54 | [3.86, 5.17] | 0.62 |
 
-**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.312, ΔMAE = +0.80 dB.
+**Net contribution of morphology** (LightGBM v1 vs site x hour table): ΔR² = +0.312, ΔMAE = +0.80 dB.
 
 **Architecture hybride (v2)** :
 
@@ -35,7 +35,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 |---|---|---|---|---|---|
 | Moyenne globale | -0.039 | [-0.12, -0.03] | 6.06 | [5.28, 6.76] | -0.44 |
 | Moyenne par site | -0.198 | [-0.55, -0.03] | 6.62 | [5.86, 7.30] | -0.06 |
-| Moyenne par (site, heure) | -0.419 | [-0.77, 0.03] | 6.58 | [4.89, 7.94] | 0.06 |
+| Mean per (site, hour) | -0.419 | [-0.77, 0.03] | 6.58 | [4.89, 7.94] | 0.06 |
 | Regression on log(distance to road) | 0.200 | [0.08, 0.27] | 5.28 | [4.49, 5.91] | 0.45 |
 | Distance inverse (k=8, p=2) | -0.203 | [-0.37, 0.02] | 6.44 | [5.28, 7.34] | 0.02 |
 | LightGBM — temps seul (ablation) | 0.075 | [-0.13, 0.46] | 5.19 | [3.67, 6.28] | 0.39 |
@@ -46,7 +46,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 | HYBRID - physics + LightGBM on the residual | 0.123 | [-0.22, 0.29] | 5.39 | [4.65, 6.19] | 0.45 |
 | Conservative HYBRID - constrained residual (morphology+time) | 0.144 | [-0.15, 0.35] | 5.30 | [4.27, 6.20] | 0.45 |
 
-**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.556, ΔMAE = +1.32 dB.
+**Net contribution of morphology** (LightGBM v1 vs site x hour table): ΔR² = +0.556, ΔMAE = +1.32 dB.
 
 **Architecture hybride (v2)** :
 
@@ -60,7 +60,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 |---|---|---|---|---|---|
 | Moyenne globale | -0.058 | [-0.15, -0.03] | 6.05 | [5.29, 6.72] | -0.21 |
 | Moyenne par site | -0.058 | [-0.15, -0.03] | 6.05 | [5.29, 6.72] | -0.21 |
-| Moyenne par (site, heure) | -0.058 | [-0.15, -0.03] | 6.05 | [5.29, 6.72] | -0.21 |
+| Mean per (site, hour) | -0.058 | [-0.15, -0.03] | 6.05 | [5.29, 6.72] | -0.21 |
 | Regression on log(distance to road) | 0.189 | [0.06, 0.27] | 5.26 | [4.47, 5.92] | 0.44 |
 | Distance inverse (k=8, p=2) | -0.140 | [-0.34, 0.05] | 6.25 | [5.00, 7.30] | 0.18 |
 | LightGBM — temps seul (ablation) | -0.139 | [-0.29, 0.08] | 5.82 | [4.54, 6.75] | 0.21 |
@@ -71,7 +71,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 | HYBRID - physics + LightGBM on the residual | 0.035 | [-0.41, 0.23] | 5.65 | [4.96, 6.53] | 0.37 |
 | Conservative HYBRID - constrained residual (morphology+time) | 0.106 | [-0.27, 0.27] | 5.39 | [4.64, 6.22] | 0.41 |
 
-**Apport propre de la morphologie** (LightGBM v1 vs table site × heure) : ΔR² = +0.087, ΔMAE = +0.37 dB.
+**Net contribution of morphology** (LightGBM v1 vs site x hour table): ΔR² = +0.087, ΔMAE = +0.37 dB.
 
 **Architecture hybride (v2)** :
 
@@ -92,7 +92,7 @@ All models are evaluated on **exactly the same splits**. IC 95 % par bootstrap p
 `E = A_hw/max(d_hw,D0) + A_res/max(d_res,D0) + B ; L = 10*log10(E)`
 
 - `A_highway` = 4.774e+07 (power per unit length, major roads)
-- `A_residential` = 3.8e+07 (petites rues)
+- `A_residential` = 3.8e+07 (minor streets)
 - `B_background` = 1.106e-10 (fond non routier)
 - `D0` = 5 m (plancher de distance)
 

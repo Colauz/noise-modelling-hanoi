@@ -169,7 +169,7 @@ def count_crossings(traj, cls_votes, w, h):
        along y, each one NORMALISED BY THE CORRESPONDING IMAGE DIMENSION. If the
        dominant motion is horizontal, the line must be VERTICAL (at mid-width);
        otherwise horizontal. A line parallel to the flow would never be
-       franchie — c'est le garde-fou n°3.
+       crossed -- this is guard 3.
 
        The normalisation is not cosmetic. Comparing amplitudes in RAW PIXELS
        mechanically favours the larger image dimension: on our portrait videos

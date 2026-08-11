@@ -83,7 +83,7 @@ ANCHORS = [
                  "mechanically above a daytime level. Value to be confirmed against the PDF."),
     dict(key='phan2010characteristics_night',
          source='Phan et al. 2010, Applied Acoustics 71(5):479-485',
-         city='Hanoï', year='2005-2007',
+         city='Hanoi', year='2005-2007',
          instrument='RION NL-21 / NL-22, 24 h continu',
          metric='Lnight (lowest of the 7 sites)', value=66.0, spread='inter-site minimum',
          comparable='night_all', metric_gap_dB=0.0,

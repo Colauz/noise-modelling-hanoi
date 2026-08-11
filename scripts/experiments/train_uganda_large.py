@@ -85,7 +85,7 @@ for region, g in df.groupby('region'):
         """Le cache couvre-t-il la bbox large ?"""
         if not (os.path.exists(bpath) and os.path.exists(path_graph)):
             return False
-        b = gpd.read_file(bpath, rows=1)  # juste pour les bounds du fichier
+        b = gpd.read_file(bpath, rows=1)  # just to read the file bounds
         full = gpd.read_file(bpath, columns=['geometry'])
         w, s, e, n = full.total_bounds
         return w <= bbox[0] and s <= bbox[1] and e >= bbox[2] and n >= bbox[3]
