@@ -1,69 +1,73 @@
-"""Évaluation honnête du modèle Hanoï : CV à blocs spatiaux + baselines + ablation.
+"""Honest evaluation of the Hanoi model: spatial-block CV + baselines + ablation.
 
-POURQUOI CE SCRIPT EXISTE
--------------------------
-Le notebook 08 groupait la validation croisée sur `lat.round(3)/lon.round(3)`, soit des
-cellules de ~110 m. Or les features de morphologie sont des agrégats sur un disque de
-RAYON 300 m : deux points distants de 110 m partagent plus de 85 % de leur disque. Leurs
-vecteurs de features sont donc quasi identiques et leurs niveaux fortement autocorrélés :
-le modèle voyait, en apprentissage, des quasi-jumeaux de ses points de test. Le R² obtenu
-n'était pas hors-échantillon (Roberts et al. 2017, Ecography).
+WHY THIS SCRIPT EXISTS
+----------------------
+Notebook 08 grouped the cross-validation on `lat.round(3)/lon.round(3)`, i.e. cells of
+~110 m. But the morphology features are aggregates over a disc of RADIUS 300 m: two
+points 110 m apart share more than 85 % of their disc. Their feature vectors are
+therefore near-identical and their levels strongly autocorrelated: in training, the
+model saw near-twins of its test points. The R2 obtained was not out-of-sample
+(Roberts et al. 2017, Ecography).
 
-Ce script remplace ce protocole par deux protocoles défendables :
+This script replaces that protocol with two defensible ones:
 
-  1. BLOCK-CV      blocs carrés de BLOCK_M = 600 m (= 2 x rayon de buffer) en UTM 48N,
-                   GroupKFold sur l'identifiant de bloc.
-  2. BLOO          buffered leave-one-out : pour chaque point, on l'apprend sur TOUS les
-                   points situés à plus de BUFFER_M = 300 m de lui. C'est le protocole de
-                   référence, plus strict et sans hasard de découpage.
-  3. LOSO          leave-one-site-out : généralisation à une typologie urbaine non vue.
+  1. BLOCK-CV      square blocks of BLOCK_M = 600 m (= 2 x buffer radius) in UTM 48N,
+                   GroupKFold on the block identifier.
+  2. BLOO          buffered leave-one-out: for each point, train on ALL points more
+                   than BUFFER_M = 300 m away from it. This is the reference protocol,
+                   stricter and with no split randomness.
+  3. LOSO          leave-one-site-out: generalisation to an unseen urban typology.
 
-Et il ajoute ce qui manquait : des BASELINES et une ABLATION, évaluées sur exactement
-les mêmes découpages, pour répondre à la question « la morphologie urbaine sert-elle
-vraiment à quelque chose ? ».
+And it adds what was missing: BASELINES and an ABLATION, evaluated on exactly the same
+splits, to answer the question "is urban morphology actually good for anything?".
 
-  global_mean       moyenne globale                        (plancher absolu)
-  site_mean         moyenne par site                       (aucune info spatiale fine)
-  site_hour_mean    moyenne par (site, heure)              <- LE baseline à battre
-  dist_road         régression linéaire sur log(dist_road) (physique minimale)
-  idw               pondération inverse de la distance     (interpolation pure)
-  lgbm_time         LightGBM, heure + weekend SEULEMENT    (ablation : sans morphologie)
-  lgbm_morpho       LightGBM, morphologie SEULEMENT        (ablation : sans temps)
-  lgbm_full         LightGBM, morphologie + temps          (le modèle v1)
+  global_mean       global mean                             (absolute floor)
+  site_mean         mean per site                           (no fine spatial information)
+  site_hour_mean    mean per (site, hour)                   <- THE baseline to beat
+  dist_road         linear regression on log(dist_road)     (minimal physics)
+  idw               inverse distance weighting              (pure interpolation)
+  lgbm_time         LightGBM, hour + weekend ONLY           (ablation: no morphology)
+  lgbm_morpho       LightGBM, morphology ONLY               (ablation: no time)
+  lgbm_full         LightGBM, morphology + time             (the v1 model)
 
-V2 (août 2026) — TROIS MODÈLES DE PLUS
---------------------------------------
-  lgbm_v2           LightGBM sur les features v2 : distances SÉPARÉES par classe de
-                    voirie (dist_highway / dist_residential) et heure CYCLIQUE (sin/cos).
-                    Isole l'apport du feature engineering, à architecture inchangée.
-  physical          Noyau physique seul : source linéique, décroissance en 1/d, trois
-                    paramètres positifs. Aucune donnée morphologique.
-  hybrid            LE MODÈLE LIVRÉ : le noyau physique porte la prédiction, le LightGBM
-                    apprend uniquement le RÉSIDU. C'est l'architecture recommandée en
-                    conclusion de paper/sections/negative_results.md : la part
-                    transférable est portée par des paramètres physiques, la part non
-                    transférable est confinée dans une correction bornée.
+V2 (August 2026) - THREE MORE MODELS
+------------------------------------
+  lgbm_v2           LightGBM on the v2 features: distances SEPARATED by road class
+                    (dist_highway / dist_residential) and a CYCLIC hour (sin/cos).
+                    Isolates the contribution of feature engineering, architecture
+                    unchanged.
+  physical          Physical kernel alone: line source, 1/d decay, three positive
+                    parameters. No morphological data at all.
+  hybrid            The physical kernel carries the prediction and a LightGBM learns
+                    only the RESIDUAL. This is the architecture recommended in the
+                    conclusion of docs/negative-results.md.
 
-Chaque score est assorti d'un intervalle de confiance à 95 % par bootstrap PAR BLOC
-(et non par point : rééchantillonner des points corrélés donnerait un IC trop étroit).
+WHICH MODEL IS DELIVERED IS DECIDED HERE, BY THE CODE. The best R2 under the reference
+protocol among candidates fixed in advance is written to `meta.delivered_model`, and
+07_export_gama_inputs.py reads the `apply_residual` flag. As of August 2026 the winner
+is `physical`, and the residual is written but NOT applied: the elaborate architecture
+wins the permissive split and loses both strict ones.
 
-SORTIES
+Every score carries a 95 % confidence interval bootstrapped BY BLOCK (not by point:
+resampling correlated points would give an interval that is far too narrow).
+
+OUTPUTS
 -------
-  outputs/models/metrics.json          consommé par scripts/build_report.py (plus de
-                                       recopie manuelle de chiffres dans le rapport)
-  outputs/models/model_comparison.md   tableau prêt à coller dans le manuscrit
-  outputs/models/surrogate_lgbm_hanoi_direct.txt   modèle final (tous les points),
-                                       consommé par scripts/export_gama_zones.py
+  models/metrics.json          consumed by scripts/10_build_report.py (no metric is
+                               copied into the report by hand any more)
+  models/model_comparison.md   table ready to paste into the manuscript
+  models/surrogate_lgbm_hanoi_direct.txt   final model (all points), consumed by
+                               scripts/07_export_gama_inputs.py
 
 USAGE
 -----
-  python3 scripts/evaluate_models.py [--fast]
+  python3 scripts/04_evaluate_models.py [--fast]
 
-  --fast  saute le BLOO (le plus coûteux : un ajustement par point).
+  --fast  skips the BLOO (the most expensive: one fit per point).
 
-PRÉREQUIS : data/raw/hanoi/measurements.csv (scripts/prepare_field_data.py) et les caches
-OSM data/processed/hanoi/hanoi_sites_{buildings.gpkg,roads.graphml} (créés par le
-notebook 08). Le script dit quoi lancer s'il manque quelque chose.
+PREREQUISITES: data/processed/measurements.csv (scripts/01_prepare_field_data.py) and the
+OSM caches data/interim/hanoi_sites_{buildings.gpkg,roads.graphml}. Feature construction
+comes from noise_hanoi.features. The script says what to run if something is missing.
 """
 import argparse
 import json

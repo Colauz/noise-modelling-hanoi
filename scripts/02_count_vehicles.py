@@ -1,69 +1,69 @@
-"""Comptage de véhicules sur les vidéos trafic par computer vision (YOLOv8 + ByteTrack).
+"""Count vehicles on the traffic videos by computer vision (YOLOv8 + ByteTrack).
 
-V2 (août 2026) — DE LA DENSITÉ AU DÉBIT
+V2 (August 2026) - FROM DENSITY TO FLOW
 ---------------------------------------
-La v1 échantillonnait ~1 image/s et mesurait une DENSITÉ (nombre moyen de véhicules
-visibles par image). Ce choix a produit le résultat négatif documenté en §5.x de
-paper/sections/negative_results.md : la densité est un STOCK, l'émission sonore est
-gouvernée par un FLUX (débit Q, véh/h) et par la vitesse. Les deux se découplent
-exactement là où ça compte : en congestion, la densité est maximale et le débit s'effondre.
-Les trois coefficients d'émission ressortaient nuls sous contrainte de non-négativité.
+V1 sampled ~1 frame/s and measured a DENSITY (mean number of vehicles visible per
+frame). That choice produced the negative result documented in section 5.x of
+docs/negative-results.md: density is a STOCK, whereas acoustic emission is governed
+by a FLOW (rate Q, veh/h) and by speed. The two decouple exactly where it matters:
+in congestion density is maximal and flow collapses. All three emission coefficients
+came out null under the non-negativity constraint.
 
-Cette version applique la recommandation que nous formulions nous-mêmes : compter des
-ÉVÉNEMENTS DE FRANCHISSEMENT DE LIGNE par suivi d'objets.
+This version applies the recommendation we made ourselves: count LINE-CROSSING EVENTS
+by object tracking.
 
-  - échantillonnage à SAMPLE_FPS (10 img/s) : le suivi exige des images consécutives,
-    à 1 img/s aucun tracker ne peut associer les détections ;
-  - détection + suivi ByteTrack (identifiants persistants entre images) ;
-  - LIGNE DE FRANCHISSEMENT VIRTUELLE au CENTRE de l'image, dont l'ORIENTATION est
-    choisie par vidéo (voir garde-fou n°3) : un véhicule est compté quand la
-    trajectoire de son centre traverse la ligne ;
-  - débit = franchissements / durée observée, exprimé en véhicules par MINUTE, par classe ;
-  - la classe d'une trajectoire est le vote majoritaire de ses détections (plus robuste
-    qu'une classification image par image).
+  - sampling at SAMPLE_FPS (10 fps): tracking requires consecutive frames; at 1 fps no
+    tracker can associate detections;
+  - detection + ByteTrack tracking (identifiers persistent across frames);
+  - a VIRTUAL CROSSING LINE at the CENTRE of the image, whose ORIENTATION is chosen
+    per video (see guard 3): a vehicle is counted when the trajectory of its centre
+    crosses the line;
+  - flow = crossings / observed duration, expressed in vehicles per MINUTE, per class;
+  - a trajectory's class is the majority vote of its detections (more robust than
+    frame-by-frame classification).
 
-TROIS GARDE-FOUS, ÉTABLIS EN CALIBRANT SUR NOS PROPRES VIDÉOS
--------------------------------------------------------------
-1. BANDE MORTE RELATIVE (DEADBAND_FRAC = 5 % de la hauteur d'image, et non un nombre de
-   pixels fixe). Nos vidéos n'ont pas toutes la même résolution : 1080x1920 pour les
-   IMG_*, 1280x720 pour les TC_*. Une bande morte en pixels absolus vaut 4 % de la
-   hauteur dans un cas et 13 % dans l'autre — elle laissait passer tout le jitter d'un
-   côté et bloquait tous les franchissements de l'autre.
-2. UN FRANCHISSEMENT AU PLUS PAR SENS ET PAR TRAJECTOIRE (MAX_CROSS_PER_DIR). ByteTrack
-   maintient peu d'identifiants longue durée sur nos scènes peu peuplées et leur
-   ré-associe les nouveaux véhicules : compter tous les changements de côté donnait
-   109 véh/min sur une vidéo où 0,6 véhicule est visible par image. Or la loi de Little
-   (L = lambda x W) impose alors un temps de présence de 0,3 s, soit 60-90 m/s : absurde.
-   Compter une fois par sens ramène à 12 véh/min, soit un temps de présence de 3,0 s,
-   physiquement cohérent. Le script vérifie et affiche ce diagnostic à la fin.
-3. ORIENTATION DE LA LIGNE CHOISIE PAR VIDÉO. Une ligne horizontale ne compte que les
-   mouvements VERTICAUX dans l'image. Nos vidéos VID_* sont filmées en travers de la
-   rue : les véhicules y traversent le champ de gauche à droite et ne franchissent
-   jamais une ligne horizontale médiane. Résultat de la première passe : 14 des 19
-   vidéos VID_* affichaient un débit NUL alors qu'elles montrent 2,1 véhicules par
-   image et 9 trajectoires en moyenne. Un site entier se retrouvait à débit zéro pour
-   une raison purement géométrique. On mesure donc, sur chaque vidéo, l'amplitude de
-   déplacement horizontale et verticale des trajectoires, et on place la ligne
-   PERPENDICULAIREMENT au mouvement dominant. L'axe retenu est enregistré dans la
-   colonne `line_axis` du CSV pour être vérifiable.
+THREE GUARDS, ESTABLISHED BY CALIBRATING ON OUR OWN VIDEOS
+---------------------------------------------------------
+1. RELATIVE DEAD BAND (DEADBAND_FRAC = 5 % of the image height, not a fixed pixel
+   count). Our videos do not all share a resolution: 1080x1920 for the IMG_*,
+   1280x720 for the TC_*. A dead band in absolute pixels is 4 % of the height in one
+   case and 13 % in the other - it let all the jitter through on one side and blocked
+   every crossing on the other.
+2. AT MOST ONE CROSSING PER DIRECTION PER TRAJECTORY (MAX_CROSS_PER_DIR). ByteTrack
+   keeps few long-lived identifiers on our sparsely populated scenes and reassigns them
+   to new vehicles: counting every side change gave 109 veh/min on a video where 0.6
+   vehicles are visible per frame. Little's law (L = lambda x W) then implies a
+   residence time of 0.3 s, i.e. 60-90 m/s: absurd. Counting once per direction brings
+   it to 12 veh/min, a residence time of 3.0 s, physically coherent. The script checks
+   and prints this diagnostic at the end.
+3. LINE ORIENTATION CHOSEN PER VIDEO. A horizontal line only counts VERTICAL movement
+   in the image. Our VID_* videos are filmed across the street: vehicles cross the
+   field from left to right and never cross a median horizontal line. Result of the
+   first pass: 14 of the 19 VID_* videos reported ZERO flow although they show 2.1
+   vehicles per frame and 9 trajectories on average. A whole site came out at zero flow
+   for a purely geometric reason. We therefore measure, per video, the horizontal and
+   vertical displacement amplitude of the trajectories, and place the line
+   PERPENDICULAR to the dominant motion. The chosen axis is recorded in the `line_axis`
+   column of the CSV so that it can be checked.
 
-CE QUE LE SCRIPT NE FAIT TOUJOURS PAS (à documenter dans le papier) :
-  - pas d'homographie sol : la VITESSE n'est pas estimée, seul le débit l'est ;
-  - le détecteur n'est toujours PAS validé contre un comptage manuel de référence.
-    Les parts modales restent des bornes inférieures sur la part de deux-roues.
+WHAT THE SCRIPT STILL DOES NOT DO (to be documented in the paper):
+  - no ground homography: SPEED is not estimated, only flow is;
+  - the detector is still NOT validated against a reference manual count.
+    The modal shares remain lower bounds on the two-wheeler share.
 
-COLONNES DE SORTIE (data/processed/hanoi/vehicle_counts.csv)
+OUTPUT COLUMNS (data/processed/vehicle_counts.csv)
   video, video_start, duration_s, n_frames, sample_fps
-  {classe}_mean       densité : moyenne de véhicules visibles par image  (rétro-compatible v1)
-  vehicles_mean       somme des densités                                  (rétro-compatible v1)
-  {classe}_flow       DÉBIT : franchissements de ligne par minute
-  vehicles_flow       débit total hors vélos (moto + car + bus + truck)
-  n_tracks            nombre de trajectoires distinctes vues
-  matched_timestamp, matched_dB, match_gap_s   appariement à la mesure Kobo la plus proche
+  {class}_mean        density: mean vehicles visible per frame   (v1 backward-compatible)
+  vehicles_mean       sum of the densities                        (v1 backward-compatible)
+  {class}_flow        FLOW: line crossings per minute
+  vehicles_flow       total flow excluding bicycles (moto + car + bus + truck)
+  n_tracks            number of distinct trajectories seen
+  matched_timestamp, matched_dB, match_gap_s   match to the nearest Kobo measurement
 
-Usage : python3 scripts/experiments/count_vehicles.py [--limit N] [--force]
-  ~10 s/vidéo, soit ~26 min pour les 147 vidéos. Reprise automatique (--force pour tout
-  recalculer : obligatoire au passage v1 -> v2, les colonnes de débit n'existent pas en v1).
+Usage: python3 scripts/02_count_vehicles.py [--limit N] [--force]
+  ~10 s per video, i.e. ~26 min for the 147 videos. Resumes automatically (--force to
+  recompute everything: mandatory when moving from v1 to v2, since the flow columns do
+  not exist in v1). Reads the videos from data/raw/videos/, which are not published.
 """
 import argparse
 import glob

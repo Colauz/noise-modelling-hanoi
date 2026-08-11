@@ -1,27 +1,32 @@
 """
-v2 — Feature de densité invariante entre villes (ratio de surface bâtie).
+v2 - A density feature invariant across cities (built area ratio).
 
-Diagnostic v1 : le transfert Uganda→Barcelone échouait (r≈0) en partie parce que
-le "nombre de bâtiments/km²" dépend de la convention de cartographie OSM
-(Kampala = petits bâtiments individuels, Barcelone = îlots entiers).
+STATUS: not runnable as it stands. It expects data/processed/{uganda,barcelona}/*,
+which is not in the repository. See docs/handover.md, debt 3.
 
-v2 :
-  - built_area_ratio : surface bâtie / surface du disque R=300m — invariant
-    (approximation rapide : somme des aires des bâtiments à centroïde dans R)
-  - ré-entraînement Uganda v2 (vérifier qu'on garde le niveau v1 : R² 0.639)
-  - re-test du transfert vers Barcelone — DIAGNOSTIC SEULEMENT, Barcelone ne sert
-    jamais à l'entraînement (instruments et grandeurs différents : capteurs fixes
-    classe 1 / LAeq 4 mois vs smartphones / niveaux instantanés)
+v1 diagnosis: the Uganda->Barcelona transfer failed (r about 0) partly because
+"buildings per km2" depends on the OSM mapping convention (Kampala = small
+individual buildings, Barcelona = whole blocks).
 
-Le modèle pour Hanoï reste : pré-entraîné Uganda (même instrument, même
-échantillonnage que notre collecte) + calibration sur nos mesures terrain.
+v2:
+  - built_area_ratio: built surface / area of the R=300 m disc - invariant
+    (fast approximation: sum of the areas of buildings whose centroid falls in R)
+  - Uganda v2 retraining (check that the v1 level is preserved: R2 0.639)
+  - retest of the transfer to Barcelona - DIAGNOSTIC ONLY, Barcelona is never used
+    for training (different instruments and quantities: fixed class 1 sensors /
+    4-month LAeq against smartphones / instantaneous levels)
 
-Sorties :
+NOTE, August 2026: the plan described below - "pretrained on Uganda plus calibration
+on our field measurements" - was tested and abandoned. Cross-city transfer scores
+R2 < 0 on Hanoi even with these invariant features, and the delivered model is
+trained directly on the Hanoi measurements. See docs/negative-results.md.
+
+Outputs:
   data/processed/uganda/uganda_morphology_v2.parquet
   data/processed/barcelona/barcelona_morphology_v2.parquet
-  outputs/models/surrogate_lgbm_v2_uganda.pkl
+  models/surrogate_lgbm_v2_uganda.txt  (LightGBM booster, portable text format)
 
-Usage : python3 scripts/train_v2_invariant.py
+Usage: python3 scripts/experiments/train_v2_invariant.py
 """
 import time
 import warnings

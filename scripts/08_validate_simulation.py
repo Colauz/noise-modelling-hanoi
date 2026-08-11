@@ -1,18 +1,19 @@
-"""Validation de la simulation : la carte reproduit-elle nos mesures de terrain ?
+"""Validate the simulation: does the map reproduce our field measurements?
 
-Phase 4 du projet demande de « calibrer le modèle pour reproduire les mesures observées ».
-Ce script confronte, à l'emplacement exact de chacune de nos 363 mesures et à l'heure
-où elle a été prise, le niveau prédit par la grille exportée vers GAMA au niveau
-réellement relevé sur le terrain.
+At the exact location of each of our 363 measurements, and at the hour it was taken,
+this script compares the level predicted by the grid exported to GAMA against the
+level actually recorded in the field.
 
-LIMITE À GARDER EN TÊTE - c'est une validation *en échantillon* : le modèle qui produit
-la grille a été entraîné sur ces mêmes mesures. Les chiffres ci-dessous mesurent donc la
-fidélité de la chaîne (modèle -> grille 40 m -> GAMA), pas la capacité de généralisation.
-Le chiffre honnête de généralisation reste celui de la validation croisée spatiale du
-scripts/evaluate_models.py (buffered leave-one-out), où le modèle prédit des lieux jamais vus.
+LIMITATION TO KEEP IN MIND - this is an *in-sample* validation: the model that
+produces the grid was trained on those same measurements. The figures below therefore
+measure the fidelity of the chain (model -> 40 m grid -> GAMA), not the capacity to
+generalise. The honest generalisation figure remains the one from the spatial
+cross-validation in scripts/04_evaluate_models.py (buffered leave-one-out), where the
+model predicts places it has never seen.
 
-Sorties : outputs/hanoi/validation_simulation.png + outputs/hanoi/validation_simulation.csv
-Usage   : python3 scripts/validate_simulation.py
+Outputs: results/figures/validation_simulation.png
+         results/tables/validation_simulation.csv
+Usage  : python3 scripts/08_validate_simulation.py
 """
 import os
 import warnings

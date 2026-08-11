@@ -1,31 +1,31 @@
 """
-Préparation des données terrain Hanoï : export brut Kobo → measurements.csv propre.
+Prepare the Hanoi field data: raw Kobo export -> a clean measurements.csv.
 
-SOURCE DE VÉRITÉ UNIQUE du nettoyage terrain. Utilisable de 2 façons :
-  - en script   : `python3 scripts/prepare_field_data.py`  (régénère measurements.csv)
-  - en module   : `import prepare_field_data as pfd; df = pfd.build_dataframe()`
-                  (c'est ce que fait le notebook 07 - pas de logique dupliquée)
+SINGLE SOURCE OF TRUTH for field cleaning. Usable two ways:
+  - as a script: `python3 scripts/01_prepare_field_data.py`  (rebuilds measurements.csv)
+  - as a module: `import importlib.util` ... `build_dataframe()`
+                 (notebook 07 does this, so there is no duplicated logic)
 
-À relancer à chaque nouvel export Kobo :
-    1. déposer le CSV dans data/raw/hanoi/ (les anciens dans data/raw/hanoi/old/)
-    2. python3 scripts/prepare_field_data.py
-    3. lancer les notebooks 08 (modèle) puis 09 (GAMA)
+Rerun after every new Kobo export:
+    1. drop the CSV into data/raw/kobo/
+    2. python3 scripts/01_prepare_field_data.py
+    3. then `make features && make models`
 
-Ce que ça fait :
-  - détecte les colonnes quel que soit le mode d'export Kobo (names / labels)
-  - normalise les tranches de distance (anciens codes d_0_10... du form v1)
-  - backfill HONNÊTE des champs v2 sur les anciens points :
-      * phone_orientation = horizontal, mic_to_source = towards  (protocole réel)
-      * construction_nearby DÉRIVÉ de la catégorie de bruit
-      * dist_to_source_m et comptages véhicules : laissés VIDES si non mesurés
-        (un NaN = "non mesuré" ; une valeur bidon polluerait les analyses)
-  - nettoyage (mêmes règles que le notebook 02 Sunbird)
-  - calibration par collecteur (CALIBRATION_OFFSET)
-  - enrichissement météo Open-Meteo (gracieux si l'API est injoignable)
-  - écrit data/raw/hanoi/measurements.csv
+What it does:
+  - detects the columns whatever the Kobo export mode (names / labels)
+  - normalises the distance bands (old d_0_10... codes of form v1)
+  - HONEST backfill of the v2 fields on older points:
+      * phone_orientation = horizontal, mic_to_source = towards  (the actual protocol)
+      * construction_nearby DERIVED from the noise category
+      * dist_to_source_m and vehicle counts: left EMPTY when not measured
+        (a NaN means "not measured"; a filler value would pollute the analyses)
+  - cleaning (same rules as Sunbird notebook 02)
+  - per-collector calibration (CALIBRATION_OFFSET, currently all 0.0)
+  - Open-Meteo weather enrichment (degrades gracefully if the API is unreachable)
+  - writes data/processed/measurements.csv
 
-Le fichier brut Kobo n'est JAMAIS modifié : il est lu, et le résultat propre est
-écrit dans un fichier séparé (measurements.csv).
+The raw Kobo file is NEVER modified: it is read, and the clean result is written to
+a separate file. Paths come from noise_hanoi.config.
 """
 import glob
 import os

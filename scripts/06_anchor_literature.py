@@ -1,36 +1,37 @@
-"""Ancrage de nos mesures smartphone sur la littérature instrumentée (« calibration virtuelle »).
+"""Anchor our smartphone measurements on instrumented literature ("virtual calibration").
 
-POURQUOI
---------
-Nous n'avons pas de sonomètre de référence et la campagne est close. Nos trois téléphones
-sont calibrés ENTRE EUX, jamais contre un étalon : un biais commun aux trois appareils est
-invisible dans nos données. Nous ne pouvons donc pas revendiquer de niveaux absolus certifiés.
+WHY
+---
+We have no reference sound level meter and the campaign is closed. Our three phones
+are calibrated AGAINST EACH OTHER, never against a standard: a bias common to all three
+devices is invisible in our data. We therefore cannot claim certified absolute levels.
 
-Ce que nous POUVONS faire, et ce que fait ce script : confronter la distribution de nos
-niveaux, stratifiée pour être comparable, aux campagnes vietnamiennes publiées avec
-instrumentation professionnelle. Cela ne calibre pas nos données — les grandeurs et les
-périodes d'intégration diffèrent — mais cela BORNE le biais plausible et vérifie que nos
-ordres de grandeur ne sont pas aberrants.
+What we CAN do, and what this script does: compare the distribution of our levels,
+stratified to be comparable, against published Vietnamese campaigns that used
+professional instrumentation. This does not calibrate our data -- the quantities and
+integration periods differ -- but it BOUNDS the plausible bias and checks that our
+orders of magnitude are not aberrant.
 
-PRINCIPE ET LIMITE
-------------------
-Un « point d'ancrage » n'est utilisable que si l'on compare des choses comparables. Nous
-stratifions donc nos mesures pour approcher au mieux la situation décrite par chaque source
-(bord de voirie, jour, grand axe). Même ainsi, trois écarts subsistent et sont IRRÉDUCTIBLES :
+PRINCIPLE AND LIMITATION
+------------------------
+An "anchor point" is only usable if comparable things are compared. We therefore
+stratify our measurements to approximate as closely as possible the situation described
+by each source (roadside, daytime, major road). Even so, three gaps remain and they are
+IRREDUCIBLE:
 
-  1. Grandeur     : nos 25 s vs des LAeq,1min à 24 h, voire des Lden (moyenne annuelle
-                    avec pénalités soir/nuit). Un Lden est mécaniquement supérieur au
-                    LAeq diurne du même lieu.
-  2. Lieu         : « grands axes de Hanoï » n'est pas « nos 3 quartiers », dont deux ne
-                    sont pas des corridors majeurs.
-  3. Époque       : 2005-2019 selon les sources, contre 2026 pour nous (électrification
-                    partielle du parc de deux-roues en cours à Hanoï).
+  1. Quantity : our 25 s against LAeq,1min to 24 h, or even Lden (an annual average
+                with evening/night penalties). An Lden is mechanically above the
+                daytime LAeq of the same place.
+  2. Place    : "major arteries of Hanoi" is not "our 3 districts", two of which are
+                not major corridors.
+  3. Epoch    : 2005-2019 depending on the source, against 2026 for us (partial
+                electrification of the two-wheeler fleet under way in Hanoi).
 
-=> L'offset calculé ici est un ORDRE DE GRANDEUR DE PLAUSIBILITÉ. Il n'est PAS appliqué
-   aux données. Aucune correction n'est écrite dans measurements.csv.
+=> The offset computed here is an ORDER OF PLAUSIBILITY. It is NOT applied to the
+   data. No correction is written into measurements.csv.
 
-Sortie : outputs/hanoi/literature_anchoring.md  (+ .csv)
-Usage  : python3 scripts/literature_anchoring.py
+Output: results/tables/literature_anchoring.md  (+ .csv)
+Usage : python3 scripts/06_anchor_literature.py
 """
 import os
 import warnings

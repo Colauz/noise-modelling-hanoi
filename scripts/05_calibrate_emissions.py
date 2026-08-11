@@ -1,33 +1,36 @@
-"""Calibration des émissions sonores par type de véhicule SUR NOS DONNÉES.
+"""Calibrate per-vehicle-class sound emissions ON OUR OWN DATA.
 
-Problème : la simulation GAMA a besoin d'un niveau sonore par catégorie (moto,
-voiture, poids lourd) et pour les chantiers. Prendre des valeurs « de la
-littérature » sans les vérifier revient à simuler au doigt mouillé. On les estime
-donc directement à partir de nos 147 vidéos comptées et des mesures appariées.
+Problem: the GAMA simulation needs a sound level per category (motorcycle, car,
+heavy vehicle) and for construction sites. Taking "literature" values without
+checking them amounts to simulating by guesswork. We therefore estimate them
+directly from our 147 counted videos and the matched measurements.
 
-Principe physique
------------------
-Les niveaux sonores s'additionnent en ÉNERGIE, pas en décibels :
+Physical principle
+------------------
+Sound levels add in ENERGY, not in decibels:
 
-    E_total = E_fond + n_moto·e_moto + n_voiture·e_voiture + n_lourd·e_lourd
+    E_total = E_background + n_moto*e_moto + n_car*e_car + n_heavy*e_heavy
 
-avec E = 10^(L/10). C'est donc une régression LINÉAIRE en énergie, avec des
-coefficients nécessairement POSITIFS (une source ne peut pas retirer de l'énergie)
--> moindres carrés sous contrainte de non-négativité (NNLS).
+with E = 10^(L/10). It is therefore a LINEAR regression in energy, with
+necessarily POSITIVE coefficients (a source cannot remove energy)
+-> non-negative least squares (NNLS).
 
-Le fond est laissé libre PAR SITE (une colonne indicatrice par site) : chaque
-quartier a son ambiance propre, qu'on ne veut pas attribuer aux véhicules.
+The background is left free PER SITE (one indicator column per site): each
+district has its own ambience, which we do not want attributed to vehicles.
 
-Ce que les valeurs obtenues signifient
---------------------------------------
-e_moto, e_voiture, e_lourd sont les énergies apportées par UN véhicule visible
-dans le champ de la caméra, à la distance typique de nos prises de vue. Converties
-en dB (10·log10), ce sont donc des niveaux « par véhicule au récepteur », pas des
-puissances acoustiques normalisées à 7,5 m comme dans les normes. C'est
-exactement ce dont la simulation a besoin, et c'est mesuré chez nous.
+What the resulting values mean
+------------------------------
+e_moto, e_car, e_heavy are the energies contributed by ONE vehicle visible in the
+camera field, at the typical distance of our shots. Converted to dB (10*log10),
+they are therefore "per-vehicle levels at the receiver", not sound powers
+normalised to 7.5 m as in the standards. That is exactly what the simulation
+needs, and it is measured on our own data.
 
-Sortie : outputs/gama_inputs/emission_calibration.csv (lu par le modèle GAMA)
-Usage  : python3 scripts/calibrate_emissions.py
+RESULT, as of August 2026: the coefficients come out NULL for motorcycles and
+cars. They are not identifiable from these data. See docs/negative-results.md.
+
+Output: simulation/gama/inputs/emission_calibration.csv (read by the GAMA model)
+Usage : python3 scripts/05_calibrate_emissions.py
 """
 import os
 import warnings

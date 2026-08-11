@@ -1,26 +1,25 @@
-"""Génère le tableau de bord HTML statique du projet : outputs/dashboard/index.html.
+"""Generate the project's static HTML dashboard: results/report/dashboard/index.html.
 
-POURQUOI UN HTML STATIQUE ET PAS STREAMLIT
-------------------------------------------
-Le livrable doit pouvoir être ouvert par un encadrant qui n'a ni Python ni le dépôt :
-un fichier HTML s'envoie par mail, se dépose sur un partage, s'archive avec le rapport.
-Un serveur Streamlit exige un processus vivant et une installation. On génère donc du
-HTML, et `run_dashboard.sh` se contente de le construire puis de l'ouvrir.
+WHY STATIC HTML AND NOT STREAMLIT
+---------------------------------
+The deliverable must be openable by a supervisor who has neither Python nor the
+repository: an HTML file can be emailed, dropped on a share, archived with the report.
+A Streamlit server requires a live process and an installation. So we generate HTML, and
+`make dashboard` simply builds it.
 
-CONTENU
-  - bandeau d'indicateurs du modèle HYBRIDE livré (lus dans metrics.json, jamais recopiés) ;
-  - comparaison des modèles, en mise en évidence : le modèle livré en couleur, les autres
-    en gris — la question n'est pas « quelle est la couleur de chaque modèle » mais
-    « où se situe le nôtre » ;
-  - carte interactive Folium : points de mesure terrain + grille de bruit prédite ;
-  - trafic mesuré par heure et par site, désormais en DÉBIT (véh/min) issu du suivi vidéo ;
-  - lien vers le rapport PDF ;
-  - instructions de lancement de la simulation GAMA.
+CONTENTS
+  - indicator banner for the DELIVERED model (read from metrics.json, never copied);
+  - model comparison, highlighted: the delivered model in colour, the others in grey --
+    the question is not "what colour is each model" but "where does ours sit";
+  - interactive Folium map: field measurement points + predicted noise grid;
+  - measured traffic by hour and by site, now as FLOW (veh/min) from the video tracking;
+  - link to the PDF report;
+  - instructions for launching the GAMA simulation.
 
-Les graphiques sont du SVG écrit à la main : aucune dépendance JavaScript externe, donc
-le fichier reste lisible hors ligne et ne casse pas dans cinq ans.
+The charts are hand-written SVG: no external JavaScript dependency, so the file stays
+readable offline and will not break in five years.
 
-Usage : python3 scripts/build_dashboard.py
+Usage: python3 scripts/11_build_dashboard.py
 """
 import html
 import json

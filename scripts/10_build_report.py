@@ -1,25 +1,26 @@
-"""Assemble le Data Collection Report du projet en un seul PDF : outputs/report.pdf.
+"""Assemble the project Data Collection Report into a single PDF.
 
-Comprehensive (mais pas trop formel) : objectif, méthodologie (protocole de
-collecte + reproduction Sunbird), analyse de données (patterns temporels,
-sources, dépassements QCVN/OMS), modèle prédictif (transfert vs entraînement
-direct), limitations & prochaines étapes.
+Comprehensive but not over-formal: objective, methodology (collection protocol +
+Sunbird reproduction), data analysis (temporal patterns, sources, QCVN
+exceedances), predictive model (transfer against direct training), limitations
+and next steps.
 
-Données descriptives recalculées depuis measurements.csv ; métriques modèle LUES
-DEPUIS outputs/models/metrics.json (produit par scripts/evaluate_models.py).
-Plus aucune métrique n'est recopiée à la main : le rapport ne peut plus se
-désynchroniser du modèle réellement livré.
+Descriptive figures are recomputed from measurements.csv; model metrics are READ
+FROM models/metrics.json (produced by scripts/04_evaluate_models.py). No metric is
+copied by hand any more: the report can no longer drift from the model actually
+delivered, and it refuses to run without that file.
 
-Deux corrections de fond (août 2026) :
-  - les valeurs guides OMS (L_den 53 / L_night 45) ont été RETIRÉES du rapport.
-    Ce sont des moyennes ANNUELLES avec pénalités soir/nuit, non comparables à
-    nos échantillons de 25 s (cf. paper/sections/metrology.md) ;
-  - les dépassements QCVN sont présentés comme une STATISTIQUE DESCRIPTIVE de
-    notre échantillon, assortie d'une analyse de sensibilité au biais de
-    calibration, et non comme un constat de non-conformité réglementaire.
+Two substantive corrections (August 2026):
+  - the WHO guideline values (L_den 53 / L_night 45) were REMOVED from the report.
+    They are ANNUAL averages with evening/night penalties, not comparable to our
+    25 s samples (see docs/metrology.md);
+  - QCVN exceedances are presented as a DESCRIPTIVE STATISTIC of our sample, with a
+    sensitivity analysis on the calibration bias, and not as a finding of
+    regulatory non-compliance.
 
-Usage : python3 scripts/build_report.py
-  (lancer avant : prepare_field_data.py, evaluate_models.py)
+Output: results/report/report.pdf (8 pages)
+Usage : python3 scripts/10_build_report.py
+  (run first: 01_prepare_field_data.py, 04_evaluate_models.py)
 """
 import json
 import os

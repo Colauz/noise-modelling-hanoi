@@ -1,18 +1,22 @@
 """
-Entraînement du surrogate model sur le config `large` de Sunbird (61K points).
+Train the surrogate model on Sunbird's `large` config (61K points).
 
-Optimisations vs notebooks (small) :
-- ne télécharge que les colonnes métadonnées des parquet (pas l'audio, ~3 GB évités)
-- distance à la route via sjoin_nearest vectorisé (la boucle du notebook 04
-  serait inutilisable sur 61K points)
-- réutilise les caches OSM des notebooks ; les étend si l'emprise `large` dépasse
+STATUS: not runnable as it stands. It expects data/processed/uganda/*, which is not
+in the repository; the Sunbird chain does not run on a fresh machine. See
+docs/handover.md, debt 3.
 
-Sorties :
+Optimisations over the notebooks (small config):
+- downloads only the metadata columns of the parquet files (no audio, ~3 GB saved)
+- distance to road via vectorised sjoin_nearest (the loop in notebook 04 would be
+  unusable on 61K points)
+- reuses the notebooks' OSM caches; extends them if the `large` extent exceeds them
+
+Outputs:
 - data/processed/uganda/sunbird_clean_large.csv
 - data/processed/uganda/sunbird_morphology_large.parquet
-- outputs/models/surrogate_lgbm_large.pkl
+- models/surrogate_lgbm_large.txt  (LightGBM booster, portable text format)
 
-Usage : python3 scripts/train_large.py   (depuis la racine du repo)
+Usage: python3 scripts/experiments/train_uganda_large.py   (from the repository root)
 """
 import os
 import time

@@ -1,17 +1,17 @@
-"""Carte interactive des points de mesure : outputs/hanoi/hanoi_field_points.html.
+"""Interactive map of the measurement points: results/maps/hanoi_field_points.html.
 
-SOURCE DE VÉRITÉ UNIQUE de la carte terrain. Utilisable de 2 façons :
-  - en script  : `python3 scripts/build_field_map.py`
-  - en module  : `import build_field_map as bfm; m = bfm.build_map(df)`
-                 (c'est ce que fait le notebook 07)
+SINGLE SOURCE OF TRUTH for the field map. Usable two ways:
+  - as a script: `python3 scripts/09_build_field_map.py`
+  - as a module: `build_map(df)` (notebook 07 does this)
 
-Contenu :
-  - un cercle par mesure, coloré par niveau (vert <60, orange 60-70,
-    rouge 70-80, rouge foncé >80 ; la limite QCVN jour est 70 dB)
-  - popup au clic : toutes les infos pertinentes du point (les champs vides
-    ne sont pas affichés)
-  - une couche par site (cochable) + couche chantiers (marqueurs bleus)
-  - légende + cadrage automatique sur l'ensemble des points
+Contents:
+  - one circle per measurement, coloured by level (green <60, orange 60-70,
+    red 70-80, dark red >80; the QCVN daytime value is 70 dB)
+  - popup on click: every relevant field of the point (empty fields are not shown)
+  - one toggleable layer per site, plus a construction-site layer (blue markers)
+  - legend, and automatic framing on the full set of points
+
+Paths come from noise_hanoi.config.
 """
 import glob
 import os

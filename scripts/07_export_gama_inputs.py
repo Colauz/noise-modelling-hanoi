@@ -1,52 +1,50 @@
-"""Export GAMA multi-zones et multi-heures pour la simulation `gama/hanoi_noise.gaml`.
+"""Multi-zone, multi-hour GAMA export for the `simulation/gama/hanoi_noise.gaml` model.
 
-Produit dans outputs/gama_inputs/ :
-  - {zone}_noise.shp      grille de bruit prédite, une colonne par heure (h5 ... h21),
-                          plus d_hw / d_res : distances aux deux classes de voirie
-  - {zone}_roads.shp      réseau routier de la zone
-  - {zone}_buildings.shp  bâtiments de la zone
-  - fleet_by_hour.csv     densité, composition ET DÉBIT du trafic par site et par heure
-  - physical_params.csv   coefficients du noyau physique (A_hw, A_res, B, D0)
-  - noise_map.csv         format plat (x, y, noise_dB) à l'heure de référence REF_HOUR
-  - (+ noise_points/roads/buildings.shp : les 3 zones réunies, vue d'ensemble)
-et dans outputs/hanoi/ :
-  - hanoi_noise_map.csv   grille complète, 3 zones x 17 heures (livrable cartographique)
+Produces in simulation/gama/inputs/:
+  - {zone}_noise.shp      predicted noise grid, one column per hour (h5 ... h21),
+                          plus d_hw / d_res: distances to the two road classes
+  - {zone}_roads.shp      road network of the zone
+  - {zone}_buildings.shp  buildings of the zone
+  - fleet_by_hour.csv     traffic density, composition AND FLOW by site and by hour
+  - physical_params.csv   physical kernel coefficients (A_hw, A_res, B, D0)
+  - noise_map.csv         flat format (x, y, noise_dB) at the reference hour REF_HOUR
+  - (+ noise_points/roads/buildings.shp: the 3 zones combined, overview)
+and in results/maps/:
+  - hanoi_noise_map.csv   full grid, 3 zones x 17 hours (the cartographic deliverable)
 
-zones : hoankiem · oceanpark · vinhtuy
+zones: hoankiem - oceanpark - vinhtuy
 
-EMPRISE — POINT MÉTHODOLOGIQUE IMPORTANT
-----------------------------------------
-La grille est bornée à l'emprise des mesures de chaque site + MARGIN_M (400 m), et à rien
-de plus. Les anciennes sorties du notebook 08/09 couvraient un disque de 1500 m autour de
-Bach Khoa, quartier SANS AUCUNE MESURE : c'était une extrapolation vers une typologie non
-vue, par un modèle (le LightGBM d'alors) dont le leave-one-site-out était négatif sur 2 sites
-sur 3. Le modèle livré depuis la V2 extrapole nettement mieux, mais la règle NE CHANGE PAS :
-trois typologies échantillonnées restent trois, quel que soit le score. Ces artefacts
-sont archivés dans outputs/deprecated/. Ne pas réintroduire de prédiction hors emprise
-mesurée sans, au minimum, un masque de domaine d'applicabilité.
+EXTENT - AN IMPORTANT METHODOLOGICAL POINT
+------------------------------------------
+The grid is bounded to the measurement envelope of each site + MARGIN_M (400 m), and to
+nothing more. The old outputs of notebooks 08/09 covered a 1500 m disc around Bach Khoa,
+a district with NO MEASUREMENT AT ALL: that was extrapolation to an unseen typology, by a
+model (the LightGBM of the time) whose leave-one-site-out was negative on 2 sites out of
+3. The delivered model extrapolates markedly better since V2, but THE RULE DOES NOT
+CHANGE: three sampled typologies remain three, whatever the score. Those artefacts are
+archived in docs/archive/bach-khoa/. Do not reintroduce predictions outside the measured
+envelope without, at a minimum, an applicability-domain mask. Guarded by
+tests/test_grid_extent.py.
 
-Sources et statut scientifique de chaque sortie
-----------------------------------------------
-  grille de bruit  : PRÉDITE par le modèle HYBRIDE (v2, août 2026) entraîné sur nos 363
-                     mesures terrain : un noyau physique de source linéique
-                     (E = A_hw/d_hw + A_res/d_res + B) porte la prédiction, un LightGBM
-                     apprend seulement le RÉSIDU sur la morphologie OSM dans 300 m et
-                     l'heure cyclique. Métriques : outputs/models/metrics.json.
-                     Le R² 0.45 du notebook 08 était un artefact de CV groupée sur
-                     cellules de 110 m : ne plus le citer.
-                     ATTENTION, ce qui vaut toujours : sous leave-one-site-out c'est le
-                     NOYAU PHYSIQUE SEUL qui généralise le mieux, l'hybride complet ne
-                     bat les baselines que dans les typologies échantillonnées. Les
-                     contrastes spatiaux de cette grille sont à lire comme pilotés par la
-                     distance aux axes routiers (cf. negative_results.md §5.z).
-  trafic par heure : MESURÉ - 147 vidéos horodatées, agrégées par site et par heure.
-                     DEUX grandeurs distinctes : la DENSITÉ (véh/image, détection image
-                     par image) qui sert à peupler la scène GAMA, et le DÉBIT (véh/min,
-                     franchissements de ligne par suivi ByteTrack) qui est la grandeur
-                     physiquement liée à l'émission. Les heures sans vidéo sont
-                     interpolées et signalées par measured=0.
+Sources and scientific status of each output
+--------------------------------------------
+  noise grid   : PREDICTED by the model delivered by 04_evaluate_models.py and trained on
+                 our 363 field measurements. As of August 2026 that is the PHYSICAL
+                 KERNEL ALONE: a line-source law (E = A_hw/d_hw + A_res/d_res + B), with
+                 the learned residual written but not applied. Metrics:
+                 models/metrics.json. The R2 0.45 of notebook 08 was an artefact of CV
+                 grouped on 110 m cells: do not cite it any more.
+                 What still holds: the spatial contrasts of this grid are driven by the
+                 distance to the two road classes and by nothing else; morphology
+                 aggregated over 300 m added no measurable gain (docs/negative-results.md
+                 section 5.z).
+  traffic/hour : MEASURED - 147 timestamped videos, aggregated by site and by hour.
+                 TWO distinct quantities: DENSITY (veh/frame, frame-by-frame detection)
+                 which populates the GAMA scene, and FLOW (veh/min, line crossings by
+                 ByteTrack tracking) which is the quantity physically linked to emission.
+                 Hours with no video are interpolated and flagged with measured=0.
 
-Usage : python3 scripts/export_gama_zones.py
+Usage: python3 scripts/07_export_gama_inputs.py
 """
 import glob
 import os
