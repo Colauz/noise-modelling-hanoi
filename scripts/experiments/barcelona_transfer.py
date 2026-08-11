@@ -65,11 +65,11 @@ def log(msg):
 
 
 def energetic_mean(db_series):
-    """Moyenne énergétique de niveaux en dB (pas arithmétique)."""
+    """Energy mean of levels in dB (not arithmetic)."""
     return 10 * np.log10(np.mean(10 ** (db_series / 10)))
 
 
-# ---------- 1. Mesures : agrégation LAeq par capteur x heure x type de jour ----------
+# ---------- 1. Measurements: LAeq aggregated by sensor x hour x day type ----------
 zips = sorted(glob.glob('data/raw/barcelona/*Dades_1Min.zip'))
 log(f'{len(zips)} mois de mesures : {[os.path.basename(z) for z in zips]}')
 
@@ -83,28 +83,28 @@ for z in zips:
     m['ts'] = pd.to_datetime(m['Timestamp_local'], format='ISO8601', utc=True).dt.tz_convert('Europe/Madrid')
     m['hour'] = m['ts'].dt.hour
     m['is_weekend'] = (m['ts'].dt.dayofweek >= 5).astype(int)
-    # énergie moyenne par capteur x heure x weekend pour ce mois
+    # mean energy per sensor x hour x weekend for this month
     m['energy'] = 10 ** (m['Nivell_LAeq_1min'] / 10)
     a = (m.groupby(['Id_Instal', 'hour', 'is_weekend'])['energy']
            .agg(['mean', 'count']).reset_index())
     aggs.append(a)
     log(f'{os.path.basename(z)} : {len(m)} lignes 1-min, {m.Id_Instal.nunique()} capteurs')
 
-# combine les mois (moyenne énergétique pondérée par le nombre de minutes)
+# combine the months (energy mean weighted by the number of minutes)
 allm = pd.concat(aggs)
 allm['energy_sum'] = allm['mean'] * allm['count']
 agg = (allm.groupby(['Id_Instal', 'hour', 'is_weekend'])
             .agg(energy_sum=('energy_sum', 'sum'), n=('count', 'sum')).reset_index())
 agg['LAeq'] = 10 * np.log10(agg['energy_sum'] / agg['n'])
-agg = agg[agg['n'] >= 60]  # au moins 1 h de données par cellule
-log(f'Agrégat : {len(agg)} cellules capteur x heure x weekend, {agg.Id_Instal.nunique()} capteurs')
+agg = agg[agg['n'] >= 60]  # at least 1 h of data per cell
+log(f'Aggregate: {len(agg)} sensor x hour x weekend cells, {agg.Id_Instal.nunique()} sensors')
 
 # ---------- 2. Jointure avec les positions ----------
 inst = pd.read_csv('data/raw/barcelona/XarxaSoroll_EquipsMonitor_Instal.csv')
 inst = inst.drop_duplicates(subset='Id_Instal')[['Id_Instal', 'Latitud', 'Longitud']]
 df = agg.merge(inst, on='Id_Instal', how='inner').rename(
     columns={'Latitud': 'latitude', 'Longitud': 'longitude'})
-log(f'Après jointure positions : {len(df)} cellules, {df.Id_Instal.nunique()} capteurs localisés')
+log(f'After joining positions: {len(df)} cells, {df.Id_Instal.nunique()} located sensors')
 
 # ---------- 3. Morphologie OSM de Barcelone (cache local) ----------
 MARGIN = 0.01
@@ -115,19 +115,19 @@ gpath = 'data/processed/barcelona/barcelona_roads.graphml'
 ox.settings.timeout = 600
 
 if not os.path.exists(bpath):
-    log('Téléchargement bâtiments OSM Barcelone (plusieurs minutes)...')
+    log('Downloading Barcelona OSM buildings (several minutes)...')
     b = ox.features_from_bbox(bbox, tags={'building': True})
     b = b[b.geometry.geom_type.isin(['Polygon', 'MultiPolygon'])]
     b[['geometry']].to_file(bpath, driver='GPKG')
 if not os.path.exists(gpath):
-    log('Téléchargement réseau routier Barcelone...')
+    log('Downloading Barcelona road network...')
     G = ox.graph_from_bbox(bbox, network_type='drive')
     ox.save_graphml(G, gpath)
 
 buildings = gpd.read_file(bpath)
 G = ox.load_graphml(gpath)
 nodes, edges = ox.graph_to_gdfs(G)
-log(f'Barcelone : {len(buildings)} bâtiments, {len(edges)} segments')
+log(f'Barcelona: {len(buildings)} buildings, {len(edges)} segments')
 
 # features morphologie par CAPTEUR (positions uniques), puis re-jointure
 sensors = df[['Id_Instal', 'latitude', 'longitude']].drop_duplicates('Id_Instal').reset_index(drop=True)
@@ -156,7 +156,7 @@ df = df.merge(morph[['Id_Instal', 'building_density_km2', 'road_density_km_km2',
 df.to_parquet('data/processed/barcelona/barcelona_test_set.parquet', index=False)
 log(f'Test set Barcelone : {len(df)} lignes')
 
-# ---------- 4. Expériences ----------
+# ---------- 4. Experiments ----------
 model = joblib.load('outputs/models/surrogate_lgbm_large.pkl')
 X = df[FEATURES]
 y = df['LAeq']
@@ -166,23 +166,23 @@ log('=== A. TRANSFERT BRUT (Uganda -> Barcelone) ===')
 log(f'MAE  : {mean_absolute_error(y, pred_raw):.2f} dB')
 log(f'R²   : {r2_score(y, pred_raw):.3f}')
 log(f'r    : {pearsonr(y, pred_raw)[0]:.3f}')
-log(f'Biais moyen (mesuré - prédit) : {(y - pred_raw).mean():+.2f} dB')
+log(f'Mean bias (measured - predicted): {(y - pred_raw).mean():+.2f} dB')
 
-# B : offset calibré sur 30% des capteurs, évalué sur les 70% restants
+# B: offset calibrated on 30% of sensors, evaluated on the remaining 70%
 gss = GroupShuffleSplit(n_splits=1, train_size=0.3, random_state=42)
 cal_idx, eval_idx = next(gss.split(X, y, groups=df['Id_Instal']))
 offset = (y.iloc[cal_idx] - pred_raw[cal_idx]).mean()
 pred_off = pred_raw[eval_idx] + offset
 y_eval = y.iloc[eval_idx]
 
-log('=== B. TRANSFERT + OFFSET (protocole prévu pour Hanoï) ===')
-log(f'Offset calibré sur {df.iloc[cal_idx].Id_Instal.nunique()} capteurs : {offset:+.2f} dB')
+log('=== B. TRANSFER + OFFSET (the protocol then planned for Hanoi) ===')
+log(f'Offset calibrated on {df.iloc[cal_idx].Id_Instal.nunique()} sensors: {offset:+.2f} dB')
 log(f'MAE  : {mean_absolute_error(y_eval, pred_off):.2f} dB '
-    f'(éval sur {df.iloc[eval_idx].Id_Instal.nunique()} capteurs jamais vus)')
+    f'(evaluated on {df.iloc[eval_idx].Id_Instal.nunique()} sensors never seen)')
 log(f'R²   : {r2_score(y_eval, pred_off):.3f}')
 log(f'r    : {pearsonr(y_eval, pred_off)[0]:.3f}')
 
-# C : entraînement direct sur Barcelone, split PAR CAPTEUR (pas de fuite spatiale)
+# C: direct training on Barcelona, split BY SENSOR (no spatial leakage)
 gss2 = GroupShuffleSplit(n_splits=1, train_size=0.7, random_state=42)
 tr_idx, te_idx = next(gss2.split(X, y, groups=df['Id_Instal']))
 mc = lgb.LGBMRegressor(n_estimators=1000, learning_rate=0.05, num_leaves=31,
@@ -190,8 +190,8 @@ mc = lgb.LGBMRegressor(n_estimators=1000, learning_rate=0.05, num_leaves=31,
 mc.fit(X.iloc[tr_idx], y.iloc[tr_idx])
 pc = mc.predict(X.iloc[te_idx])
 
-log('=== C. ENTRAÎNEMENT DIRECT BARCELONE (benchmark vs réf. profs : R²=0.61, r=0.66) ===')
+log('=== C. DIRECT BARCELONA TRAINING (benchmark against the cited R2=0.61, r=0.66) ===')
 log(f'MAE  : {mean_absolute_error(y.iloc[te_idx], pc):.2f} dB')
 log(f'R²   : {r2_score(y.iloc[te_idx], pc):.3f}')
 log(f'r    : {pearsonr(y.iloc[te_idx], pc)[0]:.3f}')
-log('Terminé.')
+log('Done.')

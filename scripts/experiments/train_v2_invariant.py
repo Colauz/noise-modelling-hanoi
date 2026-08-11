@@ -54,7 +54,7 @@ def log(msg):
 
 
 def morphology_v2(points_df, bpath, gpath, crs_utm):
-    """Features invariantes : ratio de surface bâtie + réseau routier."""
+    """Invariant features: built area ratio + road network."""
     buildings = gpd.read_file(bpath).to_crs(crs_utm)
     buildings['area_m2'] = buildings.geometry.area
     buildings = buildings.set_geometry(buildings.geometry.centroid)
@@ -71,7 +71,7 @@ def morphology_v2(points_df, bpath, gpath, crs_utm):
     buf = gpd.GeoDataFrame({'pt_id': range(len(pts))},
                            geometry=pts.geometry.buffer(R), crs=crs_utm)
 
-    # Ratio de surface bâtie (somme des aires des bâtiments à centroïde dans R)
+    # Built area ratio (sum of the areas of buildings whose centroid falls in R)
     jb = gpd.sjoin(buildings[['geometry', 'area_m2']], buf, predicate='within')
     area_sum = jb.groupby('pt_id')['area_m2'].sum()
     pts['built_area_ratio'] = [min(area_sum.get(i, 0) / AREA_M2, 1.0)
@@ -124,7 +124,7 @@ log(f'Comparaison domaines — built_area_ratio Uganda [{ug.built_area_ratio.qua
     f'{ug.built_area_ratio.quantile(0.95):.2f}] vs Barcelone [{bcn.built_area_ratio.quantile(0.05):.2f}-'
     f'{bcn.built_area_ratio.quantile(0.95):.2f}]')
 
-# ---------- 3. Modèle Uganda v2 ----------
+# ---------- 3. Uganda v2 model ----------
 Xu, yu = ug[FEATURES], ug['noise_measurement']
 Xu_tr, Xu_te, yu_tr, yu_te = train_test_split(Xu, yu, test_size=0.2, random_state=42)
 mu = lgb.LGBMRegressor(n_estimators=2000, learning_rate=0.05, num_leaves=63,
@@ -135,12 +135,12 @@ pu = mu.predict(Xu_te)
 log('=== UGANDA v2 (feature invariante) ===')
 log(f'MAE = {mean_absolute_error(yu_te, pu):.2f} dB   R² = {r2_score(yu_te, pu):.3f}   '
     f'r = {pearsonr(yu_te, pu)[0]:.3f}')
-log('(référence v1 : MAE 5.17, R² 0.639, r 0.800)')
+log('(v1 reference: MAE 5.17, R2 0.639, r 0.800)')
 # Booster texte : format portable, independant de la version de LightGBM et de
 # sklearn. Le pickle ne se rechargeait qu'avec les versions exactes d'origine.
 mu.booster_.save_model('models/surrogate_lgbm_v2_uganda.txt')
 
-# ---------- 4. Diagnostic transfert vers Barcelone (jamais en entraînement) ----------
+# ---------- 4. Transfer diagnostic to Barcelona (never used for training) ----------
 Xb, yb = bcn[FEATURES], bcn['LAeq']
 pb = mu.predict(Xb)
 log('=== DIAGNOSTIC TRANSFERT v2 Uganda -> Barcelone (brut) ===')
@@ -151,9 +151,9 @@ log('(v1 : MAE 19.55, r -0.001, biais +19.27)')
 gss = GroupShuffleSplit(n_splits=1, train_size=0.3, random_state=42)
 cal, ev = next(gss.split(Xb, yb, groups=bcn['Id_Instal']))
 off = (yb.iloc[cal] - pb[cal]).mean()
-log('=== DIAGNOSTIC TRANSFERT v2 + OFFSET (protocole Hanoï) ===')
+log('=== v2 + OFFSET TRANSFER DIAGNOSTIC (the Hanoi protocol) ===')
 log(f'offset = {off:+.2f} dB   MAE = {mean_absolute_error(yb.iloc[ev], pb[ev] + off):.2f} dB   '
     f'R² = {r2_score(yb.iloc[ev], pb[ev] + off):.3f}   '
     f'r = {pearsonr(yb.iloc[ev], pb[ev] + off)[0]:.3f}')
 log('(v1 : MAE 8.72, R² -2.369, r -0.015)')
-log('Terminé.')
+log('Done.')

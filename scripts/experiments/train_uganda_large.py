@@ -50,17 +50,17 @@ def log(msg):
     print(f'[{time.time() - t0:6.0f}s] {msg}', flush=True)
 
 
-# ---------- 1. Métadonnées large (colonnes sélectionnées, sans audio) ----------
-log('Lecture des parquet large (métadonnées seulement)...')
+# ---------- 1. Large metadata (selected columns, no audio) ----------
+log('Reading the large parquet files (metadata only)...')
 shards = [f'hf://datasets/Sunbird/urban-noise-uganda-61k/large/train-{i:05d}-of-00006.parquet'
           for i in range(6)]
 storage = {'token': os.environ['HF_TOKEN']}
 df = pd.concat(
     [pd.read_parquet(s, columns=META_COLS, storage_options=storage) for s in shards],
     ignore_index=True)
-log(f'{len(df)} lignes chargées')
+log(f'{len(df)} rows loaded')
 
-# ---------- 2. Nettoyage (mêmes règles que le notebook 02) ----------
+# ---------- 2. Cleaning (same rules as notebook 02) ----------
 df = df.dropna(subset=['noise_measurement', 'latitude', 'longitude', 'timestamp'])
 df = df.drop_duplicates(subset=['submitter_id', 'timestamp'])
 df = df[df['accuracy'] < 50]
@@ -70,9 +70,9 @@ df['hour'] = df['timestamp'].dt.hour
 df['is_weekend'] = df['timestamp'].dt.dayofweek.isin([5, 6]).astype(int)
 df = df.reset_index(drop=True)
 df.to_csv('data/processed/uganda/sunbird_clean_large.csv', index=False)
-log(f'{len(df)} lignes après nettoyage')
+log(f'{len(df)} rows after cleaning')
 
-# ---------- 3. Caches OSM (étendus si l'emprise large dépasse celle du small) ----------
+# ---------- 3. OSM caches (extended if the large extent exceeds the small one) ----------
 MARGIN = 0.01
 osm = {}
 for region, g in df.groupby('region'):
@@ -91,7 +91,7 @@ for region, g in df.groupby('region'):
         return w <= bbox[0] and s <= bbox[1] and e >= bbox[2] and n >= bbox[3]
 
     if not covers(gpath):
-        log(f'{region} : cache absent ou trop petit, téléchargement OSM (plusieurs minutes)...')
+        log(f'{region}: cache missing or too small, downloading OSM (several minutes)...')
         ox.settings.timeout = 600
         b = ox.features_from_bbox(bbox, tags={'building': True})
         b = b[b.geometry.geom_type.isin(['Polygon', 'MultiPolygon'])]
@@ -103,9 +103,9 @@ for region, g in df.groupby('region'):
     G = ox.load_graphml(gpath)
     nodes, edges = ox.graph_to_gdfs(G)
     osm[region] = (buildings, edges, nodes)
-    log(f'{region} : {len(buildings)} bâtiments, {len(edges)} segments')
+    log(f'{region}: {len(buildings)} buildings, {len(edges)} segments')
 
-# ---------- 4. Morphologie (vectorisé, sjoin_nearest pour la distance) ----------
+# ---------- 4. Morphology (vectorised, sjoin_nearest for the distance) ----------
 feats = []
 for region, (buildings, edges, nodes) in osm.items():
     sub = df[df['region'] == region].reset_index(drop=True)
@@ -140,13 +140,13 @@ for region, (buildings, edges, nodes) in osm.items():
 
 feat = pd.concat(feats, ignore_index=True)
 feat.to_parquet('data/processed/uganda/sunbird_morphology_large.parquet', index=False)
-log(f'Morphologie sauvegardée ({len(feat)} points)')
+log(f'Morphology saved ({len(feat)} points)')
 
-# ---------- 5. Entraînement ----------
+# ---------- 5. Training ----------
 X = feat[FEATURES]
 y = feat['noise_measurement']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-log(f'Entraînement LightGBM : train={len(X_train)}, test={len(X_test)}')
+log(f'LightGBM training: train={len(X_train)}, test={len(X_test)}')
 
 model = lgb.LGBMRegressor(
     n_estimators=2000, learning_rate=0.05, num_leaves=63,
@@ -159,7 +159,7 @@ mae = mean_absolute_error(y_test, y_pred)
 rmse = root_mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
-log('=== RÉSULTATS LARGE ===')
+log('=== LARGE RESULTS ===')
 log(f'MAE  : {mae:.2f} dB')
 log(f'RMSE : {rmse:.2f} dB')
 log(f'R²   : {r2:.3f}')
@@ -167,4 +167,4 @@ log(f'R²   : {r2:.3f}')
 # Booster texte : format portable, independant de la version de LightGBM et de
 # sklearn. Le pickle ne se rechargeait qu'avec les versions exactes d'origine.
 model.booster_.save_model('models/surrogate_lgbm_large.txt')
-log('Modèle sauvegardé : outputs/models/surrogate_lgbm_large.pkl')
+log('Model saved: models/surrogate_lgbm_large.txt')
