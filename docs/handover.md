@@ -8,7 +8,49 @@ Read §1, run §2, then pick from §6.
 
 ---
 
-## 0. Open items — answers we never got
+## 0. The working principle: verify by executing, not by reading
+
+**Every defect this project shipped was one that reading could not catch.**
+
+The R² = 0.45 was withdrawn because a cross-validation split *looked* spatial. The
+Bach Khoa map was published because a grid *looked* like it covered the study area.
+The validation figures drifted for six days because an artefact *looked* current.
+A renamed import broke the pipeline three times, and two of those survived review
+because the reviewer was reading module headers. None of these is a careless
+mistake; each is what happens when a check is a person looking at code instead of
+a machine running it.
+
+So the guards here execute. Each one exists because something got past a reading.
+
+| Guard | What it runs | What it catches |
+|---|---|---|
+| `tests/test_cv_protocols.py` | asserts `BLOO_RADIUS_M >= FEATURE_RADIUS_M`, and that a 110 m buffer would still leak | the leak behind the withdrawn R² = 0.45 |
+| `tests/test_grid_extent.py` | reads the published grid, checks every cell against the sampled envelope and against the retracted Bach Khoa extent | a map extended to unmeasured ground |
+| `tests/test_features_extraction.py` | recomputes the morphology features and compares them element by element to the stored artefact | silent drift in the input to every published number |
+| `tests/test_gama_fingerprint.py` | compares extracted **values**, never strings, between two dated fingerprints | a model edit that changes what the simulation loads |
+| `tests/test_pipeline_end_to_end.py` | loads every numbered script for real; `-m slow` runs `make results` | a broken import, including one hidden inside a function |
+| `Makefile` dependency rules | rebuilds a derived artefact when its input is newer | the validation that drifted from its grid |
+| `make` environment check | fails legibly when the package is not importable | an obscure `ModuleNotFoundError` halfway through a target |
+
+Two habits go with them, and they cost minutes:
+
+- **Fingerprint before you change anything.** Before the restructuring, before the
+  feature extraction, before translating the simulation's strings, a reference was
+  captured and diffed afterwards. Every one of those diffs came back identical,
+  which is the only reason those changes can be trusted. `tests/fixtures/` holds
+  the two GAMA fingerprints, including the French one kept as the continuity trace.
+- **Compare dates across the whole tree, not the file you are thinking about.**
+  Comparing each artefact's last commit against its inputs' found **four** stale
+  artefacts where one had been noticed by hand — and `report.pdf` and the dashboard
+  were stale a level above, because `make results` did not build them.
+
+If you add a step to the pipeline, add its dependency to the Makefile and a check
+that runs. A rule nobody executes is a rule that will be broken without anyone
+noticing, and this repository has the receipts.
+
+---
+
+## 0b. Open items — answers we never got
 
 Every one of these is a **visible placeholder** in the repository rather than a
 guess. A field marked "to confirm" is honest; a field filled in by judgement is
