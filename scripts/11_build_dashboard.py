@@ -40,7 +40,7 @@ COUNTS = cfg.VEHICLE_COUNTS
 FLEET = os.path.join(cfg.GAMA_INPUTS, 'fleet_by_hour.csv')
 PHYS = cfg.PHYS_JSON
 
-# Palette de référence du guide de dataviz, validée pour les deux modes
+# Reference palette from the dataviz guide, validated for both modes
 # (scripts/validate_palette.js : tous les tests passent en clair et en sombre).
 SERIES = ['#2a78d6', '#eb6834', '#1baf7a']
 SERIES_DARK = ['#3987e5', '#d95926', '#199e70']
@@ -60,12 +60,12 @@ def fmt(v, n=2, sign=False):
 
 # ------------------------------------------------------------------------------ graphiques
 def bar_emphasis(rows, highlight, width=880, row_h=30, pad_l=286, pad_r=64):
-    """Barres horizontales en MISE EN ÉVIDENCE : un modèle en couleur, les autres en gris.
+    """Horizontal bars with ONE HIGHLIGHTED: one model in colour, the others in grey.
 
-    Les valeurs sont dans une COLONNE FIXE à droite plutôt qu'accolées au bout de chaque
-    barre : avec des R² proches de zéro, une étiquette accolée se superpose au nom du
-    modèle et devient illisible. L'axe zéro est matérialisé parce que des R² négatifs
-    existent — un R² négatif signifie « moins bon que prédire la moyenne partout »,
+    Values sit in a FIXED COLUMN on the right rather than at the end of each
+    bar: with R2 values near zero, an attached label overlaps the model name and
+    becomes unreadable. The zero axis is drawn because negative R2 values exist --
+    a negative R2 means "worse than predicting the mean everywhere",
     c'est une information, pas un artefact.
     """
     if not rows:
@@ -74,7 +74,7 @@ def bar_emphasis(rows, highlight, width=880, row_h=30, pad_l=286, pad_r=64):
     lo, hi = min(min(vals), 0.0), max(max(vals), 0.0)
     span = (hi - lo) or 1.0
     plot_w = width - pad_l - pad_r
-    x0 = pad_l + (0 - lo) / span * plot_w          # position du zéro
+    x0 = pad_l + (0 - lo) / span * plot_w          # position of zero
     h = len(rows) * row_h + 34
     out = [f'<svg viewBox="0 0 {width} {h}" role="img" class="chart" '
            f'aria-label="Comparaison des modeles, R2">']
@@ -98,31 +98,31 @@ def bar_emphasis(rows, highlight, width=880, row_h=30, pad_l=286, pad_r=64):
     return '\n'.join(out)
 
 
-# Noms courts pour le graphique : les libellés complets de metrics.json débordent de la
-# colonne de gauche. Le tableau juste en dessous porte, lui, les libellés complets.
+# Short names for the chart: the full labels from metrics.json overflow the left
+# column. The table just below carries the full labels.
 SHORT = {
-    'site_hour_mean': 'Table site × heure',
-    'idw':            'Distance inverse (IDW)',
-    'dist_road':      'Régression log(dist_road)',
-    'lgbm_morpho':    'LightGBM morphologie seule',
-    'lgbm_time':      'LightGBM temps seul',
+    'site_hour_mean': 'Site x hour table',
+    'idw':            'Inverse distance (IDW)',
+    'dist_road':      'log(dist_road) regression',
+    'lgbm_morpho':    'LightGBM morphology only',
+    'lgbm_time':      'LightGBM time only',
     'lgbm_full':      'LightGBM v1',
-    'lgbm_v2':        'LightGBM v2 (voiries séparées)',
-    'physical':       'Noyau physique seul',
-    'hybrid':         'HYBRIDE',
-    'hybrid_lowcap':  'HYBRIDE conservateur',
+    'lgbm_v2':        'LightGBM v2 (road classes split)',
+    'physical':       'Physical kernel only',
+    'hybrid':         'HYBRID',
+    'hybrid_lowcap':  'Conservative HYBRID',
 }
 
 
 def line_by_hour(fleet, value_col, width=760, height=250):
-    """Débit par heure et par site : trois séries, légende + étiquettes directes.
+    """Flow by hour and by site: three series, legend plus direct labels.
 
-    Trois séries seulement, ce qui est la limite validée en « toutes paires » de la
-    palette de référence. Les heures NON FILMÉES sont interpolées : elles sont tracées
+    Three series only, which is the "all pairs" limit validated for the reference
+    palette. UNFILMED hours are interpolated: they are drawn
     en trait discontinu pour que la distinction mesure/estimation reste visible.
     """
     if fleet is None or value_col not in fleet.columns:
-        return '<p class="note">Débit indisponible : relancer count_vehicles.py puis export_gama_zones.py.</p>'
+        return '<p class="note">Flow unavailable: rerun 02_count_vehicles.py then 07_export_gama_inputs.py.</p>'
     sites = list(fleet.site_name.unique())[:3]
     pl, pr, pt, pb = 46, 108, 14, 30
     hrs = sorted(fleet.hour.unique())
@@ -144,7 +144,7 @@ def line_by_hour(fleet, value_col, width=760, height=250):
         g = fleet[fleet.site_name == s].sort_values('hour')
         pts = ' '.join(f'{X(r.hour):.1f},{Y(r[value_col]):.1f}' for _, r in g.iterrows())
         out.append(f'<polyline points="{pts}" class="ln s{i+1}"/>')
-        for _, r in g[g.measured == 1].iterrows():   # points = heures réellement filmées
+        for _, r in g[g.measured == 1].iterrows():   # points = hours actually filmed
             out.append(f'<circle cx="{X(r.hour):.1f}" cy="{Y(r[value_col]):.1f}" r="4" '
                        f'class="dot s{i+1}"><title>{esc(s)} · {int(r.hour)}h · '
                        f'{r[value_col]:.1f} veh/min (mesure)</title></circle>')
@@ -157,7 +157,7 @@ def line_by_hour(fleet, value_col, width=760, height=250):
 
 # ----------------------------------------------------------------------------- carte
 def build_map(meas, grid):
-    """Carte Folium : grille de bruit prédite (heatmap) + points de mesure terrain."""
+    """Folium map: predicted noise grid (heatmap) plus field measurement points."""
     import folium
     from folium.plugins import HeatMap
 
@@ -173,13 +173,13 @@ def build_map(meas, grid):
         HeatMap([[r.latitude, r.longitude, float(np.clip((r[col] - lo) / rng, 0, 1))]
                  for _, r in g.iterrows()],
                 radius=9, blur=12, min_opacity=.30,
-                name=f'Bruit prédit (modèle hybride, {REF_HOUR} h)').add_to(m)
+                name=f'Predicted noise (delivered model, {REF_HOUR}h)').add_to(m)
 
     fg = folium.FeatureGroup(name='Mesures terrain (363 points)')
     lo, hi = meas.noise_dB.quantile([.05, .95])
     for _, r in meas.iterrows():
         t = float(np.clip((r.noise_dB - lo) / ((hi - lo) or 1), 0, 1))
-        # rampe séquentielle à une seule teinte : plus foncé = plus bruyant
+        # single-hue sequential ramp: darker = louder
         col = f'#{int(255-107*t):02x}{int(235-180*t):02x}{int(250-190*t):02x}'
         folium.CircleMarker(
             [r.latitude, r.longitude], radius=4, color='#333', weight=.6,
@@ -187,7 +187,7 @@ def build_map(meas, grid):
             tooltip=f'{r.noise_dB:.1f} dB · {esc(r.site)} · {r.timestamp}').add_to(fg)
     fg.add_to(m)
     folium.LayerControl(collapsed=False).add_to(m)
-    # cadrage sur l'emprise réellement mesurée : les 3 sites sont distants d'une dizaine
+    # framed on the envelope actually measured: the 3 sites are about ten
     # de km, un zoom fixe les laisse minuscules dans un coin de la carte.
     m.fit_bounds([[meas.latitude.min(), meas.longitude.min()],
                   [meas.latitude.max(), meas.longitude.max()]], padding=(24, 24))
@@ -276,13 +276,13 @@ def main():
     fleet = pd.read_csv(FLEET) if os.path.exists(FLEET) else None
     phys = json.load(open(PHYS)) if os.path.exists(PHYS) else {}
 
-    # Le modèle livré est celui que evaluate_models.py a retenu sous le protocole de
-    # référence — pas forcément le plus sophistiqué. On le lit, on ne le devine pas.
+    # The delivered model is the one 04_evaluate_models.py kept under the reference
+    # protocol -- not necessarily the most sophisticated. We read it, we do not guess it.
     delivered = M['meta']['delivered_model']
     # The "(delivered)" marker is attached here, from meta, and never baked into a
     # label: SHORT used to carry it on 'hybrid', which stayed wrong for a week after
     # the physical kernel took over.
-    SHORT[delivered] = SHORT.get(delivered, delivered) + ' (livré)'
+    SHORT[delivered] = SHORT.get(delivered, delivered) + ' (delivered)'
     D = RM[delivered]
 
     # --- bandeau d'indicateurs -----------------------------------------------------
@@ -290,21 +290,21 @@ def main():
     if vc is not None and 'vehicles_flow' in vc.columns:
         f = vc.vehicles_flow.dropna()
         flow_txt = f'{f.mean():.0f}'
-        flow_det = f'médiane {f.median():.0f} · max {f.max():.0f} véh/min'
+        flow_det = f'median {f.median():.0f} - max {f.max():.0f} veh/min'
     kpis = ''.join([
-        kpi(fmt(D['r2'], 3), 'R² modèle livré',
+        kpi(fmt(D['r2'], 3), 'R2, delivered model',
             f"{esc(SHORT.get(delivered, D['label']))} · IC 95 % "
             f"[{D['r2_ci95'][0]:.2f}, {D['r2_ci95'][1]:.2f}] · {esc(reflabel)}"),
         kpi(f"{D['mae']:.2f} dB", 'MAE',
             f"IC 95 % [{D['mae_ci95'][0]:.2f}, {D['mae_ci95'][1]:.2f}]"),
         kpi(f"{M['meta']['n_measurements']}", 'mesures terrain',
             f"{len(M['meta']['sites'])} sites · {M['meta']['date_min']} → {M['meta']['date_max']}"),
-        kpi(f'{len(vc) if vc is not None else 0}', 'vidéos suivies',
+        kpi(f'{len(vc) if vc is not None else 0}', 'videos tracked',
             'YOLOv8 + ByteTrack, franchissement de ligne'),
-        kpi(flow_txt, 'débit moyen (véh/min)', flow_det),
+        kpi(flow_txt, 'mean flow (veh/min)', flow_det),
     ])
 
-    # --- comparaison des modèles ---------------------------------------------------
+    # --- model comparison ------------------------------------------------------------
     order = ['site_hour_mean', 'idw', 'dist_road', 'lgbm_morpho', 'lgbm_full',
              'lgbm_v2', 'physical', 'hybrid', 'hybrid_lowcap']
     rows = [(SHORT.get(k, RM[k]['label']), RM[k]['r2']) for k in order if k in RM]
@@ -317,7 +317,7 @@ def main():
         f'<td>{RM[k]["mae"]:.2f}</td><td>{RM[k]["r"]:.2f}</td></tr>'
         for k in order if k in RM)
 
-    # L'inversion de classement entre protocoles est LE résultat de la V2 : elle doit être
+    # The ranking inversion between protocols is THE V2 result: it must be
     # sur la page, pas seulement dans le rapport.
     bcv = M.get('block_cv', {}).get('models', {})
     inversion = ''
@@ -325,55 +325,55 @@ def main():
         g = M[ref].get('v2_gains', {}).get('residual_ml_gain', {})
         inversion = (
             f'<div class="warn"><strong>Le classement s\'inverse entre protocoles.</strong> '
-            f'Sous le découpage permissif (block-CV 600 m) ce sont les modèles les plus '
-            f'élaborés qui mènent : hybride {bcv["hybrid"]["r2"]:+.3f}, LightGBM v2 '
+            f'Under the permissive split (block-CV 600 m) the most elaborate models '
+            f'lead: hybrid {bcv["hybrid"]["r2"]:+.3f}, LightGBM v2 '
             f'{bcv["lgbm_v2"]["r2"]:+.3f}, noyau physique {bcv["physical"]["r2"]:+.3f}. Sous le '
-            f'protocole de référence, dont le rayon d\'exclusion égale le rayon d\'agrégation '
+            f'reference protocol, whose exclusion radius equals the feature aggregation '
             f'des variables, l\'ordre se retourne : noyau physique {RM["physical"]["r2"]:+.3f}, '
-            f'hybride {RM["hybrid"]["r2"]:+.3f}. L\'architecture hybride a donc été '
-            f'<strong>construite, testée et écartée</strong> — la correction apprise vaut '
-            f'ΔR² {g.get("delta_r2", 0):+.3f} face à la physique seule sous ce protocole.</div>')
+            f'hybrid {RM["hybrid"]["r2"]:+.3f}. The hybrid architecture was therefore '
+            f'<strong>built, tested and rejected</strong> -- the learned correction is worth '
+            f'dR2 {g.get("delta_r2", 0):+.3f} against physics alone under this protocol.</div>')
 
-    # Honnêteté : le modèle livré n'est pas forcément le meilleur sous TOUS les protocoles.
+    # Honesty: the delivered model is not necessarily best under ALL protocols.
     loso = M.get('loso', {}).get('models', {})
     caveat = ''
     if loso and delivered in loso:
         bl = max(loso, key=lambda k: loso[k]['r2'])
         if bl != delivered:
             caveat = (
-                f'<div class="warn"><strong>À lire avec le tableau.</strong> Sous '
-                f'<em>leave-one-site-out</em> — généralisation à une typologie urbaine jamais '
-                f'vue — le modèle livré tombe à R² {loso[delivered]["r2"]:+.3f}, tandis que '
-                f'« {esc(loso[bl]["label"])} » tient à {loso[bl]["r2"]:+.3f}. Le noyau physique '
+                f'<div class="warn"><strong>Read this with the table.</strong> Under '
+                f'<em>leave-one-site-out</em> -- generalisation to an urban typology never '
+                f'seen -- the delivered model falls to R2 {loso[delivered]["r2"]:+.3f}, while '
+                f'"{esc(loso[bl]["label"])}" holds at {loso[bl]["r2"]:+.3f}. The physical kernel '
                 f'seul extrapole donc mieux que l\'hybride complet : la correction apprise '
-                f'améliore l\'interpolation dans les typologies échantillonnées, pas '
-                f'l\'extrapolation hors d\'elles. Toute carte publiée reste bornée à '
-                f'l\'emprise mesurée.</div>')
+                f'improves interpolation within the sampled typologies, not '
+                f'extrapolation beyond them. Every published map stays bounded to '
+                f'the measured envelope.</div>')
 
     # --- physique ------------------------------------------------------------------
     phys_html = ''
     if phys:
         phys_html = (
             '<h2>Noyau physique</h2>'
-            '<div class="card"><p class="note">Une voie est traitée comme une source '
-            '<strong>linéique</strong> : l\'intensité décroît en 1/d et non en 1/d². '
-            'L\'énergie reçue est la somme des deux classes de voirie et d\'un fond '
-            'résiduel, tous coefficients contraints positifs.</p>'
+            '<div class="card"><p class="note">A road is treated as a '
+            '<strong>line source</strong>: intensity falls as 1/d, not as 1/d^2. '
+            'The energy received is the sum of the two road classes and a residual '
+            'background, all coefficients constrained non-negative.</p>'
             f'<pre>E(x) = A_hw / max(d_hw, {phys["D0_m"]:.0f})  +  A_res / max(d_res, '
             f'{phys["D0_m"]:.0f})  +  B\nL(x) = 10 · log10( E(x) )\n\n'
             f'A_highway     = {phys["A_highway"]:.4g}\n'
             f'A_residential = {phys["A_residential"]:.4g}\n'
             f'B_background  = {phys["B_background"]:.4g}</pre>'
-            + ('<p class="note">Un LightGBM apprend le <strong>résidu</strong> de cette '
-               'équation : la part transférable est portée par les paramètres physiques, la '
-               'part non transférable est confinée dans une correction bornée.</p>'
+            + ('<p class="note">A LightGBM learns the <strong>residual</strong> of this '
+               'equation: the transferable part is carried by the physical parameters, the '
+               'non-transferable part is confined to a bounded correction.</p>'
                if phys.get('apply_residual', True) else
-               '<p class="note">Un LightGBM de résidu a été entraîné et sauvegardé, mais il '
-               '<strong>n\'est pas appliqué</strong> à la carte publiée : sous le protocole '
-               'de référence il dégrade la prédiction plutôt que de l\'améliorer (voir le '
-               'tableau ci-dessus). Le choix est fait par le code, pas à la main — '
+               '<p class="note">A residual LightGBM was trained and saved, but it is '
+               '<strong>not applied</strong> to the published map: under the reference '
+               'protocol it degrades the prediction rather than improving it (see the '
+               'table above). The choice is made by the code, not by hand -- '
                '<code>evaluate_models.py</code> retient le meilleur candidat sous le '
-               'protocole de référence et écrit le drapeau <code>apply_residual</code>.</p>')
+               'reference protocol and writes the <code>apply_residual</code> flag.</p>')
             + '</div>')
 
     # --- trafic --------------------------------------------------------------------
@@ -382,25 +382,25 @@ def main():
     traffic = ''
     if flow_col:
         traffic = (
-            '<h2>Trafic mesuré — débit par heure</h2>'
+            '<h2>Measured traffic - flow by hour</h2>'
             '<div class="card">' + line_by_hour(fleet, flow_col) +
-            '<p class="note">Points = heures réellement filmées ; entre elles, '
-            'interpolation linéaire. Le <strong>débit</strong> (franchissements de ligne '
-            'par minute) remplace la densité par image utilisée jusqu\'en juillet 2026 : '
-            'en congestion la densité est maximale alors que le débit s\'effondre, et '
-            'c\'est le débit qui gouverne l\'émission sonore.</p></div>')
+            '<p class="note">Points = hours actually filmed; between them, '
+            'linear interpolation. <strong>Flow</strong> (line crossings '
+            'per minute) replaces the per-frame density used until July 2026: '
+            'in congestion density is maximal while flow collapses, and '
+            'it is flow that governs acoustic emission.</p></div>')
 
     map_src = ''
     try:
         map_src = build_map(meas, grid)
-    except Exception as e:      # la carte est un plus : son échec ne doit pas tuer la page
-        print(f'  carte non générée : {e}')
+    except Exception as e:      # the map is a bonus: its failure must not kill the page
+        print(f'  map not generated: {e}')
 
     map_html = (f'<div class="card"><iframe src="{map_src}" title="Carte du bruit" '
                 f'loading="lazy"></iframe><p class="note">Fond de carte CartoDB / '
-                f'OpenStreetMap. La grille prédite est bornée à l\'emprise réellement '
-                f'mesurée (+400 m) : aucune extrapolation vers un quartier non '
-                f'échantillonné.</p></div>') if map_src else ''
+                f'OpenStreetMap. The predicted grid is bounded to the envelope actually '
+                f'measured (+400 m): no extrapolation to an unsampled '
+                f'district.</p></div>') if map_src else ''
 
     doc = f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
@@ -411,23 +411,23 @@ def main():
 <h1>Hanoi Urban Noise — tableau de bord</h1>
 <p class="sub">Cartographie du bruit urbain par smartphones · Center for Environmental
 Intelligence, VinUniversity</p>
-<p class="meta">Généré le {date.today().isoformat()} · protocole de référence :
-{esc(reflabel)} · toutes les métriques sont lues dans
-<code>outputs/models/metrics.json</code>, aucune n'est recopiée à la main.</p>
+<p class="meta">Generated on {date.today().isoformat()} - reference protocol:
+{esc(reflabel)} - every metric is read from
+<code>models/metrics.json</code>; none is copied by hand.</p>
 
 <div class="kpis">{kpis}</div>
 
-<h2>Comparaison des modèles</h2>
+<h2>Model comparison</h2>
 <div class="card">
 {chart}
-<p class="note">Le modèle livré est en couleur, les autres en gris. Tous sont évalués sur
-<strong>exactement les mêmes découpages</strong>, avec IC 95 % par bootstrap par bloc
+<p class="note">The delivered model is in colour, the others in grey. All are evaluated on
+<strong>exactly the same splits</strong>, with 95 % block-bootstrap confidence intervals
 spatial.</p>
 </div>
 {inversion}
 {caveat}
 <div class="card">
-<table><thead><tr><th>Modèle</th><th>R²</th><th>IC 95 %</th><th>MAE (dB)</th><th>r</th></tr>
+<table><thead><tr><th>Model</th><th>R2</th><th>95 % CI</th><th>MAE (dB)</th><th>r</th></tr>
 </thead><tbody>{trows}</tbody></table>
 </div>
 
@@ -440,27 +440,27 @@ spatial.</p>
 
 <h2>Rapport complet</h2>
 <div class="card">
-<p class="note">Le rapport de collecte de données (8 pages : protocole, métrologie,
-analyse, modèle, simulation, limites) est régénéré par
+<p class="note">The data collection report (8 pages: protocol, metrology,
+analysis, model, simulation, limitations) is regenerated by
 <code>scripts/build_report.py</code>.</p>
 <p style="margin-top:14px"><a class="btn" href="../report.pdf">Ouvrir report.pdf</a></p>
 </div>
 
 <h2>Lancer la simulation GAMA</h2>
 <div class="card">
-<p class="note">La simulation multi-agents rejoue la carte heure par heure, avec véhicules
-mobiles, chantiers et scénarios de mitigation.</p>
+<p class="note">The agent-based simulation replays the map hour by hour, with moving
+vehicles, construction sites and mitigation scenarios.</p>
 <pre>1.  Installer GAMA Platform 1.9+        https://gama-platform.org/download
 2.  File &gt; Open Project…                choisir le dossier  gama/
 3.  Ouvrir                              gama/hanoi_noise.gaml
-4.  Choisir la zone en tête de fichier  zone &lt;- "oceanpark" | "hoankiem" | "vinhtuy"
-5.  Lancer l'expérimentation            hanoi_noise_sim  (icone ▶)
+4.  Pick the zone at the top of the file  zone &lt;- "oceanpark" | "hoankiem" | "vinhtuy"
+5.  Run the experiment                    hanoi_noise_sim
 
-Régénérer les entrées de la simulation :
+Regenerate the simulation inputs:
     python3 scripts/export_gama_zones.py</pre>
-<p class="note">Les fichiers d'entrée sont dans <code>outputs/gama_inputs/</code> :
-grille de bruit par heure, voiries, bâtiments, chantiers, points de mesure,
-<code>fleet_by_hour.csv</code> (débit et composition du parc) et
+<p class="note">The input files are in <code>simulation/gama/inputs/</code>:
+hourly noise grid, roads, buildings, construction sites, measurement points,
+<code>fleet_by_hour.csv</code> (flow and fleet composition) and
 <code>physical_params.csv</code> (coefficients du noyau physique).</p>
 </div>
 
@@ -471,7 +471,7 @@ grille de bruit par heure, voiries, bâtiments, chantiers, points de mesure,
     with open(path, 'w') as f:
         f.write(doc)
     print(f'OK -> {path}')
-    print(f'  modèle livré : {D["label"]}  R² {D["r2"]:+.3f}  MAE {D["mae"]:.2f} dB '
+    print(f'  delivered model: {D["label"]}  R2 {D["r2"]:+.3f}  MAE {D["mae"]:.2f} dB '
           f'({reflabel})')
     if best != delivered:
         print(f'  note : sous ce protocole le meilleur score est {RM[best]["label"]} '
