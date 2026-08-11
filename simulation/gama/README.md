@@ -61,6 +61,24 @@ map alone cannot: **people's exposure**.
 - Pedestrianisation: ×0.2 on selected streets.
 - Peak hour ×1.5.
 
+## FLOW_LINES_EQUIV: what it scales, and what it does not
+
+Flow is measured on **one** counting section — a virtual line in one video — while the
+simulated zone holds hundreds of streets. `FLOW_LINES_EQUIV` states how many equivalent
+sections the zone is taken to represent. The default 1.0 is the conservative reading:
+"the whole zone carries the flow measured at one point". It is an assumed scaling choice,
+not a measurement.
+
+| | Effect of raising it |
+|---|---|
+| Sound level, noise map, indicators | **None.** No acoustic emission is attached to the agents; the map comes from the physical kernel |
+| Number of vehicles on screen | **Proportional.** It multiplies the creation rate in `reflex spawn_traffic` |
+| Little's law (N = flow x residence time) | **Still holds, but for a different flow.** N settles around `FLOW_LINES_EQUIV x measured flow x residence time` |
+
+The consequence that matters: **the on-screen vehicle count stops being a physical quantity
+as soon as this parameter leaves 1.0.** It becomes a display density. Raising it to make the
+simulation look busier is legitimate for a demonstration and misleading in a figure caption.
+
 ## Two physics corrections that changed the answers
 
 **Scenario energy is decomposed.** `10·log10(k)` and any mitigation apply only to

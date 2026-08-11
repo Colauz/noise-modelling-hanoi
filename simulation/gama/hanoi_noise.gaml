@@ -189,8 +189,17 @@ global {
     // one video), whereas the simulated zone holds hundreds of streets. This factor states
     // how many equivalent sections the zone is taken to represent. 1.0 = the conservative
     // reading "the whole zone carries the flow measured at one point". It is an ASSUMED
-    // scaling choice, not a measurement: raising it densifies the display without changing
-    // the sound level, which does not depend on the agents (see header, point 3).
+    // scaling choice, not a measurement.
+    //
+    // WHAT IT DOES AND DOES NOT CHANGE - read this before raising it.
+    //   Invariant:  the SOUND LEVEL. No acoustic emission is attached to the agents
+    //               (see header, point 3), so the map is untouched whatever the value.
+    //   NOT invariant: the EMERGENT POPULATION. This factor multiplies the vehicle
+    //               creation rate in `reflex spawn_traffic`, so N scales with it, and
+    //               Little's law above (N = flow x residence time) then describes a
+    //               flow of FLOW_LINES_EQUIV x the measured flow, not the measured flow.
+    // Raising it to make the screen look busier therefore invalidates any reading of the
+    // on-screen vehicle count as a physical quantity. See simulation/gama/README.md.
     float FLOW_LINES_EQUIV <- 1.0 min: 0.2 max: 20.0;
     int   VEH_MAX_HOPS     <- 3;     // segments travelled before leaving the network
 
