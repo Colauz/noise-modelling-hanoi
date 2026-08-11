@@ -218,6 +218,17 @@ where they were taken. **This is an in-sample check** and is labelled as such: i
 verifies chain integrity, not generalisation. Generalisation is what §4.3
 measures, and the answer there is R² 0.246.
 
+Current figures, against the delivered physical kernel: bias −1.24 dB, MAE 5.30 dB,
+RMSE 6.49 dB, r 0.444, R² 0.166, 53.1 % of points within ±5 dB.
+
+> **Read those numbers as a trade-off, not as a failure.** The three-parameter
+> physical kernel fits the training points less closely than the LightGBM did
+> (R² 0.166 against 0.499) and generalises better under buffered leave-one-out
+> (0.246 against 0.137). The map is flatter — σ 3.14 dB simulated against 5.57 dB
+> for the earlier grid — because the model is less flexible. The earlier, more
+> flattering validation described a model that is not delivered; it is archived in
+> [`archive/validation-2026-08-05/`](archive/validation-2026-08-05/).
+
 ---
 
 ## 6. Map and simulation

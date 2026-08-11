@@ -9,6 +9,10 @@
 > triggered. **None of them matches `models/metrics.json`, and none should.** File
 > paths likewise refer to the repository layout as it stood at commit `c5108d6`.
 >
+> The validation metrics quoted here (bias −0.52, MAE 3.68, r 0.719, 74 % within
+> ±5 dB) are those of 5 August 2026, **before the grid was regenerated**. Current
+> values are in `docs/methodology.md` section 5.3.
+>
 > **For current results, read [`../methodology.md`](../methodology.md) and
 > [`../../models/model_comparison.md`](../../models/model_comparison.md).**
 > The delivered model scores **R² = 0.246** under the reference protocol.
