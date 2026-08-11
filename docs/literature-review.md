@@ -8,12 +8,25 @@ Coverage was not a goal. An honest bibliography beats a long one.
 [`methodology.md`](methodology.md) §5.2 — `verified` / `to_check` / `grey`, no fourth
 level, and grey literature is never cited as a primary reference.
 
-> **Status of this document: first batch, DOIs verified, quartiles not yet.**
+> **Status: DOIs verified. Quartiles could not be read off their source.**
+>
 > Every DOI below was resolved against the Crossref API on 2026-08-12 and its
-> journal, year and title confirmed. **Journal quartiles are marked
-> `[À VÉRIFIER]`**: the rule is that a quartile is read off the ranking source with
-> its year, never from memory, and that pass has not been done. Do not quote a
-> quartile from this file until it is filled in.
+> journal, year and title confirmed.
+>
+> **Quartiles are recorded as `relevé impossible` rather than filled in.**
+> The rule of this project is that a quartile is read off its ranking source with
+> the year of that ranking, never from memory and never from a summary.
+> [scimagojr.com](https://www.scimagojr.com) returns **HTTP 403 to automated
+> requests**, and a search engine's summary of a quartile is second-hand — the same
+> category of evidence this project classifies `grey` everywhere else. Quoting one
+> would break the source policy in the very document that states it.
+>
+> **This is a fifteen-minute manual task**, listed in
+> [`handover.md`](handover.md): open Scimago in a browser, search each journal
+> below, and record the quartile *with its ranking year and subject category*.
+> Until then, **no quartile from this file may be quoted**, and the journals are
+> characterised by publisher and by the credibility evidence that could be
+> verified: method, independence, and citation counts where Crossref reports them.
 
 ---
 
@@ -60,7 +73,7 @@ Characteristics of road traffic noise in Hanoi and Ho Chi Minh City, Vietnam.
 `L_den` values 70–83 dB used as our anchor come from secondary sources and have not
 been confirmed against the article PDF.** Flagged `to_check` in
 `06_anchor_literature.py` and still open in `handover.md`.
-**Quartile.** `[À VÉRIFIER]` — Applied Acoustics, Elsevier.
+**Quartile.** *Relevé impossible* (Scimago 403). Applied Acoustics, Elsevier, an established journal in environmental and applied acoustics.
 **Why credible.** The only professionally instrumented noise campaign published for
 Hanoi: RION NL-21/22 sound level meters, 24 h continuous, 7 urban sites.
 **Concrete contribution.** **The primary anchor of our absolute-bias interval.** With
@@ -76,7 +89,7 @@ gaps we declare (§5.2 of the methodology).
 Minh City. *Applied Acoustics* 148, 332–343. DOI
 [10.1016/j.apacoust.2018.12.031](https://doi.org/10.1016/j.apacoust.2018.12.031)
 **Status.** `verified` — DOI resolved, value read in the abstract.
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Why credible.** Personal dosimeters plus GPS over 3 300 segments; independent team;
 method fully described.
 **Concrete contribution.** **The second anchor**, and the one that forced the
@@ -91,7 +104,7 @@ instrumental bias is a direct consequence of this source.
 and acoustic characteristics in congested urban traffic. *Acoustics* 7(2). DOI
 [10.3390/acoustics7020036](https://doi.org/10.3390/acoustics7020036)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]` — MDPI.
+**Quartile.** *Relevé impossible* (Scimago 403). *Acoustics*, MDPI.
 **Concrete contribution.** Supplies the **+17 dB horn-event figure** used in
 `metrology.md` to argue that our 25 s target is *intrinsically* noisy at sample level
 — a property of the quantity, not a sensor defect. That argument is what places a
@@ -105,7 +118,7 @@ pollution in developing countries: loopholes and recommendations for Vietnam law
 *City and Environment Interactions*. DOI
 [10.1016/j.cacint.2025.100187](https://doi.org/10.1016/j.cacint.2025.100187)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution.** Establishes that **Vietnam has no national strategic noise
 mapping programme and no statutory noise action plan**. That single fact is the
 justification for the project's positioning in `metrology.md`: a low-cost reproducible
@@ -121,7 +134,7 @@ smartphone method has value precisely in that vacuum, provided it does not overc
 measurement applications. *The Journal of the Acoustical Society of America* 135(4).
 DOI [10.1121/1.4865269](https://doi.org/10.1121/1.4865269)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Why credible.** NIOSH authors, reference-laboratory comparison, heavily cited.
 **Concrete contribution.** **The evidential basis of Assumption 1.** It is why we
 state that consumer smartphone measurement departs from reference instruments by
@@ -136,7 +149,7 @@ and sound level meter applications for measuring environmental noise. *Applied
 Acoustics* 106, 16–22. DOI
 [10.1016/j.apacoust.2016.01.007](https://doi.org/10.1016/j.apacoust.2016.01.007)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution.** Corroborates the above on **environmental** noise
 specifically, and on a device/OS spread. Cited beside Kardous & Shaw in
 `metrology.md`; it is the reason the phone **model** is named as a missing metadata
@@ -154,7 +167,7 @@ strategies for data with temporal, spatial, hierarchical, or phylogenetic struct
 *Ecography* 40(8), 913–929. DOI
 [10.1111/ecog.02881](https://doi.org/10.1111/ecog.02881)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Why credible.** The reference synthesis on the question; very heavily cited across
 ecology, remote sensing and geostatistics; independent of any noise-modelling agenda.
 **Concrete contribution.** **This is the source that makes our reference protocol
@@ -173,7 +186,7 @@ Estimating the area of applicability of spatial prediction models. *Methods in E
 and Evolution* 12(9). DOI
 [10.1111/2041-210X.13650](https://doi.org/10.1111/2041-210X.13650)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution.** Two uses, one applied and one deferred. Applied: it
 underpins the rule that **no prediction is published outside the sampled envelope**,
 now enforced by `tests/test_grid_extent.py` and the reason the Bach Khoa grid was
@@ -193,7 +206,7 @@ Systems Research.* DOI
 **Status.** **`to_check`** — DOI, title, journal and year verified against Crossref;
 **the author list and the reported accuracy figures have not been read in the article
 itself.** Do not quote a number from it until they are.
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution (pending confirmation).** This is the closest published
 counterpart to our §2b limitation: automated counting at **motorcycle-dominated**
 intersections, the traffic composition that makes our own detector's under-detection
@@ -213,7 +226,7 @@ Mwebaze, E. & Quinn, J. (2026). Noise mapping and ambient sound recordings of th
 environment in Uganda. *Scientific Data*. DOI
 [10.1038/s41597-026-06658-w](https://doi.org/10.1038/s41597-026-06658-w)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]` — Nature Portfolio.
+**Quartile.** *Relevé impossible* (Scimago 403). *Scientific Data*, Nature Portfolio.
 **Concrete contribution.** **The project's point of departure and the subject of its
 second negative result.** Its protocol shaped ours (ODK collection, smartphone target,
 morphology within a radius); notebooks 01–06 reproduce its figures; and its surrogate
@@ -227,7 +240,7 @@ Advances in the development of common noise assessment methods in Europe. *Scien
 The Total Environment* 482–483, 400–410. DOI
 [10.1016/j.scitotenv.2014.02.031](https://doi.org/10.1016/j.scitotenv.2014.02.031)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution.** **Read, not used — and that is itself a documented
 decision.** CNOSSOS-EU is the physical propagation framework this project does *not*
 implement. It is cited to name precisely what is missing, and it is the top entry in
@@ -242,7 +255,7 @@ open source GIS-based tool to produce environmental noise maps. *ISPRS Internati
 Journal of Geo-Information* 8(3), 130. DOI
 [10.3390/ijgi8030130](https://doi.org/10.3390/ijgi8030130)
 **Status.** `verified`
-**Quartile.** `[À VÉRIFIER]`
+**Quartile.** *Relevé impossible* (Scimago 403 — see the note at the top)
 **Concrete contribution.** **Read, not used.** It is the concrete implementation route
 for the CNOSSOS layer above — open source, OSM-native inputs — and it is named as such
 in the audit's P1-3 and in `handover.md`. No parameter of the present work comes from

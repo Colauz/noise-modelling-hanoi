@@ -239,6 +239,12 @@ package now; scripts read inputs, call the package, write outputs.
 
 ### High value, low effort
 
+- [ ] **Read the twelve journal quartiles off Scimago** and record each with its
+      ranking year and subject category in `docs/literature-review.md`. About fifteen
+      minutes in a browser. It cannot be automated: scimagojr.com returns HTTP 403 to
+      automated requests, and a search engine's summary of a quartile is second-hand
+      evidence, which this project classifies `grey` everywhere else.
+
 - [ ] Validate the YOLO detector on ~10 videos (debt #2). Without it, no modal shares.
 - [ ] Extract `validation.py` and `physics.py` from `04_evaluate_models.py` (debt #1).
 - [ ] Write the two remaining tests (debt #4).
