@@ -1,672 +1,689 @@
-# Audit scientifique — *Noise Modelling Hanoi*
+# Scientific audit — *Noise Modelling Hanoi*
 
-> ## ⚙️ État des suites données (5 août 2026)
+> # ⛔ FROZEN DOCUMENT — 5 August 2026
 >
-> Le projet a **pivoté vers une étude méthodologique** : pas de sonomètre professionnel
-> disponible, campagne de terrain close. Les recommandations qui supposaient du matériel ou
-> du terrain supplémentaire sont donc caduques ; celles qui portent sur l'analyse et la
-> rédaction ont été appliquées. Détail dans `ROADMAP.md`.
+> **This is a dated record, not current documentation. It is never updated.**
 >
-> | Recommandation | Statut |
+> Every figure below — including **R² = 0.45**, which appears eleven times — is a
+> value of the **old protocol**, measured before the corrections this audit
+> triggered. **None of them matches `models/metrics.json`, and none should.** File
+> paths likewise refer to the repository layout as it stood at commit `c5108d6`.
+>
+> **For current results, read [`../methodology.md`](../methodology.md) and
+> [`../../models/model_comparison.md`](../../models/model_comparison.md).**
+> The delivered model scores **R² = 0.246** under the reference protocol.
+>
+> An audit whose figures are corrected after the fact documents nothing. This one
+> is kept exactly as written so that the diagnosis remains verifiable against what
+> was actually claimed at the time. It is excluded from the repository's
+> number-consistency check for that reason — see `CONTRIBUTING.md`.
+
+> ## ⚙️ Status of the follow-up actions (5 August 2026)
+>
+> The project has **pivoted to a methodological study**: no professional sound
+> level meter available, field campaign closed. Recommendations that assumed extra
+> equipment or extra fieldwork are therefore moot; those bearing on analysis and
+> writing have been applied. Details in `ROADMAP.md`.
+>
+> | Recommendation | Status |
 > |---|---|
-> | **P0-1** CV honnête + baselines + ablation + IC | ✅ `scripts/evaluate_models.py` (blocs 600 m, BLOO 300 m, LOSO, 8 modèles, bootstrap par bloc) |
-> | **P0-2** Recadrage métrique et normes | ✅ cible `L_A,25s`, OMS `L_den`/`L_night` retirées partout, QCVN en statistique descriptive + sensibilité — `paper/sections/metrology.md` |
-> | **P0-3** Ancrage absolu | ⚠️ **adapté** : pas de sonomètre → bornage du biais par ancrage sur la littérature instrumentée (`scripts/literature_anchoring.py`). Le biais est encadré, pas corrigé. |
-> | **P0-4** Nettoyage du dépôt | ✅ artefacts Bach Khoa archivés dans `outputs/deprecated/`, notebook 09 neutralisé, `metrics.json` remplace la recopie manuelle |
-> | **P0-5** Publication des données | ⏳ à faire (Zenodo + DOI + déclaration éthique) |
-> | **P1-1** Campagne complémentaire | ❌ **sans objet** — terrain clos |
-> | **P1-2** Plafond de R² mesuré | ❌ sans objet (exige des points fixes répétés) |
-> | **P1-3** Couche physique CNOSSOS | ⏸️ reporté en *future work* |
-> | **P1-4** Comptage vidéo en débit | ⏸️ argumenté comme résultat négatif — `paper/sections/negative_results.md` |
-> | **P1-6** Physique GAMA | ✅ décomposition énergie fond/trafic, zone 30 bornée à 150 m — corrigé et vérifié numériquement |
+> | **P0-1** Honest CV + baselines + ablation + CI | ✅ `scripts/evaluate_models.py` (600 m blocks, 300 m BLOO, LOSO, 8 models, block bootstrap) |
+> | **P0-2** Metric and standards reframing | ✅ target `L_A,25s`, WHO `L_den`/`L_night` removed everywhere, QCVN as a descriptive statistic + sensitivity — `paper/sections/metrology.md` |
+> | **P0-3** Absolute anchoring | ⚠️ **adapted**: no sound level meter → bias bounded by anchoring on instrumented literature (`scripts/literature_anchoring.py`). The bias is bracketed, not corrected. |
+> | **P0-4** Repository cleanup | ✅ Bach Khoa artefacts archived in `outputs/deprecated/`, notebook 09 neutralised, `metrics.json` replaces manual copying |
+> | **P0-5** Data publication | ⏳ to do (Zenodo + DOI + ethics statement) |
+> | **P1-1** Additional campaign | ❌ **moot** — fieldwork closed |
+> | **P1-2** Measured R² ceiling | ❌ moot (requires repeated fixed points) |
+> | **P1-3** CNOSSOS physical layer | ⏸️ deferred to *future work* |
+> | **P1-4** Video counting as flow | ⏸️ argued as a negative result — `paper/sections/negative_results.md` |
+> | **P1-6** GAMA physics | ✅ background/traffic energy decomposition, zone 30 bounded to 150 m — corrected and verified numerically |
 >
-> Le texte d'audit ci-dessous est **conservé tel quel** : il documente l'état au moment du
-> diagnostic et les chiffres qu'il cite (R² 0.45, etc.) sont ceux de l'ancien protocole.
+> The audit text below is **kept exactly as written**: it documents the state at
+> the time of the diagnosis, and the figures it cites (R² 0.45, etc.) are those of
+> the old protocol.
 
-**Date de l'audit :** 5 août 2026
-**Périmètre :** dépôt `noise-modelling-hanoi` @ `c5108d6` (README, ROADMAP, `field/`, `scripts/`, `notebooks/01→09`, `gama/`, `outputs/`)
-**Angle :** data science + modélisation acoustique environnementale. Regard de rapporteur.
+**Audit date:** 5 August 2026
+**Scope:** repository `noise-modelling-hanoi` @ `c5108d6` (README, ROADMAP, `field/`, `scripts/`, `notebooks/01→09`, `gama/`, `outputs/`)
+**Angle:** data science + environmental acoustic modelling. A referee's eye.
 
-> **Note de méthode et de limite de cet audit.** Le dossier `data/` est absent de la machine (il est
-> `gitignore`). Je n'ai donc **pas pu recalculer** les scores du modèle à partir des mesures brutes.
-> Tout ce que j'annonce ci-dessous est soit **[V]** vérifié par calcul sur les artefacts présents dans
-> `outputs/`, soit **[C]** lu directement dans le code, soit **[I]** inféré/déduit et signalé comme tel.
-> Cette impossibilité de rejouer la chaîne est elle-même un constat d'audit (§4.8).
+> **Method note and limitation of this audit.** The `data/` folder is absent from the machine (it is
+> `gitignore`d). I therefore **could not recompute** the model scores from the raw measurements.
+> Everything stated below is either **[V]** verified by computation on the artefacts present in
+> `outputs/`, **[C]** read directly in the code, or **[I]** inferred and flagged as such.
+> This inability to replay the chain is itself an audit finding (§4.8).
 
 ---
 
-## 1. Résumé de l'état actuel
+## 1. Summary of the current state
 
-### 1.1 Ce que fait le projet aujourd'hui
+### 1.1 What the project does today
 
-| Bloc | Contenu réel |
+| Block | Actual content |
 |---|---|
-| **Collecte** | 363 mesures ponctuelles au smartphone, 3 quartiers de Hanoï (Ocean Park 184, Hoan Kiem 99, Vinh Tuy 80) **[V]**, via ODK Collect → KoboToolbox, application sonomètre *Decibel X* (pondération A, réponse SLOW), 3 collecteurs inter-calibrés, ~20-30 s par point + clip audio ≥ 10 s **[C]** |
-| **Données annexes** | 147 vidéos trafic horodatées comptées par YOLOv8n, registre de chantiers (formulaire dédié), météo horaire Open-Meteo (réanalyse) **[C]** |
-| **Nettoyage** | `scripts/prepare_field_data.py` : source unique, dédup, filtre GPS `accuracy < 50 m`, filtre dB ∈ [20,120], réassignation du site par plus proche centre GPS, backfill explicite des champs v2, offsets de calibration (tous à 0.0) **[C]** |
-| **Modèle** | LightGBM, 6 features : `built_area_ratio`, `road_density_km_km2`, `intersection_count`, `dist_road_m` (tous dans un rayon **300 m** issu d'OSM) + `hour` + `is_weekend`. Entraîné **directement** sur les 363 mesures **[C]** |
-| **Score annoncé** | r 0.69 / R² 0.45 / MAE 4.2 dB en « CV spatiale honnête » ; transfert Ouganda→Hanoï R² −1.26 **[C, sorties du notebook 08]** |
-| **Carte** | grille prédite, deux versions coexistantes : ①  8 640 cellules ~30 m autour de **Bach Khoa** (notebooks 08/09) ; ②  5 587 cellules 40 m sur les **3 sites mesurés**, une colonne par heure `h5…h21` (`scripts/export_gama_zones.py`) **[V]** |
-| **Simulation** | GAMA `hanoi_noise.gaml` (446 lignes) : fond horaire prédit + véhicules mobiles (visuels), chantiers calibrés en énergie, sliders heure / volume de trafic / mitigation **[C]** |
-| **Validation** | `scripts/validate_simulation.py` : confrontation grille ↔ mesures, **explicitement annoncée comme *in-sample*** — biais −0.52 dB, MAE 3.68 dB, RMSE 4.98 dB, r 0.719, 74 % dans ±5 dB **[V, recalculé]** |
-| **Livrables** | `outputs/report.pdf` (8 pages), diaporama HTML, cartes Folium, figures |
+| **Collection** | 363 spot smartphone measurements, 3 districts of Hanoi (Ocean Park 184, Hoan Kiem 99, Vinh Tuy 80) **[V]**, via ODK Collect → KoboToolbox, sound meter application *Decibel X* (A-weighting, SLOW response), 3 cross-calibrated collectors, ~20–30 s per point + audio clip ≥ 10 s **[C]** |
+| **Ancillary data** | 147 timestamped traffic videos counted by YOLOv8n, construction site register (dedicated form), hourly Open-Meteo weather (reanalysis) **[C]** |
+| **Cleaning** | `scripts/prepare_field_data.py`: single source of truth, dedup, GPS filter `accuracy < 50 m`, dB filter ∈ [20,120], site reassignment by nearest GPS centre, explicit backfill of v2 fields, calibration offsets (all 0.0) **[C]** |
+| **Model** | LightGBM, 6 features: `built_area_ratio`, `road_density_km_km2`, `intersection_count`, `dist_road_m` (all within a **300 m** radius from OSM) + `hour` + `is_weekend`. Trained **directly** on the 363 measurements **[C]** |
+| **Advertised score** | r 0.69 / R² 0.45 / MAE 4.2 dB under "honest spatial CV"; Uganda→Hanoi transfer R² −1.26 **[C, notebook 08 outputs]** |
+| **Map** | predicted grid, two coexisting versions: ① 8 640 cells at ~30 m around **Bach Khoa** (notebooks 08/09); ② 5 587 cells at 40 m over the **3 measured sites**, one column per hour `h5…h21` (`scripts/export_gama_zones.py`) **[V]** |
+| **Simulation** | GAMA `hanoi_noise.gaml` (446 lines): predicted hourly background + mobile vehicles (visual), construction sites calibrated in energy, sliders for hour / traffic volume / mitigation **[C]** |
+| **Validation** | `scripts/validate_simulation.py`: grid ↔ measurements comparison, **explicitly announced as *in-sample*** — bias −0.52 dB, MAE 3.68 dB, RMSE 4.98 dB, r 0.719, 74 % within ±5 dB **[V, recomputed]** |
+| **Deliverables** | `outputs/report.pdf` (8 pages), HTML slide deck, Folium maps, figures |
 
-### 1.2 Verdict global
+### 1.2 Overall verdict
 
-**Le projet est un très bon travail d'ingénieur et un travail de recherche encore incomplet.**
+**The project is very good engineering work and still-incomplete research work.**
 
-L'ingénierie est solide : chaîne bout-en-bout fonctionnelle, source de vérité unique pour le
-nettoyage, séparation nette « mesuré / prédit / calibré / exclu », refus documenté d'inventer des
-paramètres. C'est rare et c'est à porter au crédit du projet.
+The engineering is solid: a working end-to-end chain, a single source of truth for cleaning, a clean
+separation of "measured / predicted / calibrated / excluded", a documented refusal to invent
+parameters. That is rare and it is to the project's credit.
 
-Mais **trois verrous empêchent aujourd'hui de qualifier l'étude de « fiable et généralisable »**
-au sens où une revue Q1 l'entendrait :
+But **three obstacles currently prevent calling the study "reliable and generalisable"** in the sense
+a Q1 journal would mean:
 
-1. **Le chiffre-phare « R² 0.45 en validation croisée spatiale honnête » n'est pas honnête** : les
-   blocs de CV font ~110 m alors que les features sont calculées sur un disque de 300 m. Il y a
-   fuite spatiale structurelle. Le seul protocole réellement hors-échantillon présent au dossier —
-   le *leave-one-site-out* — donne **R² de −0.68 à +0.21**, c'est-à-dire *pire que la moyenne*. (§4.3)
-2. **Le lien morphologie → bruit n'est pas démontré comme utile.** Un simple tableau de correspondance
-   « site × heure », sans aucune morphologie, atteint **R² 0.27 / MAE 4.79 dB en leave-one-out**
-   sur les mêmes points **[V, calculé par moi]** — contre 0.45 / 4.2 annoncés pour le modèle avec une
-   CV plus permissive. L'apport propre des 4 features OSM n'est donc, au mieux, que modeste, et
-   n'a jamais été isolé.
-3. **La métrologie n'est pas ancrée.** Les 3 téléphones sont calibrés *entre eux*, jamais contre une
-   référence absolue (sonomètre classe 1/2 ou calibreur acoustique). Toute la distribution des
-   niveaux — et donc les 39 % de dépassement QCVN — peut être décalée en bloc de plusieurs dB
-   sans qu'on puisse le savoir. (§4.1)
+1. **The headline figure "R² 0.45 under honest spatial cross-validation" is not honest**: the CV
+   blocks are ~110 m while the features are computed over a 300 m disc. There is structural spatial
+   leakage. The only genuinely out-of-sample protocol in the record — *leave-one-site-out* — gives
+   **R² from −0.68 to +0.21**, i.e. *worse than the mean*. (§4.3)
+2. **The morphology → noise link is not demonstrated to be useful.** A simple "site × hour" lookup
+   table, with no morphology at all, reaches **R² 0.27 / MAE 4.79 dB under leave-one-out** on the same
+   points **[V, computed by me]** — against 0.45 / 4.2 advertised for the model under a more permissive
+   CV. The net contribution of the 4 OSM features is therefore modest at best, and has never been
+   isolated.
+3. **The metrology is not anchored.** The 3 phones are calibrated *against each other*, never against
+   an absolute reference (class 1/2 sound level meter or acoustic calibrator). The whole level
+   distribution — and therefore the 39 % QCVN exceedance rate — could be shifted by several dB
+   without anyone being able to tell. (§4.1)
 
-Aucun de ces trois points n'est rédhibitoire. Tous sont réparables, et deux d'entre eux le sont
-en quelques jours de travail sans nouvelle collecte. Le §5 donne le plan.
+None of these three is fatal. All are repairable, and two of them in a few days of work with no new
+collection. §5 gives the plan.
 
 ---
 
-## 2. Décorticage de la Data Collection
+## 2. Dissecting the data collection
 
 ### 2.1 Instrumentation
 
-- **Capteur :** application *Decibel X* sur smartphone grand public. Réglages homogènes : pondération
-  **A**, réponse **SLOW**, trim 0.0 **[C, `field/README.md`]**.
-- **Grandeur relevée :** un seul nombre, la valeur « AVG » lue à l'écran. Le formulaire dit
-  *« Read LAeq / average value from the dB app »* **[V, XLSForm]**. Ni durée d'intégration
-  enregistrée, ni L_Amax, ni L10/L90, ni tiers d'octave.
-- **Calibration :** procédure **relative** en 5 étapes — les 3 téléphones côte à côte, le téléphone du
-  milieu pris comme référence arbitraire, offsets saisis dans le trim de l'app **[C]**.
-  Dans le code, `CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}` **[C]**.
-- **Hauteur :** ~1,2 m, tenu à la main **[C]**. Non enregistré par point.
-- **Modèle de téléphone :** **non enregistré**. Le champ `collector` en est un proxy imparfait.
+- **Sensor:** the *Decibel X* application on consumer smartphones. Uniform settings: **A**-weighting,
+  **SLOW** response, trim 0.0 **[C, `field/README.md`]**.
+- **Quantity recorded:** a single number, the "AVG" value read on screen. The form says
+  *"Read LAeq / average value from the dB app"* **[V, XLSForm]**. No integration duration recorded,
+  no L_Amax, no L10/L90, no third-octave bands.
+- **Calibration:** a **relative** 5-step procedure — the 3 phones side by side, the middle phone taken
+  as an arbitrary reference, offsets entered in the app's trim **[C]**.
+  In the code, `CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}` **[C]**.
+- **Height:** ~1.2 m, hand-held **[C]**. Not recorded per point.
+- **Phone model:** **not recorded**. The `collector` field is an imperfect proxy for it.
 
-### 2.2 Plan d'échantillonnage spatial
+### 2.2 Spatial sampling design
 
-- 3 zones choisies pour leurs typologies contrastées : Ocean Park (nouveau tissu vertical),
-  Vinh Tuy (corridor de transport), Hoan Kiem (vieux quartier). Choix pertinent sur le principe.
-- **Sélection des points à l'intérieur d'une zone : non spécifiée.** Ni grille, ni tirage aléatoire,
-  ni stratification documentée. Le protocole dit seulement *« varier les distances à la route »* **[C]**.
-  C'est de l'échantillonnage de convenance le long des rues accessibles.
-- `dist_to_road` est saisi en **classes** (0-2 / 2-10 / 10-30 / 30-60 / >60 m), pas en mètres **[V]**.
-- Filtre GPS retenu : `accuracy < 50 m` **[C]**, alors que le formulaire demande au collecteur
-  d'attendre `< 10 m` **[V]**. Incohérence : 50 m d'incertitude de position sur une grille de 40 m,
-  c'est plus d'une cellule d'erreur.
+- 3 zones chosen for their contrasting typologies: Ocean Park (new vertical fabric),
+  Vinh Tuy (transport corridor), Hoan Kiem (old quarter). A sound choice in principle.
+- **Selection of points within a zone: unspecified.** No grid, no random draw, no documented
+  stratification. The protocol only says *"vary the distances to the road"* **[C]**.
+  This is convenience sampling along accessible streets.
+- `dist_to_road` is entered in **classes** (0-2 / 2-10 / 10-30 / 30-60 / >60 m), not in metres **[V]**.
+- GPS filter used: `accuracy < 50 m` **[C]**, whereas the form asks the collector to wait for
+  `< 10 m` **[V]**. Inconsistent: 50 m of positional uncertainty on a 40 m grid is more than one cell
+  of error.
 
-### 2.3 Plan d'échantillonnage temporel
+### 2.3 Temporal sampling design
 
-Distribution horaire réelle, recalculée **[V]** :
+Actual hourly distribution, recomputed **[V]**:
 
 ```
- 5h:  6   6h: 27   7h: 53   8h: 37   9h:  0 ←  trou complet
+ 5h:  6   6h: 27   7h: 53   8h: 37   9h:  0 ←  complete gap
 10h: 17  11h: 31  12h: 22  13h: 18  14h:  9
 15h: 48  16h: 10  17h: 54  18h: 16  19h:  9
-20h:  2  21h:  1  (+3 points à 22-23h)
+20h:  2  21h:  1  (+3 points at 22-23h)
 ```
 
-- **Nuit quasi absente.** La période réglementée « nuit » du QCVN 26:2010 court de 21 h à 6 h.
-  Le jeu de données y compte **10 points sur 363, soit 2,8 %** **[V, via `hanoi_exceedances.csv`]**,
-  et **zéro mesure entre 00 h et 05 h**. Or c'est la période au seuil le plus sévère (55 dB) et celle
-  qui pèse le plus lourd sur la santé (OMS : L_night).
-- **Trou à 9 h**, creux marqué à 14 h, 16 h, 19-21 h.
-- **Week-end** : signalé comme « léger » dans le rapport, non quantifiable ici (données absentes).
-- **Saisonnalité : nulle.** Campagne concentrée sur juin-juillet 2026 **[I, historique git]** —
-  une seule saison, en mousson. Aucune couverture du Têt, de la saison sèche, des vacances scolaires.
+- **Night almost absent.** The regulated "night" period of QCVN 26:2010 runs from 21:00 to 06:00.
+  The dataset holds **10 points out of 363, i.e. 2.8 %** **[V, via `hanoi_exceedances.csv`]**,
+  and **zero measurements between 00:00 and 05:00**. Yet that is the period with the strictest
+  threshold (55 dB) and the one that weighs most on health (WHO: L_night).
+- **Gap at 09:00**, marked troughs at 14:00, 16:00, 19:00–21:00.
+- **Weekend**: reported as "light" in the report, not quantifiable here (data absent).
+- **Seasonality: none.** Campaign concentrated in June–July 2026 **[I, git history]** —
+  a single season, in the monsoon. No coverage of Tết, the dry season, or school holidays.
 
-### 2.4 Métadonnées collectées
+### 2.4 Metadata collected
 
-Le formulaire v2 est bien conçu **[V, XLSForm]** : site, collecteur, GPS, audio, dB, catégorie de
-source, classe de distance à la route, orientation du téléphone, direction du micro, distance à la
-source dominante, comptages moto/voiture/PL/VE, vidéo trafic, chantier audible. Bonne granularité.
+The v2 form is well designed **[V, XLSForm]**: site, collector, GPS, audio, dB, source category,
+distance-to-road class, phone orientation, microphone direction, distance to the dominant source,
+motorcycle/car/HGV/EV counts, traffic video, audible construction. Good granularity.
 
-Manquent, et ce sont les champs qui coûtent le plus cher à rattraper *a posteriori* : **durée
-d'intégration**, **modèle de téléphone**, **hauteur de mesure**, **vent ressenti / présence de
-bonnette**, **état de la chaussée (sèche/humide)**, **identifiant de point fixe** permettant la
-répétition, **largeur de rue et hauteur de front bâti** (ratio H/L du canyon urbain).
+Missing, and these are the fields most expensive to recover *after the fact*: **integration
+duration**, **phone model**, **measurement height**, **perceived wind / presence of a windscreen**,
+**road surface state (dry/wet)**, **fixed-point identifier** allowing repetition, **street width and
+façade height** (the H/W ratio of the urban canyon).
 
 ---
 
-## 3. Décorticage du Workflow
+## 3. Dissecting the workflow
 
 ```
 Kobo CSV ──► prepare_field_data.py ──► measurements.csv
                                             │
-   vidéos ──► count_vehicles.py (YOLOv8n) ──┼──► vehicle_counts.csv
+   videos ──► count_vehicles.py (YOLOv8n) ──┼──► vehicle_counts.csv
                                             │
-                       Open-Meteo (réanalyse)┘
+                       Open-Meteo (reanalysis)┘
                                             │
-                          nb 07 : EDA, normes, carte Folium
+                          nb 07: EDA, standards, Folium map
                                             │
-                          nb 08 : features OSM 300 m + LightGBM + CV
+                          nb 08: OSM features 300 m + LightGBM + CV
                                             │
                     ┌───────────────────────┴───────────────────────┐
         nb 09 (Bach Khoa)                             export_gama_zones.py (3 sites × 17 h)
                     │                                               │
-                    └──────────► outputs/gama_inputs/ ◄──────────────┘   ⚠ deux producteurs
+                    └──────────► outputs/gama_inputs/ ◄──────────────┘   ⚠ two producers
                                             │
-                            calibrate_emissions.py (NNLS en énergie)
+                            calibrate_emissions.py (NNLS in energy)
                                             │
                           GAMA hanoi_noise.gaml ──► validate_simulation.py (in-sample)
                                             │
                                      build_report.py ──► report.pdf
 ```
 
-**Algorithme de cartographie.** Il n'y a **aucune interpolation spatiale** (ni krigeage, ni IDW) et
-**aucun modèle physique de propagation**. La carte est une pure **régression d'usage des sols
-(LUR — Land Use Regression)** : pour chaque cellule, on calcule 4 descripteurs OSM dans un disque de
-300 m + l'heure, et on demande sa prédiction à LightGBM. C'est une approche légitime et publiée,
-mais c'est un choix méthodologique qui n'est **jamais justifié ni comparé** à une alternative dans
-le dossier.
+**Mapping algorithm.** There is **no spatial interpolation** (neither kriging nor IDW) and
+**no physical propagation model**. The map is pure **land use regression (LUR)**: for each cell, 4
+OSM descriptors are computed within a 300 m disc, plus the hour, and LightGBM is asked for its
+prediction. That is a legitimate and published approach, but it is a methodological choice that is
+**never justified nor compared** against an alternative in the record.
 
-**Protocole de validation actuel.**
-- CV « spatiale » : `GroupKFold(5)` sur des groupes = `(lat.round(3), lon.round(3))`, soit des
-  cellules de **~111 m × 104 m** à la latitude de Hanoï **[C, notebook 08]**.
-- CV aléatoire, gardée comme borne haute optimiste. Bonne pratique.
-- Leave-one-site-out, reporté en page 6 du PDF : R² = 0.21 / −0.68 / −0.37 **[C]**.
-- Validation de la simulation : *in-sample*, honnêtement étiquetée comme telle **[C]**.
-
----
-
-## 4. Évaluation critique — Gap Analysis
-
-### 4.0 Points forts (à conserver et à mettre en avant dans le manuscrit)
-
-Ils sont réels et il faut les défendre :
-
-1. **Honnêteté méthodologique documentée.** Le refus d'injecter des émissions véhicule inventées
-   quand la NNLS renvoie des coefficients nuls (`calibrate_emissions.py`) est exactement le bon
-   réflexe scientifique. La note « validation in-sample » dans `validate_simulation.py` et dans le
-   PDF idem. Le backfill « honnête » qui laisse des NaN plutôt que d'inventer idem. **C'est le
-   meilleur atout du dossier** — beaucoup d'études publiées ne le font pas.
-2. **Le résultat négatif sur le transfert inter-villes est publiable.** Ouganda → Hanoï R² −1.26,
-   avec le contrôle Barcelone en répétition générale. C'est une contribution méthodologique
-   authentique, et le survey paper la réclame explicitement.
-3. **Séparation explicite du statut de chaque couche** (prédit / mesuré / calibré / exclu) dans
-   l'en-tête du `.gaml` et dans `export_gama_zones.py`. Exemplaire.
-4. **Source de vérité unique** pour le nettoyage terrain, réutilisée comme module par le notebook.
-   Pas de logique dupliquée. Bonne architecture logicielle.
-5. **Feature `built_area_ratio` invariante** introduite après diagnostic du biais de convention
-   cartographique OSM (Kampala = bâtiments individuels, Barcelone = îlots). Diagnostic fin et bien mené.
-6. **Traçabilité des corrections** : réassignation des sites par GPS, avec log des 6 corrections.
-7. **Protocole terrain écrit et reproductible**, formulaires XLSForm versionnés.
+**Current validation protocol.**
+- "Spatial" CV: `GroupKFold(5)` on groups = `(lat.round(3), lon.round(3))`, i.e. cells of
+  **~111 m × 104 m** at Hanoi's latitude **[C, notebook 08]**.
+- Random CV, kept as an optimistic upper bound. Good practice.
+- Leave-one-site-out, reported on page 6 of the PDF: R² = 0.21 / −0.68 / −0.37 **[C]**.
+- Simulation validation: *in-sample*, honestly labelled as such **[C]**.
 
 ---
 
-### 4.1 🔴 CRITIQUE — Métrologie : aucun ancrage absolu
+## 4. Critical evaluation — gap analysis
 
-**Le problème.** La calibration croisée aligne les 3 téléphones **entre eux**, sur un quatrième
-arbitraire (« le téléphone du milieu »). Il n'existe **aucun point de rattachement à une référence
-acoustique**. La conséquence est directe : un biais systématique commun aux 3 appareils est
-strictement invisible et se propage intégralement dans tous les résultats.
+### 4.0 Strengths (to keep and to foreground in the manuscript)
 
-**Pourquoi c'est grave ici.** Le livrable principal du rapport est *« 39 % des mesures dépassent le
-QCVN »*. Un biais de +3 dB ferait chuter ce chiffre ; un biais de −3 dB l'enverrait au-delà de 55 %.
-La littérature sur les sonomètres smartphone donne des écarts couramment de ±3 à ±8 dB(A) selon
-l'appareil et l'OS, non linéaires en niveau. **Aucune conclusion normative n'est actuellement
-défendable.**
+They are real and they should be defended:
 
-**Aggravants.**
-- Le modèle de téléphone n'est pas enregistré → impossible de corriger *a posteriori*.
-- Pas de bonnette anti-vent mentionnée. L'analyse « pas d'effet du vent » **[C, notebook 07]** s'appuie
-  sur le vent de **réanalyse Open-Meteo** (maille ~10-25 km) — un instrument incapable de détecter
-  un artefact de micro qui dépend du vent *local à 1,2 m*. C'est une absence de preuve, pas une
-  preuve d'absence.
-- Plancher et saturation non caractérisés. Le max mesuré est **88,0 dB** **[V]**, dans la zone où les
-  chaînes AGC des smartphones commencent à comprimer. Les niveaux hauts sont probablement écrasés,
-  ce qui **réduit artificiellement la variance de la cible** (σ = 7,1 dB **[V]**) et donc plafonne
-  mécaniquement le R² atteignable.
+1. **Documented methodological honesty.** Refusing to inject invented vehicle emissions when the NNLS
+   returns null coefficients (`calibrate_emissions.py`) is exactly the right scientific reflex. The
+   "in-sample validation" note in `validate_simulation.py` and in the PDF, likewise. The "honest"
+   backfill that leaves NaN rather than inventing, likewise. **This is the record's greatest asset** —
+   many published studies do not do it.
+2. **The negative result on cross-city transfer is publishable.** Uganda → Hanoi R² −1.26, with the
+   Barcelona control as a dress rehearsal. That is a genuine methodological contribution, and the
+   survey paper explicitly calls for it.
+3. **Explicit separation of each layer's status** (predicted / measured / calibrated / excluded) in the
+   `.gaml` header and in `export_gama_zones.py`. Exemplary.
+4. **Single source of truth** for field cleaning, reused as a module by the notebook.
+   No duplicated logic. Good software architecture.
+5. **Invariant `built_area_ratio` feature** introduced after diagnosing the OSM mapping-convention bias
+   (Kampala = individual buildings, Barcelona = blocks). A fine, well-conducted diagnosis.
+6. **Traceability of corrections**: site reassignment by GPS, with a log of the 6 corrections.
+7. **Written and reproducible field protocol**, with versioned XLSForm files.
 
-### 4.2 🔴 CRITIQUE — La grandeur mesurée n'est comparable à aucune norme citée
+---
 
-**Le problème.** La grandeur du projet est un « AVG » de ~20-30 s. Or :
+### 4.1 🔴 CRITICAL — Metrology: no absolute anchor
 
-| Norme citée dans le rapport | Grandeur réelle de la norme | Comparable au « AVG 20-30 s » ? |
+**The problem.** Cross-calibration aligns the 3 phones **with each other**, on an arbitrary fourth
+("the middle phone"). There is **no point of attachment to an acoustic reference**. The consequence is
+direct: a systematic bias common to all 3 devices is strictly invisible and propagates in full through
+every result.
+
+**Why it matters here.** The report's headline deliverable is *"39 % of measurements exceed QCVN"*.
+A bias of +3 dB would collapse that figure; a bias of −3 dB would push it beyond 55 %.
+The literature on smartphone sound level meters gives discrepancies commonly of ±3 to ±8 dB(A)
+depending on device and OS, non-linear in level. **No normative conclusion is currently defensible.**
+
+**Aggravating factors.**
+- The phone model is not recorded → impossible to correct *after the fact*.
+- No windscreen mentioned. The "no wind effect" analysis **[C, notebook 07]** relies on
+  **Open-Meteo reanalysis** wind (grid ~10–25 km) — an instrument incapable of detecting a microphone
+  artefact that depends on *local* wind at 1.2 m. That is an absence of evidence, not evidence of
+  absence.
+- Floor and saturation not characterised. The maximum measured is **88.0 dB** **[V]**, in the range
+  where smartphone AGC chains begin to compress. High levels are probably flattened, which
+  **artificially reduces the variance of the target** (σ = 7.1 dB **[V]**) and therefore mechanically
+  caps the achievable R².
+
+### 4.2 🔴 CRITICAL — The measured quantity is comparable to none of the standards cited
+
+**The problem.** The project's quantity is an "AVG" over ~20–30 s. Yet:
+
+| Standard cited in the report | Actual quantity of the standard | Comparable to the "AVG 20-30 s"? |
 |---|---|---|
-| QCVN 26:2010/BTNMT, 70 / 55 dB | L_Aeq sur la période de référence, appareil classe 1 ou 2, méthode TCVN 7878-2 | **Non** — durée et instrument non conformes |
-| OMS 2018, 53 / 45 dB | **L_den** et **L_night**, moyennes **annuelles**, avec pénalités +5 dB soirée / +10 dB nuit | **Non, très loin** |
+| QCVN 26:2010/BTNMT, 70 / 55 dB | L_Aeq over the reference period, class 1 or 2 instrument, TCVN 7878-2 method | **No** — neither duration nor instrument compliant |
+| WHO 2018, 53 / 45 dB | **L_den** and **L_night**, **annual** averages, with +5 dB evening / +10 dB night penalties | **No, very far from it** |
 
-Le PDF (§3.4) présente « WHO (road-traffic guideline) — Day 53 / Night 45 » dans un tableau
-jour/nuit. C'est une **erreur de nature** : L_den n'est pas un indicateur « de jour », c'est un
-indicateur agrégé sur 24 h et sur l'année. Un rapporteur de revue Q1 relèvera ce point en premier.
+The PDF (§3.4) presents "WHO (road-traffic guideline) — Day 53 / Night 45" in a day/night table.
+That is an **error of kind**: L_den is not a "daytime" indicator, it is an indicator aggregated over
+24 h and over the year. A Q1 reviewer will raise this point first.
 
-La ROADMAP note d'ailleurs elle-même le problème (« positionner notre métrique dB face à
-Leq/L_dn/L_max, cf. survey paper §V ») — mais le rapport a été diffusé sans l'avoir traité.
+The ROADMAP itself notes the problem ("position our dB metric against Leq/L_dn/L_max, cf. survey
+paper §V") — but the report was circulated without addressing it.
 
-**Second problème, quantitatif.** Un échantillon de 25 s sur une voirie hanoïenne ne converge pas
-vers le L_Aeq de la période : le passage d'un bus ou un coup de klaxon déplace la valeur de 5-10 dB.
-Le rapport affirme *« ±5 dB de bruit irréductible, plafonnant le R² vers 0,6 »* — affirmation
-**posée sans aucune dérivation ni mesure**. Elle est probablement juste, mais elle est
-actuellement invérifiable, alors qu'elle est facile à établir expérimentalement (§5, P0-3).
+**Second problem, quantitative.** A 25 s sample on a Hanoi street does not converge to the L_Aeq of
+the period: a passing bus or a horn blast displaces the value by 5–10 dB.
+The report claims *"±5 dB of irreducible noise, capping R² near 0.6"* — a statement
+**made with no derivation and no measurement**. It is probably right, but it is currently
+unverifiable, whereas it is easy to establish experimentally (§5, P0-3).
 
-### 4.3 🔴 CRITIQUE — La validation du modèle surestime la performance
+### 4.3 🔴 CRITICAL — Model validation overstates performance
 
-C'est le point le plus grave sur le plan de la data science.
+This is the most serious point on the data science side.
 
-**(a) Fuite spatiale dans la « CV spatiale ».**
-Les groupes de `GroupKFold` sont des cellules de ~110 m. Les features sont des agrégats sur un
-disque de **rayon 300 m**. Deux points distants de 110 m ont donc des disques dont l'intersection
-dépasse **85 % de la surface** : leurs vecteurs de features sont quasi identiques, et leurs niveaux
-de bruit sont fortement autocorrélés. Le modèle voit donc, en apprentissage, des quasi-jumeaux de
-ses points de test. **Le R² 0.45 n'est pas hors-échantillon.**
+**(a) Spatial leakage in the "spatial CV".**
+The `GroupKFold` groups are cells of ~110 m. The features are aggregates over a disc of
+**300 m radius**. Two points 110 m apart therefore have discs whose intersection exceeds
+**85 % of the area**: their feature vectors are near-identical and their noise levels are strongly
+autocorrelated. In training, the model therefore sees near-twins of its test points.
+**The R² 0.45 is not out-of-sample.**
 
-La règle admise en modélisation spatiale (Roberts et al. 2017, *Ecography* ; Meyer & Pebesma 2021,
-*Nat. Commun.*) est que le bloc de CV doit dépasser la portée d'autocorrélation des prédicteurs —
-ici **au minimum 600 m** (2 × rayon du buffer), idéalement avec zone tampon exclue (*buffered
+The accepted rule in spatial modelling (Roberts et al. 2017, *Ecography*; Meyer & Pebesma 2021,
+*Nat. Commun.*) is that the CV block must exceed the autocorrelation range of the predictors —
+here **at least 600 m** (2 × buffer radius), ideally with an excluded buffer zone (*buffered
 leave-one-out*).
 
-**(b) La seule validation réellement hors-échantillon donne un résultat négatif.**
-Le *leave-one-site-out* du PDF : **R² = +0.21 (Ocean Park), −0.68 (Vinh Tuy), −0.37 (Hoan Kiem)**.
-Un R² négatif signifie : *le modèle fait moins bien que de prédire partout la moyenne globale*.
-Le rapport le qualifie de « stress test » « bruité sur de petits échantillons » et renvoie vers le
-0.45 comme « chiffre fiable ». **C'est l'inverse.** Le leave-one-site-out est le protocole propre,
-c'est le 0.45 qui est contaminé. La conclusion correcte est : *à ce stade, le modèle n'extrapole pas
-à une typologie urbaine non vue* — ce que la section Limitations du PDF dit d'ailleurs en toutes
-lettres, en contradiction avec le chiffre mis en avant en couverture.
+**(b) The only genuinely out-of-sample validation gives a negative result.**
+The PDF's *leave-one-site-out*: **R² = +0.21 (Ocean Park), −0.68 (Vinh Tuy), −0.37 (Hoan Kiem)**.
+A negative R² means: *the model does worse than predicting the global mean everywhere*.
+The report calls it a "stress test", "noisy on small samples", and points back to the
+0.45 as the "reliable figure". **It is the other way round.** Leave-one-site-out is the clean
+protocol; it is the 0.45 that is contaminated. The correct conclusion is: *at this stage, the model
+does not extrapolate to an unseen urban typology* — which the PDF's Limitations section states in so
+many words, contradicting the figure put on the cover.
 
-**(c) Le nombre effectif de degrés de liberté est de l'ordre de 3, pas de 363.**
-Les 4 features de morphologie sont des agrégats sur 300 m. À l'intérieur d'un site, dont l'emprise
-fait quelques centaines de mètres, ces 4 valeurs varient très peu. Le modèle dispose donc en pratique
-de **3 configurations morphologiques distinctes**, répétées 363 fois. Toute inférence sur la relation
-morphologie → bruit repose sur n ≈ 3. Aucun intervalle de confiance n'est reporté nulle part.
+**(c) The effective number of degrees of freedom is of the order of 3, not 363.**
+The 4 morphology features are aggregates over 300 m. Within a site, whose extent is a few hundred
+metres, those 4 values vary very little. The model therefore has in practice
+**3 distinct morphological configurations**, repeated 363 times. Any inference about the
+morphology → noise relationship rests on n ≈ 3. No confidence interval is reported anywhere.
 
-**(d) Aucun modèle de comparaison n'a été testé.** Le seul point de comparaison du notebook 08 est
-la moyenne (MAE 5,9 dB). J'ai construit le comparateur manquant à partir de
-`outputs/hanoi/validation_simulation.csv` **[V, calcul de l'audit]** :
+**(d) No comparison model has been tested.** The only point of comparison in notebook 08 is the
+mean (MAE 5.9 dB). I built the missing comparator from
+`outputs/hanoi/validation_simulation.csv` **[V, audit computation]**:
 
-| Prédicteur | Protocole | R² | MAE |
+| Predictor | Protocol | R² | MAE |
 |---|---|---|---|
-| Moyenne globale | — | 0.00 | 5.9 dB |
-| **Moyenne par site** (aucune morphologie) | leave-one-out | 0.03 | 5.79 dB |
-| **Moyenne par (site × heure)** (aucune morphologie) | leave-one-out | **0.27** | **4.79 dB** |
-| LightGBM morphologie + heure | « CV spatiale » 110 m (optimiste) | 0.45 | 4.2 dB |
-| Grille GAMA vs mesures | *in-sample* | 0.51 | 3.68 dB |
+| Global mean | — | 0.00 | 5.9 dB |
+| **Mean per site** (no morphology) | leave-one-out | 0.03 | 5.79 dB |
+| **Mean per (site × hour)** (no morphology) | leave-one-out | **0.27** | **4.79 dB** |
+| LightGBM morphology + hour | "spatial CV" 110 m (optimistic) | 0.45 | 4.2 dB |
+| GAMA grid vs measurements | *in-sample* | 0.51 | 3.68 dB |
 
-*Lecture :* une table de correspondance à 29 entrées, sans une seule variable spatiale, capte déjà
-**plus de la moitié** de la performance annoncée du modèle — et elle, en leave-one-out strict.
-Les protocoles ne sont pas rigoureusement identiques (LOO sur 360 points vs GroupKFold sur 363),
-donc ce tableau est un **indice fort, pas une preuve** ; mais il rend indispensable de mesurer
-l'apport propre de la morphologie (§5, P0-1). En l'état, la question *« vos 4 features OSM
-servent-elles à quelque chose ? »* n'a pas de réponse au dossier.
+*Reading:* a 29-entry lookup table, without a single spatial variable, already captures
+**more than half** the model's advertised performance — and it does so under strict leave-one-out.
+The protocols are not rigorously identical (LOO on 360 points vs GroupKFold on 363),
+so this table is **strong evidence, not proof**; but it makes measuring the net contribution of
+morphology indispensable (§5, P0-1). As it stands, the question *"are your 4 OSM features good for
+anything?"* has no answer in the record.
 
-**(e) Aucune quantification d'incertitude.** Pas d'intervalle de confiance bootstrap sur R²/MAE, pas
-d'intervalle de prédiction sur la carte, pas d'analyse de l'autocorrélation spatiale des résidus
-(Moran's I), pas de masque de domaine d'applicabilité sur les cellules extrapolées.
+**(e) No uncertainty quantification.** No bootstrap confidence interval on R²/MAE, no prediction
+interval on the map, no analysis of the spatial autocorrelation of residuals (Moran's I), no
+applicability-domain mask on extrapolated cells.
 
-**(f) La comparaison à Barcelone (R² 0.61) est trompeuse.** Elle figure dans le même tableau que les
-scores Hanoï en page 6 du PDF. Or Barcelone = capteurs fixes classe 1, L_Aeq intégré sur 4 mois.
-Ce n'est pas la même cible statistique : un L_Aeq long terme est intrinsèquement beaucoup plus
-prévisible qu'un instantané de 25 s. Le docstring de `train_v2_invariant.py` le dit correctement —
-le PDF, non. À retirer du tableau ou à isoler avec un avertissement explicite.
+**(f) The Barcelona comparison (R² 0.61) is misleading.** It appears in the same table as the Hanoi
+scores on page 6 of the PDF. But Barcelona = fixed class 1 sensors, L_Aeq integrated over 4 months.
+That is not the same statistical target: a long-term L_Aeq is intrinsically far more predictable
+than a 25 s snapshot. The docstring of `train_v2_invariant.py` states this correctly —
+the PDF does not. To be removed from the table or isolated with an explicit warning.
 
-### 4.4 🟠 MAJEUR — Résolution et physique de la carte
+### 4.4 🟠 MAJOR — Map resolution and physics
 
-- **Le lissage à 300 m détruit exactement l'information qu'une carte de bruit doit porter.** Deux
-  cellules voisines de la grille 40 m partagent > 98 % de leur disque de features : leurs prédictions
-  sont quasi identiques. Le modèle est structurellement incapable de représenter le contraste
-  façade / cour intérieure (10-15 dB en tissu dense), l'effet d'écran des bâtiments, ou le gradient
-  transversal d'une rue. On le voit dans les chiffres : σ(simulé) = 5,52 dB contre
-  σ(mesuré) = 7,10 dB **[V]** — la carte est significativement plus plate que la réalité.
-- **Aucune physique.** Pas de divergence géométrique, pas d'effet de sol, pas de diffraction /
-  masquage par le bâti, pas de réflexion de façade, pas d'absorption atmosphérique. Les empreintes
-  bâties sont pourtant déjà téléchargées et exportées en shapefile — la matière première est là,
-  inutilisée.
-- **La carte diffusée ne couvre pas la zone étudiée.** `outputs/hanoi/hanoi_noise_map.csv`,
-  `hanoi_heatmap.html` et `outputs/gama_inputs/noise_map.csv` couvrent un disque de 1 500 m autour de
-  **Bach Khoa** — un quartier où **aucune mesure n'a été prise** **[V : lat 20.992-21.019,
-  lon 105.829-105.858, 8 640 cellules]**. C'est de l'extrapolation vers une typologie non vue, par un
-  modèle dont le leave-one-site-out est négatif. Ces trois fichiers ne doivent pas être diffusés en
-  l'état.
+- **The 300 m smoothing destroys exactly the information a noise map should carry.** Two neighbouring
+  cells of the 40 m grid share > 98 % of their feature disc: their predictions are near-identical.
+  The model is structurally incapable of representing the façade / inner courtyard contrast
+  (10–15 dB in dense fabric), the screening effect of buildings, or the transverse gradient of a
+  street. It shows in the figures: σ(simulated) = 5.52 dB against
+  σ(measured) = 7.10 dB **[V]** — the map is significantly flatter than reality.
+- **No physics.** No geometric divergence, no ground effect, no diffraction / screening by buildings,
+  no façade reflection, no atmospheric absorption. Yet the building footprints are already downloaded
+  and exported as shapefiles — the raw material is there, unused.
+- **The circulated map does not cover the studied area.** `outputs/hanoi/hanoi_noise_map.csv`,
+  `hanoi_heatmap.html` and `outputs/gama_inputs/noise_map.csv` cover a 1 500 m disc around
+  **Bach Khoa** — a district where **no measurement was taken** **[V: lat 20.992-21.019,
+  lon 105.829-105.858, 8 640 cells]**. That is extrapolation to an unseen typology, by a model whose
+  leave-one-site-out is negative. These three files must not be circulated as they stand.
 
-### 4.5 🟠 MAJEUR — Comptage vidéo : aucune validation du détecteur, mauvaise grandeur
+### 4.5 🟠 MAJOR — Video counting: no detector validation, wrong quantity
 
-- **La grandeur comptée est la mauvaise.** `count_vehicles.py` mesure une *densité de véhicules
-  visibles par image* **[C]**. L'acoustique du trafic dépend du **débit** (véh/h) et de la **vitesse**,
-  pas du nombre d'objets présents dans un champ de caméra non géoréférencé. C'est la cause racine
-  de l'échec de `calibrate_emissions.py` — cause que le script lui-même identifie correctement.
-- **Aucune évaluation de l'exactitude du détecteur.** YOLOv8**n** (le plus petit modèle), `imgsz=640`,
-  `conf=0.3`, classes COCO **[C]**. Sur un flux de motos hanoïen, la sous-détection est massive et
-  connue. Le rapport publie pourtant une figure « composition du trafic par site »
-  (Hoan Kiem 65 % motos, Ocean Park 84 % voitures **[V, `fleet_mix.csv`]`**) **sans une seule ligne
-  de validation** — ni comptage manuel de référence, ni précision/rappel, ni MAPE. Ces parts modales
-  ne sont, à ce stade, pas publiables.
-- **Véhicules garés comptés**, absence de filtre de mouvement — déjà identifié dans la ROADMAP.
-- **Appariement vidéo ↔ mesure à ±5 min** **[C, `MATCH_MAX_S = 300`]** alors que la mesure dure 25 s.
-  Un écart de 5 min entre le trafic filmé et le niveau relevé suffit à décorréler les deux. Le PDF
-  annonce un écart médian de 15 s — bien ; mais la queue de distribution n'est pas contrôlée.
+- **The quantity counted is the wrong one.** `count_vehicles.py` measures a *density of vehicles
+  visible per frame* **[C]**. Traffic acoustics depends on **flow** (veh/h) and **speed**,
+  not on the number of objects present in a non-georeferenced camera field. That is the root cause
+  of the failure of `calibrate_emissions.py` — a cause the script itself identifies correctly.
+- **No assessment of detector accuracy.** YOLOv8**n** (the smallest model), `imgsz=640`,
+  `conf=0.3`, COCO classes **[C]**. On a Hanoi motorcycle stream, under-detection is massive and
+  well known. Yet the report publishes a "traffic composition by site" figure
+  (Hoan Kiem 65 % motorcycles, Ocean Park 84 % cars **[V, `fleet_mix.csv`]**) **without a single line
+  of validation** — no reference manual count, no precision/recall, no MAPE. Those modal shares are
+  not publishable at this stage.
+- **Parked vehicles counted**, no motion filter — already identified in the ROADMAP.
+- **Video ↔ measurement matching at ±5 min** **[C, `MATCH_MAX_S = 300`]** although the measurement
+  lasts 25 s. A 5 min gap between the filmed traffic and the recorded level is enough to decorrelate
+  the two. The PDF reports a median gap of 15 s — good; but the tail of the distribution is not
+  controlled.
 
-### 4.6 🟠 MAJEUR — Calibration des chantiers : extrapolation fragile
+### 4.6 🟠 MAJOR — Construction site calibration: fragile extrapolation
 
-La source équivalente chantier (64,7 dB à 56 m, propagée en 20·log₁₀) dérive d'un **écart de médianes
-de +2,0 dB** entre 32 points « chantier signalé » et 152 points « sans », à Ocean Park **[C]**.
+The equivalent construction source (64.7 dB at 56 m, propagated as 20·log₁₀) derives from a
+**median difference of +2.0 dB** between 32 "construction reported" points and 152 "without", at
+Ocean Park **[C]**.
 
-- **Aucun test de significativité, aucun intervalle de confiance.** +2,0 dB sur n=32 vs n=152, avec
-  σ ≈ 8 dB à Ocean Park **[V]** : l'erreur-type de la différence est de l'ordre de ±1,5 dB. L'écart
-  n'est probablement pas distinguable de zéro.
-- **Aucun contrôle de confusion.** Les points « chantier » ne sont pas appariés aux autres sur la
-  distance à la route, l'heure ou la sous-zone. Un chantier est typiquement en bord de voirie ;
-  l'écart peut être entièrement dû au trafic.
-- **`construction_nearby` est partiellement dérivé de la cible.** Le backfill le déduit de la
-  catégorie de bruit déclarée (`class` contient « construction ») **[C]**. Or `class` est renseigné
-  par le collecteur *au vu de ce qu'il entend*. On sélectionne donc partiellement sur la variable
-  qu'on cherche à expliquer → biais circulaire vers un écart positif.
-- **Extrapolation forte** : de +2 dB observés à 56 m, on remonte une source qui, à 25 m, ajoute
-  ~+7 dB **[C]**. Le facteur d'extrapolation est de 3,5× l'effet observé, avec la seule divergence
-  géométrique et sans barre d'erreur.
+- **No significance test, no confidence interval.** +2.0 dB on n=32 vs n=152, with
+  σ ≈ 8 dB at Ocean Park **[V]**: the standard error of the difference is of the order of ±1.5 dB. The
+  difference is probably indistinguishable from zero.
+- **No confounder control.** The "construction" points are not matched to the others on distance to
+  the road, hour or sub-zone. A construction site is typically at the kerbside;
+  the difference could be entirely due to traffic.
+- **`construction_nearby` is partly derived from the target.** The backfill infers it from the
+  declared noise category (`class` contains "construction") **[C]**. But `class` is filled in
+  by the collector *on the basis of what they hear*. We are therefore partly selecting on the variable
+  we are trying to explain → circular bias toward a positive difference.
+- **Strong extrapolation**: from +2 dB observed at 56 m, a source is inferred which, at 25 m, adds
+  ~+7 dB **[C]**. The extrapolation factor is 3.5× the observed effect, using geometric divergence
+  alone and with no error bar.
 
-### 4.7 🟡 MODÉRÉ — Simulation GAMA : deux approximations physiquement fausses
+### 4.7 🟡 MODERATE — GAMA simulation: two physically wrong approximations
 
-Le `.gaml` est bien écrit et bien commenté. Deux corrections de fond :
+The `.gaml` is well written and well commented. Two substantive corrections:
 
-1. **La loi 10·log₁₀(k) est appliquée uniformément à toutes les cellules** **[C, `reflex scenario`]**,
-   y compris aux cours intérieures et aux cellules éloignées de toute voirie. Physiquement,
-   `10·log₁₀(k)` ne s'applique qu'à **la part d'énergie attribuable au trafic**. Tripler le trafic ne
-   peut pas ajouter +4,8 dB dans une cour où le trafic ne contribue que marginalement.
-   *Correctif :* décomposer `E_cellule = E_trafic(d_route) + E_résiduel` et n'appliquer le facteur
-   qu'à `E_trafic`.
-2. **La mitigation « zone 30 » applique −3 dB à toute la zone** **[C]**, y compris aux rues qui ne
-   sont pas en zone 30 et aux cellules loin des rues concernées. Même correctif : appliquer sur les
-   routes sélectionnées, avec décroissance en distance.
+1. **The 10·log₁₀(k) law is applied uniformly to every cell** **[C, `reflex scenario`]**,
+   including inner courtyards and cells far from any road. Physically,
+   `10·log₁₀(k)` applies only to **the share of energy attributable to traffic**. Tripling traffic
+   cannot add +4.8 dB in a courtyard where traffic contributes only marginally.
+   *Fix:* decompose `E_cell = E_traffic(d_road) + E_residual` and apply the factor only to
+   `E_traffic`.
+2. **The "zone 30" mitigation applies −3 dB to the whole zone** **[C]**, including streets that are
+   not in the zone 30 and cells far from the streets concerned. Same fix: apply it on the selected
+   roads, with decay in distance.
 
-Le PLAN.md prévoit par ailleurs des **agents piétons récepteurs** (palier 2) — c'est la bonne idée,
-et c'est ce qui ferait de GAMA une contribution plutôt qu'un visualiseur. Elle n'est pas implémentée.
+PLAN.md also provides for **receiver pedestrian agents** (tier 2) — that is the right idea,
+and it is what would make GAMA a contribution rather than a viewer. It is not implemented.
 
-### 4.8 🟠 MAJEUR — Reproductibilité
+### 4.8 🟠 MAJOR — Reproducibility
 
-- **Les données ne sont pas rejouables.** `data/` est hors git et absent de la machine. Ni moi, ni un
-  rapporteur, ni le futur toi de janvier ne peut recalculer le moindre chiffre. Pour un projet qui
-  se réclame de la lignée d'un article *Scientific Data*, c'est bloquant.
-- **Deux producteurs écrivent les mêmes fichiers.** `notebooks/09_export_gama.ipynb` et
-  `scripts/export_gama_zones.py` écrivent tous deux dans `outputs/gama_inputs/`. L'état actuel du
-  dossier est **hybride** : `noise_points.shp` est la version 3-zones (5 587 cellules, colonnes
-  `h5…h21`) **[V]**, mais `noise_map.csv` est encore la version **Bach Khoa** périmée (8 640 lignes)
-  **[V]**. Rejouer le notebook 09 écraserait silencieusement les entrées de la simulation.
-- **Recopie manuelle des scores.** Le README instruit de *« recopier les scores du notebook 08 dans
-  MODEL/PERSITE en haut de build_report.py »* **[C]**. Le PDF peut donc afficher des métriques
-  désynchronisées du modèle réellement livré. Les valeurs y sont d'ailleurs des chaînes de
-  caractères en dur.
-- **Le PDF contient des sections périmées.** La page 8 « Next steps » annonce encore *« comptage
-  véhicules sur les 83 vidéos »* et *« GAMA : importer la carte »* **[C]** — deux tâches faites depuis,
-  avec 147 vidéos.
-- Pas de pinning d'environnement (`>=` partout), pas de `data/processed/` créé par le code
-  (le notebook 08 écrit dans un dossier qu'il ne crée jamais), notebooks exécutés sur une autre
-  machine en Python 3.9.
+- **The data cannot be replayed.** `data/` is outside git and absent from the machine. Neither I, nor
+  a referee, nor your future self in January can recompute a single figure. For a project claiming
+  descent from a *Scientific Data* article, that is blocking.
+- **Two producers write the same files.** `notebooks/09_export_gama.ipynb` and
+  `scripts/export_gama_zones.py` both write into `outputs/gama_inputs/`. The current state of that
+  folder is **hybrid**: `noise_points.shp` is the 3-zone version (5 587 cells, columns
+  `h5…h21`) **[V]**, but `noise_map.csv` is still the stale **Bach Khoa** version (8 640 rows)
+  **[V]**. Replaying notebook 09 would silently overwrite the simulation inputs.
+- **Manual copying of scores.** The README instructs one to *"copy the notebook 08 scores into
+  MODEL/PERSITE at the top of build_report.py"* **[C]**. The PDF can therefore display metrics
+  desynchronised from the model actually delivered. The values there are moreover hardcoded
+  strings.
+- **The PDF contains stale sections.** Page 8 "Next steps" still announces *"vehicle counting on the
+  83 videos"* and *"GAMA: import the map"* **[C]** — two tasks done since, with 147 videos.
+- No environment pinning (`>=` everywhere), no `data/processed/` created by the code
+  (notebook 08 writes into a folder it never creates), notebooks executed on another
+  machine under Python 3.9.
 
-### 4.9 🟡 MODÉRÉ — Conformité normative et éthique
+### 4.9 🟡 MODERATE — Regulatory compliance and ethics
 
-- **Pas de déclaration éthique / IRB.** 147 vidéos filmées dans l'espace public à Hanoï : visages et
-  plaques d'immatriculation. Une revue Q1 exigera une déclaration (approbation ou exemption du
-  comité d'éthique de VinUni) et, si les vidéos sont partagées, un floutage.
-- **Pas de licence de données**, pas de plan de dépôt (Zenodo/DOI), pas de pseudonymisation des
-  collecteurs (prénoms en clair dans le pipeline).
-- **Pas de référence explicite aux normes de mesure** : ISO 1996-1/2 (conditions météo, hauteur,
-  distance aux surfaces réfléchissantes, durée), TCVN 7878-2:2010, ni au cadre CNOSSOS-EU.
+- **No ethics / IRB statement.** 147 videos filmed in public space in Hanoi: faces and
+  registration plates. A Q1 journal will require a statement (approval or exemption from the
+  VinUniversity ethics committee) and, if the videos are shared, blurring.
+- **No data licence**, no deposit plan (Zenodo/DOI), no pseudonymisation of the collectors (first
+  names in clear text in the pipeline).
+- **No explicit reference to measurement standards**: ISO 1996-1/2 (weather conditions, height,
+  distance to reflecting surfaces, duration), TCVN 7878-2:2010, nor to the CNOSSOS-EU framework.
 
 ---
 
-## 5. Plan d'action pour une « étude parfaite »
+## 5. Action plan for a "perfect study"
 
-Priorisation : **P0** = sans cela le manuscrit ne passe pas la relecture ; **P1** = fait passer de
-« correct » à « bon » ; **P2** = confort et ambition.
+Prioritisation: **P0** = without it the manuscript does not survive review; **P1** = takes it from
+"correct" to "good"; **P2** = comfort and ambition.
 
-### P0 — À faire avant toute nouvelle diffusion (≈ 1 à 2 semaines, sans nouvelle collecte)
+### P0 — To do before any further circulation (≈ 1 to 2 weeks, with no new collection)
 
-**P0-1. Refaire la validation avec des blocs spatiaux honnêtes, et publier le tableau d'ablation.**
-*Pourquoi :* c'est le point sur lequel l'étude est aujourd'hui attaquable en une phrase.
-*Comment :*
-- Remplacer les groupes `round(3)` par un **blocage spatial ≥ 600 m** (2 × rayon de buffer) ou, mieux,
-  un *buffered leave-one-out* (exclure de l'apprentissage tout point à moins de 300 m du point testé).
-  `sklearn.model_selection.GroupKFold` sur un identifiant de bloc calculé en UTM, ou `spacv`.
-- Publier **quatre lignes de baseline** dans le même tableau, sous le même protocole exact :
-  ① moyenne globale · ② moyenne par site · ③ moyenne par (site × heure) · ④ `dist_road_m` seul
-  (régression linéaire) · ⑤ IDW / krigeage ordinaire sur les mesures · ⑥ LightGBM complet.
-- Ajouter une **ablation de features** : LightGBM sans morphologie, sans heure, etc.
-- Ajouter des **IC bootstrap 95 %** sur R² et MAE, avec ré-échantillonnage **par bloc spatial**.
-*Critère de succès :* on peut écrire une phrase de la forme *« la morphologie apporte ΔR² = X
-[IC 95 %] au-delà d'un modèle site × heure »*, quelle que soit la valeur de X.
-*Risque assumé :* il est possible que ΔR² soit petit. Ce n'est pas un échec — c'est un résultat, et
-c'est exactement le genre de résultat que le survey paper cité appelle.
+**P0-1. Redo the validation with honest spatial blocks, and publish the ablation table.**
+*Why:* this is the point on which the study is currently attackable in one sentence.
+*How:*
+- Replace the `round(3)` groups by **spatial blocking ≥ 600 m** (2 × buffer radius) or, better,
+  a *buffered leave-one-out* (exclude from training every point within 300 m of the tested point).
+  `sklearn.model_selection.GroupKFold` on a block identifier computed in UTM, or `spacv`.
+- Publish **four baseline rows** in the same table, under the exact same protocol:
+  ① global mean · ② mean per site · ③ mean per (site × hour) · ④ `dist_road_m` alone
+  (linear regression) · ⑤ IDW / ordinary kriging on the measurements · ⑥ full LightGBM.
+- Add a **feature ablation**: LightGBM without morphology, without hour, etc.
+- Add **95 % bootstrap CIs** on R² and MAE, resampling **by spatial block**.
+*Success criterion:* one can write a sentence of the form *"morphology contributes ΔR² = X
+[95 % CI] beyond a site × hour model"*, whatever the value of X.
+*Accepted risk:* ΔR² may be small. That is not a failure — it is a result, and
+exactly the kind of result the cited survey paper calls for.
 
-**P0-2. Reformuler la métrique et les comparaisons aux normes.**
-- Renommer partout la cible en **`L_Aeq,25s` (proxy instantané, smartphone non certifié)**, jamais
-  « dB » nu, jamais « LAeq » sans indice de durée.
-- **Retirer L_den / L_night du tableau des seuils** ou les déplacer dans un encadré « pour contexte
-  santé publique uniquement, non comparable à notre grandeur ».
-- Reformuler les dépassements QCVN en **« taux d'échantillons instantanés supérieurs au seuil »**,
-  jamais en « dépassement réglementaire », et l'assortir de l'incertitude de calibration.
-- Retirer la ligne Barcelone du tableau de performance, ou l'isoler avec l'avertissement du §4.3(f).
+**P0-2. Reformulate the metric and the comparisons to standards.**
+- Rename the target everywhere to **`L_Aeq,25s` (instantaneous proxy, uncertified smartphone)**, never
+  bare "dB", never "LAeq" without a duration subscript.
+- **Remove L_den / L_night from the thresholds table** or move them into a box marked "for public
+  health context only, not comparable to our quantity".
+- Reformulate QCVN exceedances as **"rate of instantaneous samples above the threshold"**,
+  never as "regulatory exceedance", and attach the calibration uncertainty to it.
+- Remove the Barcelona row from the performance table, or isolate it with the warning of §4.3(f).
 
-**P0-3. Ancrer la calibration absolue.** *(1 journée, coût faible)*
-- Emprunter un **sonomètre classe 1 ou classe 2** (labo génie civil / environnement de VinUni, ou
-  location) ou un **calibreur acoustique 94 dB / 1 kHz**.
-- Protocole : 3 téléphones + référence côte à côte, **≥ 20 minutes en L_Aeq,1min simultané**, sur
-  **3 environnements de niveaux contrastés** (~50, ~65, ~80 dB) — pas un seul point, pour capter la
-  **non-linéarité** en niveau.
-- Ajuster une correction par téléphone : `L_ref = a·L_phone + b`, publier `a`, `b`, R² et l'écart-type
-  résiduel. Reporter dans `CALIBRATION_OFFSET` (à généraliser en correction affine).
-- **Caractériser plancher et saturation** : point le plus calme atteignable et point > 90 dB pour
-  situer le début de compression.
-*Critère de succès :* une phrase du type *« après correction, l'écart résiduel au sonomètre de
-référence est de ±X dB (1σ) sur la plage 50-85 dB »*.
+**P0-3. Anchor the absolute calibration.** *(1 day, low cost)*
+- Borrow a **class 1 or class 2 sound level meter** (VinUniversity civil/environmental engineering
+  lab, or rental) or a **94 dB / 1 kHz acoustic calibrator**.
+- Protocol: 3 phones + reference side by side, **≥ 20 minutes of simultaneous L_Aeq,1min**, in
+  **3 environments of contrasting levels** (~50, ~65, ~80 dB) — not a single point, so as to capture
+  **non-linearity** in level.
+- Fit a per-phone correction: `L_ref = a·L_phone + b`, publish `a`, `b`, R² and the residual standard
+  deviation. Carry it into `CALIBRATION_OFFSET` (to be generalised into an affine correction).
+- **Characterise floor and saturation**: the quietest achievable point and a point > 90 dB to locate
+  the onset of compression.
+*Success criterion:* a sentence of the form *"after correction, the residual discrepancy against the
+reference sound level meter is ±X dB (1σ) over the 50–85 dB range"*.
 
-**P0-4. Nettoyer l'état du dépôt.**
-- **Supprimer** `outputs/hanoi/hanoi_noise_map.*`, `hanoi_heatmap.html` et
-  `outputs/gama_inputs/noise_map.csv` (artefacts Bach Khoa non validés), ou les déplacer dans un
-  `outputs/deprecated/` avec un README expliquant pourquoi.
-- **Retirer les cellules 1-7 du notebook 08** (grille Bach Khoa) et **archiver le notebook 09** :
-  `export_gama_zones.py` est désormais le seul producteur légitime de `outputs/gama_inputs/`.
-- Faire écrire au notebook 08 un `outputs/models/metrics.json`, et faire **lire** ce JSON par
-  `build_report.py`. Plus aucune métrique en dur.
-- Mettre à jour la page 8 « Next steps » du PDF.
-- Aligner le filtre GPS sur le protocole : `accuracy < 15 m` (et publier la distribution + le nombre
-  de points écartés).
+**P0-4. Clean up the state of the repository.**
+- **Delete** `outputs/hanoi/hanoi_noise_map.*`, `hanoi_heatmap.html` and
+  `outputs/gama_inputs/noise_map.csv` (unvalidated Bach Khoa artefacts), or move them into an
+  `outputs/deprecated/` with a README explaining why.
+- **Remove cells 1-7 of notebook 08** (Bach Khoa grid) and **archive notebook 09**:
+  `export_gama_zones.py` is henceforth the only legitimate producer of `outputs/gama_inputs/`.
+- Have notebook 08 write an `outputs/models/metrics.json`, and have `build_report.py` **read** that
+  JSON. No more hardcoded metrics.
+- Update page 8 "Next steps" of the PDF.
+- Align the GPS filter with the protocol: `accuracy < 15 m` (and publish the distribution plus the
+  number of points discarded).
 
-**P0-5. Publier le jeu de données.**
-- Committer `measurements.csv` (363 lignes, collecteurs pseudonymisés en C1/C2/C3) **dans le dépôt** —
-  il fait quelques dizaines de kio, il n'y a aucune raison de l'exclure.
-- Déposer sur **Zenodo** (dataset + DOI) : mesures, `vehicle_counts.csv`, registre chantiers,
-  formulaires XLSForm, script de nettoyage. Les vidéos brutes restent hors dépôt (RGPD/vie privée).
-- Ajouter une **déclaration éthique** (statut IRB VinUni) et une licence (CC-BY-4.0 pour les données,
-  MIT/Apache pour le code).
+**P0-5. Publish the dataset.**
+- Commit `measurements.csv` (363 rows, collectors pseudonymised as C1/C2/C3) **into the repository** —
+  it is a few tens of KiB, there is no reason to exclude it.
+- Deposit on **Zenodo** (dataset + DOI): measurements, `vehicle_counts.csv`, construction register,
+  XLSForm files, cleaning script. The raw videos stay outside the repository (GDPR/privacy).
+- Add an **ethics statement** (VinUniversity IRB status) and a licence (CC-BY-4.0 for the data,
+  MIT/Apache for the code).
 
-### P1 — Pour atteindre un niveau académique solide (≈ 4 à 8 semaines, collecte incluse)
+### P1 — To reach a solid academic level (≈ 4 to 8 weeks, collection included)
 
-**P1-1. Campagne complémentaire ciblée — priorité aux trous, pas au volume.**
-Le problème n'est pas « 363 c'est peu » : c'est *où* et *quand* ils sont. Ordre de priorité :
+**P1-1. Targeted additional campaign — priority to the gaps, not to volume.**
+The problem is not "363 is few": it is *where* and *when* they are. Priority order:
 
-| Cible | Volume indicatif | Pourquoi |
+| Target | Indicative volume | Why |
 |---|---|---|
-| **Nuit 22 h - 05 h** | ≥ 60 points, ≥ 3 nuits, les 3 sites | 2,8 % actuellement, zéro entre 0 h et 5 h ; c'est la période au seuil le plus sévère |
-| **Points fixes répétés** | **15-20 points**, chacun mesuré **≥ 6 fois** à des heures/jours différents | Permet la décomposition de variance (§P1-2) — le gain scientifique le plus élevé par heure de terrain |
-| **Une 4ᵉ et une 5ᵉ typologie** | ~60 points chacune | Zone industrielle / périurbaine / résidentielle calme. Sans nouvelle typologie, le leave-one-site-out restera sur n=3 et restera négatif |
-| **Week-end** | ~50 points | Couverture actuelle « légère », non quantifiée |
-| **Trous horaires** 9 h, 14 h, 16 h, 19-21 h | ~40 points | Le profil horaire est un livrable central du rapport |
+| **Night 22:00–05:00** | ≥ 60 points, ≥ 3 nights, all 3 sites | currently 2.8 %, zero between 00:00 and 05:00; it is the period with the strictest threshold |
+| **Repeated fixed points** | **15-20 points**, each measured **≥ 6 times** at different hours/days | Enables variance decomposition (§P1-2) — the highest scientific gain per hour of fieldwork |
+| **A 4th and a 5th typology** | ~60 points each | Industrial / peri-urban / quiet residential. Without a new typology, leave-one-site-out will stay at n=3 and stay negative |
+| **Weekend** | ~50 points | Current coverage "light", unquantified |
+| **Hourly gaps** 09:00, 14:00, 16:00, 19:00–21:00 | ~40 points | The hourly profile is a central deliverable of the report |
 
-**Métadonnées à ajouter impérativement au formulaire v3 :**
-`point_id` (pour les points fixes répétés) · `duration_s` (durée réelle d'intégration) ·
-`phone_model` · `height_m` · `windscreen` (oui/non) · `road_surface` (sec/humide) ·
-`wind_local` (anémomètre de poche, ~15 €) · `street_width_m` et `facade_height_m` (ratio de canyon) ·
-`dist_to_road_m` **en mètres** (garder la classe en secours) · `L_Amax` et `L90` si l'app les affiche
-(Decibel X les propose : ce sont deux features gratuites et très informatives).
+**Metadata that must be added to the v3 form:**
+`point_id` (for repeated fixed points) · `duration_s` (actual integration duration) ·
+`phone_model` · `height_m` · `windscreen` (yes/no) · `road_surface` (dry/wet) ·
+`wind_local` (pocket anemometer, ~€15) · `street_width_m` and `facade_height_m` (canyon ratio) ·
+`dist_to_road_m` **in metres** (keep the class as a fallback) · `L_Amax` and `L90` if the app shows
+them (Decibel X offers them: two free and highly informative features).
 
-**Ce qu'il faut aussi supprimer du protocole :** interdire la mesure sous la pluie et par vent
-> 5 m/s (ISO 1996-2), et documenter la distance minimale aux façades (≥ 3,5 m) pour éviter les
-réflexions.
+**What must also be removed from the protocol:** forbid measuring in rain and in wind
+> 5 m/s (ISO 1996-2), and document the minimum distance to façades (≥ 3.5 m) to avoid
+reflections.
 
-**P1-2. Quantifier le plafond de R² au lieu de l'affirmer.**
-Avec les points fixes répétés de P1-1 : décomposition de variance
-`σ²_total = σ²_entre-points + σ²_intra-point`. Le R² maximal atteignable par *tout* modèle
-spatial vaut `σ²_entre / σ²_total`. Cela transforme la phrase molle du rapport (« ±5 dB
-irréductibles, plafond ~0,6 ») en un résultat mesuré, et cela **valorise** le R² obtenu au lieu de
-le subir. C'est un ajout à fort rendement pour un manuscrit.
+**P1-2. Quantify the R² ceiling instead of asserting it.**
+With the repeated fixed points of P1-1: variance decomposition
+`σ²_total = σ²_between-points + σ²_within-point`. The maximum R² achievable by *any* spatial model
+equals `σ²_between / σ²_total`. This turns the report's soft sentence ("±5 dB
+irreducible, ceiling ~0.6") into a measured result, and it **adds value to** the R² obtained instead of
+suffering it. A high-yield addition for a manuscript.
 
-**P1-3. Passer d'une LUR aveugle à un modèle hybride physique + ML.**
-C'est la recommandation la plus structurante, et le nom du dépôt y invite : utiliser
-**NoiseModelling** (UMRAE/Cerema, open source, GPL, moteur **CNOSSOS-EU**, entrées OSM natives,
-sortie SIG). Architecture cible :
+**P1-3. Move from blind LUR to a hybrid physics + ML model.**
+This is the most structuring recommendation, and the repository's name invites it: use
+**NoiseModelling** (UMRAE/Cerema, open source, GPL, **CNOSSOS-EU** engine, native OSM inputs,
+GIS output). Target architecture:
 
 ```
-OSM (routes + bâtiments + hauteurs)
+OSM (roads + buildings + heights)
         │
-        ├─► NoiseModelling / CNOSSOS-EU ──► L_Aeq physique par récepteur
-        │      (émission Q,v par classe · divergence · effet de sol ·
-        │       diffraction/masquage bâti · réflexions de façade)
+        ├─► NoiseModelling / CNOSSOS-EU ──► physical L_Aeq per receiver
+        │      (emission Q,v by class · divergence · ground effect ·
+        │       diffraction/building screening · façade reflections)
         │                                          │
-        └─► features morphologiques ───────────────┤
+        └─► morphological features ────────────────┤
                                                    ▼
-                       LightGBM sur le RÉSIDU (mesure − physique)
+                       LightGBM on the RESIDUAL (measurement − physics)
                                                    │
                                                    ▼
-                                    carte finale = physique + résidu corrigé
+                                    final map = physics + corrected residual
 ```
 
-Bénéfices :
-- La carte retrouve la **résolution fine** (façade vs cour, effet d'écran) que le buffer 300 m détruit.
-- Le modèle devient **extrapolable** à un quartier non mesuré, puisque la physique ne dépend pas de
-  l'échantillon — ce qui répond directement au R² négatif du leave-one-site-out.
-- La comparaison **physique seule / ML seul / hybride** devient une section de résultats à part
-  entière, et c'est exactement le type de contribution que le survey paper appelle.
-- Les hauteurs de bâtiment manquantes dans OSM se comblent avec `building:levels` × 3,2 m, ou avec
-  un MNS libre (Copernicus DEM 30 m en secours).
+Benefits:
+- The map regains the **fine resolution** (façade vs courtyard, screening effect) that the 300 m buffer
+  destroys.
+- The model becomes **extrapolable** to an unmeasured district, since physics does not depend on the
+  sample — which directly answers the negative leave-one-site-out R².
+- The comparison **physics only / ML only / hybrid** becomes a results section in its own right,
+  and that is exactly the kind of contribution the survey paper calls for.
+- Building heights missing from OSM can be filled with `building:levels` × 3.2 m, or with
+  a free DSM (Copernicus DEM 30 m as a fallback).
 
-*Si NoiseModelling est jugé trop lourd dans le temps imparti :* implémenter a minima une couche
-physique simplifiée (source linéique par route pondérée par la classe OSM `highway`, divergence
-`−10·log₁₀(d)` en source linéique, et un masque de visibilité bâti). Même grossière, elle apportera
-un contraste spatial que les 4 features actuelles ne peuvent pas produire.
+*If NoiseModelling is judged too heavy for the time available:* implement at minimum a simplified
+physical layer (line source per road weighted by the OSM `highway` class, divergence
+`−10·log₁₀(d)` for a line source, and a building visibility mask). Even crude, it will provide
+a spatial contrast that the current 4 features cannot produce.
 
-**P1-4. Refaire le comptage vidéo sur la bonne grandeur.**
-- Passer au **tracking** (`ultralytics` + ByteTrack/BoT-SORT) et compter des **franchissements de
-  ligne** → **débit Q en véh/h par classe**, la grandeur qu'exige CNOSSOS.
-- Estimer la **vitesse** via une homographie simple (2 repères au sol de distance connue par site).
-- Passer à **YOLOv8m/l ou YOLO11**, `imgsz` 960-1280, `conf` ~0.25 — la nano à 640 px sous-détecte
-  massivement les motos.
-- **Valider le détecteur** : comptage manuel de référence sur **10 vidéos** (une par site et par
-  créneau), publier précision / rappel / MAPE par classe. **Sans cette validation, ne pas publier
-  les parts modales.**
-- Filtre de mouvement pour exclure les véhicules garés (déjà dans la ROADMAP).
-- Resserrer l'appariement vidéo↔mesure de 300 s à **60 s**, et publier la distribution des écarts.
-- *Une fois le débit et la vitesse disponibles*, `calibrate_emissions.py` peut redevenir
-  identifiable — ou, mieux, on n'a plus besoin de calibrer : CNOSSOS fournit les lois d'émission
-  par classe de véhicule et par vitesse, et on les **vérifie** sur nos mesures au lieu de les inventer.
+**P1-4. Redo the video counting on the right quantity.**
+- Move to **tracking** (`ultralytics` + ByteTrack/BoT-SORT) and count **line crossings**
+  → **flow Q in veh/h per class**, the quantity CNOSSOS requires.
+- Estimate **speed** via a simple homography (2 ground markers of known separation per site).
+- Move to **YOLOv8m/l or YOLO11**, `imgsz` 960–1280, `conf` ~0.25 — the nano model at 640 px
+  massively under-detects motorcycles.
+- **Validate the detector**: reference manual count on **10 videos** (one per site and per
+  time slot), publish precision / recall / MAPE per class. **Without this validation, do not publish
+  the modal shares.**
+- Motion filter to exclude parked vehicles (already in the ROADMAP).
+- Tighten video↔measurement matching from 300 s to **60 s**, and publish the distribution of gaps.
+- *Once flow and speed are available*, `calibrate_emissions.py` can become identifiable again —
+  or, better, calibration is no longer needed: CNOSSOS provides emission laws
+  per vehicle class and per speed, and we **verify** them against our measurements instead of inventing them.
 
-**P1-5. Fiabiliser la calibration chantier.**
-- Appariement (*matching*) des points « chantier » et « sans chantier » sur `dist_to_road`, heure et
-  sous-zone, avant de calculer l'écart. Ou modèle linéaire avec ces covariables.
-- **Test de permutation** + IC bootstrap sur l'écart, et publication du n effectif.
-- **Retirer le backfill circulaire** : ne comparer que sur les points où `construction_nearby` a été
-  *effectivement saisi*, et traiter la valeur dérivée de `class` comme une variable distincte.
-- Transect dB-distance explicite : le protocole prévoit déjà « 2-3 mesures en s'éloignant » — les
-  exploiter pour **ajuster** la loi d'atténuation observée au lieu d'imposer 20·log₁₀.
-- Assortir le +2 dB d'une barre d'erreur dans le `.gaml` et faire une **analyse de sensibilité**
-  (scénario bas / central / haut).
+**P1-5. Make the construction calibration reliable.**
+- *Matching* of "construction" and "no construction" points on `dist_to_road`, hour and
+  sub-zone, before computing the difference. Or a linear model with those covariates.
+- **Permutation test** + bootstrap CI on the difference, and publication of the effective n.
+- **Remove the circular backfill**: compare only on points where `construction_nearby` was
+  *actually entered*, and treat the value derived from `class` as a distinct variable.
+- Explicit dB-distance transect: the protocol already provides for "2-3 measurements while walking
+  away" — use them to **fit** the observed attenuation law instead of imposing 20·log₁₀.
+- Attach an error bar to the +2 dB in the `.gaml` and run a **sensitivity analysis**
+  (low / central / high scenario).
 
-**P1-6. Corriger la physique de GAMA.** Les deux points du §4.7 (décomposition trafic/résiduel pour
-le facteur `10·log₁₀(k)`, application locale de la zone 30). Puis implémenter le **palier 2 du
-PLAN.md** — les agents piétons et la **dose d'exposition** : c'est ce qui distingue une simulation
-agent-based d'une carte animée, et c'est ce qui produit un indicateur (exposition de population)
-que la carte seule ne donne pas.
+**P1-6. Correct the GAMA physics.** The two points of §4.7 (traffic/residual decomposition for
+the `10·log₁₀(k)` factor, local application of the zone 30). Then implement **tier 2 of
+PLAN.md** — the pedestrian agents and the **exposure dose**: that is what distinguishes an
+agent-based simulation from an animated map, and it is what produces an indicator (population
+exposure) that the map alone does not give.
 
-### P2 — Ambition et bonus
+### P2 — Ambition and bonus
 
-- **Benchmark de modèles** (tâche déjà dans la ROADMAP, statut à clarifier avec l'encadrant) :
-  LightGBM vs Random Forest vs régression linéaire régularisée vs LSTM/ST-GNN de Barcelone. Note :
-  les modèles temporels (LSTM, ST-GNN) **exigent des séries continues** — donc la tâche
-  « téléphone posé une journée » du reliquat technique en est le **prérequis**, pas un bonus.
-- **Séries temporelles longues** : 3-5 points avec un téléphone en enregistrement continu sur 24 h
-  → vrai L_Aeq horaire, L_den/L_night calculables, et de quoi **quantifier le biais** de l'échantillon
-  25 s par rapport au L_Aeq horaire. Fort rendement, coût quasi nul.
-- **Audio comme feature.** 363 clips ≥ 10 s sont déjà collectés et ne servent qu'au QC. Des
-  embeddings (YAMNet / PANNs / VGGish) donneraient une classification objective des sources, en
-  remplacement de la catégorie déclarative — et pourraient devenir des features du modèle.
-- **Cross-validation spatiale à la Meyer & Pebesma** avec carte du **domaine d'applicabilité** (AOA) :
-  masquer sur la carte finale les cellules où le modèle extrapole hors de son espace de features.
-  Visuellement parlant et méthodologiquement irréprochable.
-- **Carte d'incertitude** publiée à côté de la carte de niveaux (LightGBM quantile, ou variance
-  d'ensemble). Une carte de bruit sans carte d'incertitude est aujourd'hui difficilement publiable.
+- **Model benchmark** (task already in the ROADMAP, status to clarify with the supervisor):
+  LightGBM vs Random Forest vs regularised linear regression vs the Barcelona LSTM/ST-GNN. Note:
+  temporal models (LSTM, ST-GNN) **require continuous series** — so the
+  "phone left in place for a day" task in the technical backlog is their **prerequisite**, not a bonus.
+- **Long time series**: 3–5 points with a phone recording continuously over 24 h
+  → a true hourly L_Aeq, computable L_den/L_night, and the means to **quantify the bias** of the
+  25 s sample relative to the hourly L_Aeq. High yield, near-zero cost.
+- **Audio as a feature.** 363 clips of ≥ 10 s are already collected and serve only for QC.
+  Embeddings (YAMNet / PANNs / VGGish) would give an objective classification of sources, replacing
+  the declarative category — and could become model features.
+- **Meyer & Pebesma style spatial cross-validation** with an **area of applicability** (AOA) map:
+  mask on the final map the cells where the model extrapolates outside its feature space.
+  Visually compelling and methodologically unimpeachable.
+- **Uncertainty map** published beside the level map (quantile LightGBM, or ensemble variance).
+  A noise map without an uncertainty map is hard to publish today.
 
 ---
 
-## 6. Ce qu'il faut écrire (et ne plus écrire) dans le manuscrit
+## 6. What to write (and no longer write) in the manuscript
 
-**À reformuler :**
+**To reformulate:**
 
-| Formulation actuelle | Formulation défendable |
+| Current wording | Defensible wording |
 |---|---|
-| « R² 0.45 sous validation croisée spatiale honnête » | « R² 0.45 avec blocs de 110 m ; ce protocole reste contaminé par le recouvrement des buffers de 300 m. Sous blocage à 600 m : R² = … ; en leave-one-site-out : −0.68 à +0.21 » |
-| « 39 % des mesures dépassent le QCVN » | « 39 % des échantillons instantanés dépassent le seuil QCVN diurne. Notre grandeur n'est pas le L_Aeq de référence de la norme et notre instrumentation n'est pas certifiée : ce taux est indicatif, non réglementaire » |
-| « WHO day 53 / night 45 » | à retirer du tableau des seuils ; mentionner L_den/L_night uniquement en discussion santé publique |
-| « supérieur à la référence Barcelone R² 0.61 » | à retirer : cibles non comparables (L_Aeq 4 mois, capteurs classe 1) |
-| « ±5 dB irréductibles, plafond R² ≈ 0.6 » | remplacer par le plafond **mesuré** issu de la décomposition de variance (P1-2) |
-| « Le transfert échoue, l'entraînement direct fonctionne » | « Le transfert inter-villes échoue (R² −1.26). L'entraînement direct fonctionne **à l'intérieur des typologies échantillonnées** et ne généralise pas encore à une typologie non vue » |
+| "R² 0.45 under honest spatial cross-validation" | "R² 0.45 with 110 m blocks; that protocol remains contaminated by the overlap of the 300 m buffers. Under 600 m blocking: R² = … ; under leave-one-site-out: −0.68 to +0.21" |
+| "39 % of measurements exceed QCVN" | "39 % of instantaneous samples exceed the QCVN daytime threshold. Our quantity is not the standard's reference L_Aeq and our instrumentation is not certified: this rate is indicative, not regulatory" |
+| "WHO day 53 / night 45" | to be removed from the thresholds table; mention L_den/L_night only in a public health discussion |
+| "better than the Barcelona reference R² 0.61" | to be removed: non-comparable targets (4-month L_Aeq, class 1 sensors) |
+| "±5 dB irreducible, R² ceiling ≈ 0.6" | replace with the **measured** ceiling from the variance decomposition (P1-2) |
+| "Transfer fails, direct training works" | "Cross-city transfer fails (R² −1.26). Direct training works **within the sampled typologies** and does not yet generalise to an unseen typology" |
 
-**À mettre en avant, ce sont vos vraies contributions :**
-1. Le résultat négatif documenté sur le transfert inter-villes, avec Barcelone en contrôle.
-2. La non-identifiabilité des émissions véhicule à partir d'un comptage de densité vidéo — un
-   résultat négatif utile, et une leçon de conception d'expérience.
-3. Un protocole terrain smartphone reproductible, avec formulaires ouverts et données déposées.
-4. La chaîne complète mesure → modèle → carte horaire → simulation ABM avec statut explicite de
-   chaque couche.
+**To foreground — these are your real contributions:**
+1. The documented negative result on cross-city transfer, with Barcelona as a control.
+2. The non-identifiability of vehicle emissions from a video density count — a
+   useful negative result, and a lesson in experimental design.
+3. A reproducible smartphone field protocol, with open forms and deposited data.
+4. The complete chain measurement → model → hourly map → ABM simulation with an explicit status for
+   each layer.
 
 ---
 
-## 7. Récapitulatif des chiffres vérifiés pendant l'audit
+## 7. Summary of figures verified during the audit
 
-| Grandeur | Valeur | Source |
+| Quantity | Value | Source |
 |---|---|---|
-| Mesures totales / sites | 363 — OP 184, HK 99, VT 80 | `hanoi_exceedances.csv`, `*_measurements.dbf` |
-| Mesures nocturnes (21 h-6 h) | **10 (2,8 %)**, dont 0 entre 0 h et 5 h | `hanoi_exceedances.csv`, histogramme horaire |
-| Heures sans aucune mesure | **9 h** (et quasi-vide 20-23 h) | `validation_simulation.csv` |
-| Plage / dispersion mesurée | 47,0 - 88,0 dB · σ = 7,10 dB | `validation_simulation.csv` |
-| Dispersion simulée | σ = 5,52 dB (carte plus plate que le réel) | idem |
-| Validation GAMA *in-sample* | n=360 · biais −0,52 · MAE 3,68 · RMSE 4,98 · r 0,719 · 74 % dans ±5 dB | recalcul de l'audit |
-| Baseline « moyenne par site » (LOO) | R² 0,03 · MAE 5,79 dB | calcul de l'audit |
-| **Baseline « site × heure » (LOO)** | **R² 0,27 · MAE 4,79 dB** | calcul de l'audit |
-| Modèle LightGBM, CV 110 m | R² 0,45 · MAE 4,2 dB | sorties notebook 08 |
-| Modèle, leave-one-site-out | R² **+0,21 / −0,68 / −0,37** | `build_report.py` (PERSITE) |
-| Taille des blocs de CV « spatiale » | ~111 m × 104 m, vs buffer de features **300 m** | notebook 08 |
-| Grille Bach Khoa (non mesurée) | 8 640 cellules, lat 20,992-21,019 / lon 105,829-105,858 | `hanoi_noise_map.csv` |
-| Grille 3 sites (GAMA) | 5 587 cellules 40 m × 17 heures | `noise_points.dbf` |
-| Émissions véhicule (NNLS) | moto / voiture / PL = **0,0** — non identifiables | `emission_calibration.csv` |
-| Source chantier calibrée | 64,7 dB à 56 m, depuis un écart de médianes de **+2,0 dB** (n=32 vs 152) | `emission_calibration.csv`, `.gaml` |
-| Reproduction Sunbird (notebook 06) | R² 0,25 · MAE 8,17 dB, sur le config `small` = **1 000 lignes**, split aléatoire | notebook 06 |
-| Offsets de calibration appliqués | 0,0 / 0,0 / 0,0 — aucune référence absolue | `prepare_field_data.py` |
+| Total measurements / sites | 363 — OP 184, HK 99, VT 80 | `hanoi_exceedances.csv`, `*_measurements.dbf` |
+| Night measurements (21:00–06:00) | **10 (2.8 %)**, of which 0 between 00:00 and 05:00 | `hanoi_exceedances.csv`, hourly histogram |
+| Hours with no measurement at all | **09:00** (and near-empty 20:00–23:00) | `validation_simulation.csv` |
+| Measured range / dispersion | 47.0 – 88.0 dB · σ = 7.10 dB | `validation_simulation.csv` |
+| Simulated dispersion | σ = 5.52 dB (map flatter than reality) | idem |
+| GAMA validation *in-sample* | n=360 · bias −0.52 · MAE 3.68 · RMSE 4.98 · r 0.719 · 74 % within ±5 dB | audit recomputation |
+| Baseline "mean per site" (LOO) | R² 0.03 · MAE 5.79 dB | audit computation |
+| **Baseline "site × hour" (LOO)** | **R² 0.27 · MAE 4.79 dB** | audit computation |
+| LightGBM model, CV 110 m | R² 0.45 · MAE 4.2 dB | notebook 08 outputs |
+| Model, leave-one-site-out | R² **+0.21 / −0.68 / −0.37** | `build_report.py` (PERSITE) |
+| Size of the "spatial" CV blocks | ~111 m × 104 m, vs feature buffer **300 m** | notebook 08 |
+| Bach Khoa grid (unmeasured) | 8 640 cells, lat 20.992-21.019 / lon 105.829-105.858 | `hanoi_noise_map.csv` |
+| 3-site grid (GAMA) | 5 587 cells at 40 m × 17 hours | `noise_points.dbf` |
+| Vehicle emissions (NNLS) | motorcycle / car / HGV = **0.0** — not identifiable | `emission_calibration.csv` |
+| Calibrated construction source | 64.7 dB at 56 m, from a median difference of **+2.0 dB** (n=32 vs 152) | `emission_calibration.csv`, `.gaml` |
+| Sunbird reproduction (notebook 06) | R² 0.25 · MAE 8.17 dB, on the `small` config = **1 000 rows**, random split | notebook 06 |
+| Calibration offsets applied | 0.0 / 0.0 / 0.0 — no absolute reference | `prepare_field_data.py` |
 
 ---
 
 ## 8. Conclusion
 
-L'étude **tient debout comme travail d'ingénieur** : la chaîne est complète, le code est propre, et
-l'honnêteté intellectuelle affichée dans les scripts (refus d'inventer des émissions, mention
-explicite du caractère in-sample d'une validation) est au-dessus de ce qu'on lit dans beaucoup
-d'articles publiés.
+The study **stands up as engineering work**: the chain is complete, the code is clean, and
+the intellectual honesty displayed in the scripts (refusing to invent emissions, explicitly
+noting the in-sample character of a validation) is above what one reads in many
+published articles.
 
-Elle **ne tient pas encore comme étude scientifique généralisable**, pour trois raisons cumulatives :
-une métrologie non ancrée à une référence absolue, une validation croisée qui fuit et masque un
-leave-one-site-out négatif, et une carte dont la résolution effective (300 m) est incompatible avec
-l'objet qu'elle prétend représenter.
+It **does not yet stand up as generalisable scientific work**, for three cumulative reasons:
+metrology not anchored to an absolute reference, a cross-validation that leaks and masks a negative
+leave-one-site-out, and a map whose effective resolution (300 m) is incompatible with
+the object it claims to represent.
 
-Le chemin le plus court vers une étude défendable ne passe pas par « plus de mesures » : il passe par
-**P0-1** (validation honnête + ablation), **P0-3** (une journée avec un sonomètre de référence) et
-**P0-2** (reformulation de la métrique et des normes). Ces trois actions, réalisables en une à deux
-semaines sans retourner sur le terrain, transforment un chiffre attaquable en une contribution
-solide — y compris si le résultat devient moins flatteur. Ensuite seulement, **P1-3** (couche
-physique CNOSSOS/NoiseModelling) et **P1-1** (nuit + points fixes répétés + 4ᵉ typologie) font
-passer le travail au niveau d'une publication.
+The shortest path to a defensible study does not run through "more measurements": it runs through
+**P0-1** (honest validation + ablation), **P0-3** (one day with a reference sound level meter) and
+**P0-2** (reformulating the metric and the standards). Those three actions, achievable in one to two
+weeks without returning to the field, turn an attackable figure into a solid
+contribution — including if the result becomes less flattering. Only then do **P1-3** (CNOSSOS/
+NoiseModelling physical layer) and **P1-1** (night + repeated fixed points + a 4th typology) take
+the work to publication level.
 
-Le résultat négatif sur le transfert inter-villes et la non-identifiabilité des émissions par
-comptage vidéo sont, en l'état, les deux contributions les plus originales du dossier. Il faut les
-assumer et les mettre au centre, pas les traiter comme des accidents de parcours.
+The negative result on cross-city transfer and the non-identifiability of emissions from
+video counting are, as things stand, the two most original contributions in the record. They should be
+owned and put at the centre, not treated as accidents along the way.
