@@ -70,10 +70,12 @@ accent-based passes and was caught by eye. Combine the two, and run the combined
 filter over the **whole repository**, not only over the files touched in the
 current change.
 
-**`docs/references.bib` is exempt from the French sweep, on purpose.** Its accented
-characters are Vietnamese author names and LaTeX escapes, not untranslated prose. A
-Vietnamese name stripped of its diacritics in a published bibliography is an error,
-not a cleanup. Never run a de-accenting pass over it.
+**In `docs/references.bib`, translate the prose but never touch the names.** The
+`note = {...}` fields are ours and are translated like any other prose. Author names
+are not: **a Vietnamese name stripped of its diacritics in a published bibliography
+is an error, not a cleanup**, and a de-accenting pass over a `.bib` file would cause
+exactly that. Today the names in this file are already transliterated without
+diacritics, which is itself worth checking against the sources one day.
 
 The project ran in French until 11 August 2026. Commits before that date have
 French messages and are left as they are — history is not rewritten here. From
