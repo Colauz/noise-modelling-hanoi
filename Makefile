@@ -58,6 +58,9 @@ $(GRID): $(METRICS) $(SCRIPTS)/07_export_gama_inputs.py
 results/tables/validation_simulation.csv: $(GRID) $(MEASURES)
 	$(PYTHON) $(SCRIPTS)/08_validate_simulation.py
 
+results/figures/analyse_1_horaire.png: $(MEASURES) $(SCRIPTS)/09b_build_analyses.py
+	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
+
 features: .check-env $(FEATURES)  ## OSM morphology features for the measurement points
 
 models: .check-env $(METRICS)  ## Evaluate 8 models under 3 CV protocols, select and write the delivered one
@@ -66,6 +69,7 @@ results: models $(GRID) results/tables/validation_simulation.csv  ## Calibration
 	$(PYTHON) $(SCRIPTS)/05_calibrate_emissions.py
 	$(PYTHON) $(SCRIPTS)/06_anchor_literature.py
 	$(PYTHON) $(SCRIPTS)/09_build_field_map.py
+	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
 
 report: results  ## Build the 8-page PDF report (reads models/metrics.json)
 	$(PYTHON) $(SCRIPTS)/10_build_report.py
