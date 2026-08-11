@@ -1,12 +1,9 @@
 # Metrology: what our measurements are, and what they are not
 
-> **Langue.** Les fichiers de `paper/sections/` sont rédigés en anglais : ils sont destinés à
-> être collés dans le manuscrit Overleaf et utilisent les clés de `paper/bibliography.bib`.
-> Le reste du dépôt reste en français.
->
-> **À placer** dans *Methods*, immédiatement après la description du protocole de terrain,
-> et à répercuter dans *Limitations*. Remplace toute mention de conformité normative et
-> toute comparaison aux valeurs guides annuelles de l'OMS.
+> **Manuscript placement.** Goes in *Methods*, immediately after the field protocol,
+> and is echoed in *Limitations*. It replaces every mention of regulatory compliance
+> and every comparison against the WHO annual guideline values. Citation keys refer
+> to [`references.bib`](references.bib).
 
 ---
 
@@ -73,7 +70,7 @@ retrospectively. It can, however, be *bounded*, and it constrains which claims w
 
 Because we cannot calibrate against a reference instrument, we anchor our distribution
 against published Vietnamese campaigns that used professional equipment
-(`scripts/literature_anchoring.py`; full table in `outputs/hanoi/literature_anchoring.md`).
+(`scripts/06_anchor_literature.py`; full table in `results/tables/literature_anchoring.md`).
 Our measurements are stratified to approximate each published situation as closely as
 possible — roadside classes only, daytime only, and for major-corridor anchors the two sites
 whose typology matches.
@@ -103,7 +100,7 @@ point correction — only an interval.
 
 *(Note for the authors: the `L_den` figures attributed to \citet{phan2010characteristics} are
 currently taken from secondary sources and are flagged `to_check` in
-`scripts/literature_anchoring.py`. They must be confirmed against the PDF — available through
+`scripts/06_anchor_literature.py`. They must be confirmed against the PDF — available through
 the VinUniversity library — before submission. The figures circulating from the Institute of
 Occupational Health and Environment for twelve Hanoi arteries are press-reported grey
 literature and are retained only as contextual orientation, never as a primary reference.)*
@@ -136,9 +133,9 @@ cannot.
 
 - [ ] Replace every bare "dB" denoting our target with `L_A,25s`.
 - [ ] Remove the WHO `L_den` / `L_night` row from the thresholds table (done in
-      `gama/hanoi_noise.gaml` and `scripts/build_report.py`).
+      `simulation/gama/hanoi_noise.gaml` and `scripts/10_build_report.py`).
 - [ ] Reword every exceedance figure per §2.x.4, with the sensitivity statement.
 - [ ] Confirm the \citet{phan2010characteristics} values against the PDF; update
-      `scripts/literature_anchoring.py` and switch the status flag to `verified`.
+      `scripts/06_anchor_literature.py` and switch the status flag to `verified`.
 - [ ] State in *Limitations* that the campaign is closed and that absolute calibration cannot
       be retrofitted — then state what the design nonetheless supports (§2.x.2).

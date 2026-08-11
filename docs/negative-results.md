@@ -1,11 +1,9 @@
 # Negative results as contributions
 
-> **Langue.** Rédigé en anglais pour insertion directe dans le manuscrit Overleaf ; clés de
-> citation dans `paper/bibliography.bib`.
->
-> **À placer** en *Discussion*, en trois sous-sections. Ces trois résultats sont, en l'état, les
-> apports les plus originaux du travail : ils doivent être présentés comme des résultats
-> obtenus, pas comme des difficultés rencontrées. §5.z est l'argument central du papier.
+> **Manuscript placement.** Goes in *Discussion*, as three subsections. These three
+> results are the most original contribution of the work and must be presented as
+> findings obtained, not as difficulties encountered. Section 5.z is the paper's
+> central argument. Citation keys refer to [`references.bib`](references.bib).
 
 ---
 
@@ -216,7 +214,7 @@ withdrew an earlier map covering a district in which no measurement was taken.
 ablation against baselines evaluated on identical splits — including a lookup table of mean
 level by (site, hour), which uses no spatial variable whatsoever — under 600 m spatial block
 cross-validation, buffered leave-one-out and leave-one-site-out, with bootstrap confidence
-intervals (`scripts/evaluate_models.py`, results in `outputs/models/model_comparison.md`).
+intervals (`scripts/04_evaluate_models.py`, results in `models/model_comparison.md`).
 That ablation is what produced §5.z below: measured rather than assumed, the incremental
 contribution of the 300 m morphological aggregates over a single distance-to-road term is
 **negative under all three protocols**. An earlier version of this work reported
@@ -254,7 +252,7 @@ that model actually buys, we evaluated it against seven baselines *on identical 
 under three protocols of increasing severity — 600 m spatial block cross-validation, buffered
 leave-one-out with a 300 m exclusion radius, and leave-one-site-out — with 95 % confidence
 intervals from a block bootstrap (n = 363 measurements, 17 spatial blocks,
-`scripts/evaluate_models.py`).
+`scripts/04_evaluate_models.py`).
 
 One of those baselines is deliberately minimal: an ordinary least-squares regression of the
 measured level on $\log_{10} d_{\text{road}}$, the distance to the nearest road. It is a
@@ -359,7 +357,7 @@ is the spatial arrangement of our 363 points.
 
 Because of this, **the model we deliver is the bare physical core**, not the hybrid we set
 out to build. That choice is made in code, by selecting the best candidate under the
-reference protocol from a list fixed in advance (`scripts/evaluate_models.py`), so that the
+reference protocol from a list fixed in advance (`scripts/04_evaluate_models.py`), so that the
 published map cannot silently inherit a model that only wins on a permissive split.
 
 ### Interpretation
@@ -415,7 +413,7 @@ sample and more typologies — not whether hybridisation is a good idea in the a
 ## Notes for the authors *(not for the manuscript)*
 
 - **Les chiffres sont désormais réels** (run du 5 août 2026 sur les 363 mesures) et proviennent
-  tous de `outputs/models/metrics.json` / `outputs/models/model_comparison.md`. Ne pas les
+  tous de `models/metrics.json` / `models/model_comparison.md`. Ne pas les
   recopier à la main ailleurs : si `evaluate_models.py` est relancé, régénérer le tableau de
   §5.z depuis le JSON.
 - **Protocole de référence = buffered leave-one-out 300 m** (`meta.headline_protocol`), parce
