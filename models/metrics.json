@@ -64,7 +64,7 @@
           4.393357985955618,
           5.808451608175799
         ],
-        "label": "Régression sur log(distance route)"
+        "label": "Regression on log(distance to road)"
       },
       "idw": {
         "n": 363,
@@ -144,7 +144,7 @@
           4.076275215680137,
           5.316864966273349
         ],
-        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+        "label": "LightGBM v2 - road classes split + cyclic hour"
       },
       "physical": {
         "n": 363,
@@ -160,7 +160,7 @@
           4.164385714484655,
           5.611766617722558
         ],
-        "label": "Noyau physique seul (3 paramètres)"
+        "label": "Physical kernel alone (3 parameters)"
       },
       "hybrid": {
         "n": 363,
@@ -176,7 +176,7 @@
           3.9430018681210974,
           5.021531882547307
         ],
-        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+        "label": "HYBRID - physics + LightGBM on the residual"
       },
       "hybrid_lowcap": {
         "n": 363,
@@ -192,7 +192,7 @@
           3.8649839606230256,
           5.1650890525053885
         ],
-        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
+        "label": "Conservative HYBRID - constrained residual (morphology+time)"
       }
     },
     "morphology_gain": {
@@ -283,7 +283,7 @@
           4.492505479614081,
           5.909555577202982
         ],
-        "label": "Régression sur log(distance route)"
+        "label": "Regression on log(distance to road)"
       },
       "idw": {
         "n": 363,
@@ -363,7 +363,7 @@
           4.831673331658651,
           6.160876553187053
         ],
-        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+        "label": "LightGBM v2 - road classes split + cyclic hour"
       },
       "physical": {
         "n": 363,
@@ -379,7 +379,7 @@
           4.220886966407891,
           5.670319675953407
         ],
-        "label": "Noyau physique seul (3 paramètres)"
+        "label": "Physical kernel alone (3 parameters)"
       },
       "hybrid": {
         "n": 363,
@@ -395,7 +395,7 @@
           4.654727066491678,
           6.186474106831179
         ],
-        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+        "label": "HYBRID - physics + LightGBM on the residual"
       },
       "hybrid_lowcap": {
         "n": 363,
@@ -411,7 +411,7 @@
           4.265816092209379,
           6.1961038363652134
         ],
-        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
+        "label": "Conservative HYBRID - constrained residual (morphology+time)"
       }
     },
     "morphology_gain": {
@@ -502,7 +502,7 @@
           4.474377234540661,
           5.919510873242191
         ],
-        "label": "Régression sur log(distance route)"
+        "label": "Regression on log(distance to road)"
       },
       "idw": {
         "n": 363,
@@ -582,7 +582,7 @@
           5.094042407758061,
           6.640736885231427
         ],
-        "label": "LightGBM v2 — voiries séparées + heure cyclique"
+        "label": "LightGBM v2 - road classes split + cyclic hour"
       },
       "physical": {
         "n": 363,
@@ -598,7 +598,7 @@
           4.154185194111576,
           5.738168305967364
         ],
-        "label": "Noyau physique seul (3 paramètres)"
+        "label": "Physical kernel alone (3 parameters)"
       },
       "hybrid": {
         "n": 363,
@@ -614,7 +614,7 @@
           4.955263770118797,
           6.530979478125902
         ],
-        "label": "HYBRIDE — physique + LightGBM sur le résidu"
+        "label": "HYBRID - physics + LightGBM on the residual"
       },
       "hybrid_lowcap": {
         "n": 363,
@@ -630,7 +630,7 @@
           4.642946713833599,
           6.224452502262038
         ],
-        "label": "HYBRIDE conservateur — résidu bridé (morpho+temps)"
+        "label": "Conservative HYBRID - constrained residual (morphology+time)"
       }
     },
     "morphology_gain": {
@@ -777,7 +777,7 @@
     "date_max": "2026-07-22",
     "headline_protocol": "bloo",
     "delivered_model": "physical",
-    "delivered_label": "Noyau physique seul (3 paramètres)",
-    "note": "Protocole de référence = buffered leave-one-out (exclusion de 300 m, soit le rayon des features). Le block-CV 600 m est la version rapide. Les deux remplacent le GroupKFold sur cellules de 110 m du notebook 08, qui fuyait (Roberts et al. 2017)."
+    "delivered_label": "Physical kernel alone (3 parameters)",
+    "note": "Reference protocol = buffered leave-one-out (300 m exclusion, soit le rayon des features). Le block-CV 600 m est la version rapide. Les deux remplacent le GroupKFold sur cellules de 110 m du notebook 08, qui fuyait (Roberts et al. 2017)."
   }
 }
