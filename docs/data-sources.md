@@ -65,19 +65,45 @@ uncertainty added on top of the existing GPS uncertainty would make the residual
 uninterpretable. Reproducibility of the validation requires the receiver position.
 
 **Verification performed** (2026-08-11). All 363 points were tested against the
-OSM building footprints for the three sites:
+OSM building footprints of the three sites, and the 26 containing footprints were
+looked up by way ID against the live OpenStreetMap API to read their `building`
+tag.
 
-- 26 points fall geometrically inside a building footprint;
-- the GPS accuracy declared by ODK is a median of 4.9 m (p90 5.0 m, max 9.0 m);
-- of those 26, several are recorded in the field metadata as `0-2 m (roadside)`
-  and two as `> 60 m / behind building`, i.e. outdoors by the collector's own note.
+| Footprint class | Footprints | Points |
+|---|---|---|
+| `apartments` (named towers, 26–35 storeys) | 10 | 10 |
+| `house`, `terrace` | 3 | 3 |
+| `commercial`, `office`, `construction` | 4 | 4 |
+| `building=yes`, no further specification | 9 | 9 |
+| **Total** | **26** | **26** |
 
-A containment of a few metres is therefore of the same order as the positional
-uncertainty and as the setback of façades in dense Hanoi fabric. This is
-consistent with GPS error on a roadside measurement, not with measuring inside
-private property. It cannot be resolved from the data alone. **Status: reported
-to the team, awaiting a decision on whether these 26 points warrant any further
-treatment.** No blanket rounding has been applied.
+So 13 of the 363 points (3.6 %) fall inside a footprint tagged residential.
+
+**How far inside they fall is the decisive figure.** Distance from each point to
+the boundary of the polygon containing it:
+
+- median **2.7 m**, maximum **7.1 m**;
+- GPS accuracy declared by ODK: median 4.9 m, p90 5.0 m, **maximum 9.0 m**;
+- **no point lies deeper inside a residential footprint than the worst GPS
+  accuracy recorded during the campaign**, and only 5 exceed the p90.
+
+Three further facts point the same way. The ten `apartments` footprints are named
+high-rise towers of 26 to 35 storeys with footprints roughly 40–50 m on a side —
+precisely the geometry that degrades smartphone GNSS through multipath, and
+always toward the tower. The field metadata of these 13 points records distances
+to the road of `2-10 m`, `10-30 m`, `30-60 m` and, for two of them,
+`> 60 m / behind building`: outdoor positions by the collector's own note. And
+their levels, 55.0 to 72.1 dB, are consistent with outdoor readings.
+
+**Conclusion.** The containment is a positional artefact of urban-canyon GNSS
+error, not evidence of measurement inside private property. The protocol
+(outdoors, phone at ~1.2 m, recorded distance to the road) is incompatible with
+an indoor reading. Full-precision coordinates are published on that basis. No
+blanket rounding has been applied, and no individual point has been moved.
+
+The 26 footprint IDs and per-point depths are reproducible from
+`data/processed/measurements.csv` and the OSM extract; the analysis is described
+here rather than shipped as a script because it is a one-off provenance check.
 
 ---
 

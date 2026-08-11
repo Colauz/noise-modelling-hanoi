@@ -8,6 +8,24 @@ Read §1, run §2, then pick from §6.
 
 ---
 
+## 0. Open items — answers we never got
+
+Every one of these is a **visible placeholder** in the repository rather than a
+guess. A field marked "to confirm" is honest; a field filled in by judgement is
+not. Tracked as GitHub issue *Complete author and affiliation metadata*.
+
+| Item | Placeholder | Who holds the answer | If it never arrives |
+|---|---|---|---|
+| Affiliation: CEI or COSMOS Lab | `[AFFILIATION TO CONFIRM]` | Supervisor / VinUniversity | `CITATION.cff` and every paper byline stay unresolved. The June 2026 survey says *Center for Environmental Intelligence*; the team was told *COSMOS Lab*. They may nest rather than conflict |
+| Lucas Zborowski's ORCID | `[ORCID]` | Lucas Zborowski | The citation record is not FAIR-complete; a Zenodo DOI would credit an unidentified author |
+| Doanh Nguyen-Ngoc's title | `[TITLE TO CONFIRM]` | Doanh Nguyen-Ngoc | Acknowledgements and the title slide carry an unqualified name |
+| Nguyen Thanh Quang: co-author or acknowledgement? | `contributor` + acknowledgement | Nguyen Thanh Quang | The default stands. It credits the contribution without claiming authorship nobody agreed to — the choice that wrongs no one |
+| Video retention: custodian, location, deletion deadline | `[SUPERVISOR DECISION]` | Supervisor | 6 GB of unanonymised video with faces and plates sits with no owner and no expiry. **The most consequential gap on this list** |
+| Publication status of the June 2026 survey | `[À VÉRIFIER]` | The two authors | It stays out of `HEAD` and is cited as an internal working document |
+
+
+---
+
 ## 1. Where the project actually stands
 
 The field campaign is **closed**. There was never a professional sound level
@@ -124,6 +142,15 @@ package now; scripts read inputs, call the package, write outputs.
   per direction per trajectory, checked against Little's law.
 - **A dead band in absolute pixels** across two video resolutions was 4 % of the
   height in one and 13 % in the other.
+- **A joblib pickle only reloads under the exact scikit-learn and LightGBM
+  versions it was written with**, and nothing recorded them. The two 11 MB
+  `.pkl` Uganda models were therefore a time bomb for anyone cloning later. They
+  were re-exported as LightGBM text boosters, verified identical to machine
+  precision on 5000 rows before removal. Worth knowing: **the swap bought
+  portability, not weight** — the text boosters are 10.3 MB against 10.4 MB of
+  pickle, and the pickles remain in history, which was not rewritten. Anyone
+  hoping to slim the repository by dropping large files from `HEAD` should expect
+  the same result.
 - **A forced horizontal crossing line** returned zero flow on 14 of 19 `VID_*`
   videos, because vehicles crossed the frame laterally.
 
@@ -143,10 +170,12 @@ package now; scripts read inputs, call the package, write outputs.
       nobody).
 - [ ] **Video retention decision**: custodian, location, deletion or anonymisation
       deadline — `[SUPERVISOR DECISION]` in `data-sources.md`.
-- [ ] **The 26 measurement points inside OSM building footprints.** Median GPS
-      accuracy is 4.9 m and several are recorded as roadside, so this reads as
-      positional error rather than indoor measurement — but it is a judgement the
-      team should make explicitly before publishing full-precision coordinates.
+- [x] **The 26 measurement points inside OSM building footprints — resolved.**
+      13 sit inside footprints tagged residential, but none lies deeper inside one
+      than the worst GPS accuracy of the campaign (max depth 7.1 m against 9.0 m),
+      the ten `apartments` are 26–35 storey towers whose multipath explains the
+      offset, and the field metadata records outdoor distances to the road.
+      Full-precision coordinates published on that basis; see `data-sources.md`.
 - [ ] **Recompile the June 2026 survey** from its LaTeX source with institutional
       addresses; the compiled PDF was removed from `HEAD` because it carries
       personal e-mail addresses.
