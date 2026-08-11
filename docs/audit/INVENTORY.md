@@ -25,7 +25,7 @@
 | Git object store | 39 MB | `du -sh .git` [V] |
 | Tracked files | **167** | `git ls-files` [V] |
 | Largest tracked file | 11 MB (`surrogate_lgbm_v2_uganda.pkl`) | [V] |
-| Commits | 12, first on 2026-06-01 | `git log` [V] |
+| Commits | 42, first on 2026-06-01, three author identities | `git rev-list --count` [V] |
 | Files > 50 MB in git | **none** | [V] |
 | Secrets in tracked files or history | **none found** | pattern scan over `git ls-files` + `git log -S` [V] |
 
