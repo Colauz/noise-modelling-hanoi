@@ -7,7 +7,7 @@
 | [`field-protocol.md`](field-protocol.md) | How the 363 measurements were taken |
 | [`metrology.md`](metrology.md) | Why the target is `L_A,25s` and not a certified `L_Aeq` |
 | [`negative-results.md`](negative-results.md) | The three negative results. **The scientific core** |
-| [`literature-review.md`](literature-review.md) | Verified references and what each one informed |
+| `literature-review.md` | Verified references and what each one informed — **not yet written (Phase 4)** |
 | [`references.bib`](references.bib) | BibTeX for the above |
 | [`handover.md`](handover.md) | **Start here if you are taking the project over** |
 | [`project-timeline.md`](project-timeline.md) | What was done, in what order, and what changed course |
