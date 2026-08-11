@@ -106,6 +106,22 @@ def exceedance_by_hour(df):
     ax.set_title('QCVN exceedance frequency by hour'); ax.grid(alpha=.3)
     plt.tight_layout(); plt.savefig(_out('analyse_4_depassement.png'), dpi=130); plt.close(fig)
 
+    # Per site and period, the table the audit cites as a source of verified figures.
+    # It was produced by a notebook cell until August 2026 -- and written to
+    # results/figures/ while the tracked copy sat in results/tables/, so replaying
+    # that cell would have created a duplicate in the wrong place.
+    d = df.assign(period=period, limit=limit, exceeds=df.noise_dB > limit)
+    rows = []
+    for (site, per), g in d.groupby(['site', 'period']):
+        rows.append({'site': site, 'period': per, 'n': float(len(g)),
+                     'dB_median': round(g.noise_dB.median(), 1),
+                     'pct_depassement': round(100 * g.exceeds.mean(), 1),
+                     'severite_moy_dB': round((g.noise_dB - g['limit'])[g.exceeds].mean(), 1)})
+    out = os.path.join(cfg.TABLES, 'hanoi_exceedances.csv')
+    os.makedirs(cfg.TABLES, exist_ok=True)
+    pd.DataFrame(rows).to_csv(out, index=False)
+    print(f'OK -> {out}')
+
     peak = df.groupby('hour').noise_dB.median()
     print(f'Noisiest hour: {peak.idxmax()}h ({peak.max():.0f} dB) | '
           f'quietest: {peak.idxmin()}h ({peak.min():.0f} dB)')
