@@ -35,7 +35,7 @@ def color(db):
 
 
 def fmt(v, suffix=''):
-    """Valeur lisible ou None si vide (les None sont omis du popup)."""
+    """A readable value, or None when empty (None values are omitted from the popup)."""
     if v is None or (isinstance(v, float) and pd.isna(v)) or str(v) in ('nan', 'NaT', ''):
         return None
     if isinstance(v, float) and v == int(v):

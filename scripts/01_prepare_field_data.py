@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-# Chemins ancrés sur la racine du repo (marche depuis la racine OU depuis notebooks/)
+# Paths anchored on the repository root (works from the root OR from notebooks/)
 from noise_hanoi import config as cfg
 
 ROOT = cfg.ROOT
@@ -43,9 +43,9 @@ RAW_DIR = cfg.KOBO_DIR
 OUT = cfg.MEASUREMENTS
 
 CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}
-# Centres des 3 zones d'étude : le site est réassigné au centre le plus proche
-# du GPS (le label du form est parfois oublié entre deux zones - vu 1 cas le 30/06).
-# Les sites sont distants de plusieurs km, l'assignation est sans ambiguïté.
+# Centres of the 3 study areas: the site is reassigned to the centre nearest the
+# GPS fix (the form label is sometimes left unchanged between areas - 1 case on 30/06).
+# The sites are kilometres apart, so the assignment is unambiguous.
 SITE_CENTERS = {
     'Hoan Kiem lake': (21.0317, 105.8514),
     'Vinh Tuy area':  (20.9928, 105.8690),
@@ -62,23 +62,23 @@ EXTRA_COLS = ['temperature_2m', 'wind_speed_10m', 'precipitation', 'dist_to_road
 
 
 def latest_export():
-    # on exclut measurements.csv (notre sortie) et le registre chantiers (form séparé)
+    # exclude measurements.csv (our own output) and the construction register (separate form)
     files = [f for f in glob.glob(f'{RAW_DIR}/*.csv')
              if not f.endswith('measurements.csv') and 'construction' not in f.lower()]
     if not files:
-        raise SystemExit(f'Aucun export Kobo dans {RAW_DIR}/ (hors measurements.csv).')
-    return max(files)  # le nom contient la date → max = le plus récent
+        raise SystemExit(f'No Kobo export in {RAW_DIR}/ (measurements.csv aside).')
+    return max(files)  # the filename carries the date, so max = most recent
 
 
 def load_raw(path):
     raw = pd.read_csv(path, sep=';')
-    if len(raw.columns) == 1:  # mauvais séparateur
+    if len(raw.columns) == 1:  # wrong separator
         raw = pd.read_csv(path, sep=',')
     return raw
 
 
 def col(raw, *keys):
-    """Première colonne de raw dont le nom contient une des clés (insensible à la casse)."""
+    """First column of raw whose name contains one of the keys (case-insensitive)."""
     for k in keys:
         for c in raw.columns:
             if k.lower() in c.lower():
@@ -112,7 +112,7 @@ def standardize(raw):
     df['collector'] = df['collector'].str.strip().str.lower()
     df['dist_to_road'] = df['dist_to_road'].replace(DIST_NORM)
 
-    # backfill honnête (voir docstring)
+    # honest backfill (see docstring)
     df['phone_orientation'] = df['phone_orientation'].fillna('horizontal')
     df['mic_to_source'] = df['mic_to_source'].fillna('towards')
     is_constr = df['class'].astype(str).str.contains('construction', case=False, na=False)
@@ -122,8 +122,8 @@ def standardize(raw):
 
 
 def fix_site_by_gps(df):
-    """Réassigne `site` au centre de zone le plus proche du GPS (corrige les
-    oublis de changement de site dans le form). Signale toute correction."""
+    """Reassign `site` to the area centre nearest the GPS fix (corrects the
+    site field left unchanged in the form). Reports every correction."""
     names = list(SITE_CENTERS)
     centers = np.array([SITE_CENTERS[n] for n in names])
     d2 = ((df['latitude'].values[:, None] - centers[:, 0]) ** 2 +
@@ -131,7 +131,7 @@ def fix_site_by_gps(df):
     gps_site = pd.Series([names[i] for i in d2.argmin(axis=1)], index=df.index)
     changed = df['site'].notna() & (df['site'] != gps_site)
     for _, r in df[changed].iterrows():
-        print(f"  site corrigé par GPS : {r['site']} -> {gps_site[r.name]} "
+        print(f"  site corrected from GPS: {r['site']} -> {gps_site[r.name]} "
               f"({r['timestamp']}, {r['noise_dB']:.1f} dB)")
     df['site'] = gps_site
     return df
@@ -171,7 +171,7 @@ def add_weather(df):
             w['site'] = site
             frames.append(w)
     if not frames:
-        print('  (météo : API injoignable, ignorée - relancer plus tard)')
+        print('  (weather: API unreachable, skipped - rerun later)')
         return df
     weather = pd.concat(frames)
     df['time_h'] = df['timestamp'].dt.floor('h')
@@ -180,8 +180,8 @@ def add_weather(df):
 
 
 def build_dataframe(path=None, weather=True):
-    """Pipeline complet : export brut → DataFrame propre et enrichi (en mémoire).
-    C'est le point d'entrée utilisé par le notebook 07."""
+    """Full pipeline: raw export -> a clean, enriched DataFrame (in memory).
+    This is the entry point used by notebook 07."""
     path = path or latest_export()
     df = fix_site_by_gps(clean(standardize(load_raw(path))))
     if weather:
@@ -190,7 +190,7 @@ def build_dataframe(path=None, weather=True):
 
 
 def save_measurements(df, out=OUT):
-    """Écrit le sous-ensemble de colonnes consommé par le notebook 08 (+ extras d'analyse)."""
+    """Write the column subset consumed downstream (plus analysis extras)."""
     cols = MODEL_COLS + [c for c in EXTRA_COLS if c in df.columns]
     df[cols].to_csv(out, index=False)
     return out
@@ -204,9 +204,9 @@ def main():
     save_measurements(df)
     print(f'{n0} brutes → {len(df)} mesures propres → {OUT}')
     print(f'  sites              : {df["site"].value_counts().to_dict()}')
-    print(f'  avec comptage véh. : {df["count_motorbikes"].notna().sum()}')
-    print(f'  chantier (signalé/déduit) : {(df["construction_nearby"].astype(str).str.lower() == "yes").sum()}')
-    print(f'  dB médian / min / max : {df.noise_dB.median():.0f} / {df.noise_dB.min():.0f} / {df.noise_dB.max():.0f}')
+    print(f'  with vehicle counts: {df["count_motorbikes"].notna().sum()}')
+    print(f'  construction (reported/derived): {(df["construction_nearby"].astype(str).str.lower() == "yes").sum()}')
+    print(f'  median / min / max dB: {df.noise_dB.median():.0f} / {df.noise_dB.min():.0f} / {df.noise_dB.max():.0f}')
 
 
 if __name__ == '__main__':

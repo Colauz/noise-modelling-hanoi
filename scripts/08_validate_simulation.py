@@ -46,8 +46,8 @@ def build():
     mg = gpd.GeoDataFrame(m, geometry=gpd.points_from_xy(m.longitude, m.latitude),
                           crs='EPSG:4326').to_crs(CRS_M)
     grid = gpd.read_file(GRID).to_crs(CRS_M)
-    # la grille porte aussi une colonne `site` : on la renomme pour éviter que la
-    # jointure ne suffixe les deux et fasse disparaître `site` des mesures.
+    # the grid also carries a `site` column: rename it so the join does not suffix
+    # both and make `site` disappear from the measurements.
     grid = grid.drop(columns=[c for c in ['site'] if c in grid.columns])
 
     j = gpd.sjoin_nearest(mg, grid, distance_col='cell_dist_m')
@@ -125,7 +125,7 @@ def main():
           f'(median distance to cell centre: {s["cell_dist"]:.0f} m)')
     print(f'  biais {s["bias"]:+.2f} dB · MAE {s["mae"]:.2f} dB · RMSE {s["rmse"]:.2f} dB')
     print(f'  r {s["r"]:.3f} · R² {s["r2"]:.3f}')
-    print(f'  dans ±3 dB : {s["within3"]:.0f} %   dans ±5 dB : {s["within5"]:.0f} %')
+    print(f'  within +/-3 dB: {s["within3"]:.0f} %   within +/-5 dB: {s["within5"]:.0f} %')
     print('\npar site :')
     for site, g in j.groupby('site'):
         print(f'  {site:16} n={len(g):3}  biais {g.error.mean():+5.2f}  '
