@@ -119,7 +119,15 @@ Each has a test or a documented reason behind it.
    *Why:* the published validation validated a grid that had been regenerated after
    it, and nothing anywhere expressed the link. It went unnoticed for six days and
    was found by accident. See `docs/archive/validation-2026-08-05/`.
-8. **Retracted work is archived with its reason, never silently deleted.**
+8. **A date comparison names a suspect; only regeneration convicts it.** An
+   artefact whose input has a more recent commit is *stale by date*. It is only
+   *stale by content* if its inputs actually changed what it says. Both cases
+   occurred here within a week: the published validation had drifted by up to
+   15 dB because the grid beneath it was rebuilt, while `hanoi_exceedances.csv`
+   was older than its stated inputs and came back **identical**, because its only
+   real input, `measurements.csv`, had not moved. Regenerate and diff before
+   announcing a problem — and before republishing.
+9. **Retracted work is archived with its reason, never silently deleted.**
 
 ## Adding a model
 
