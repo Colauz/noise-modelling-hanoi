@@ -136,7 +136,9 @@ def main():
         import json
         M = json.load(open(ref))
         k = M['meta']['headline_protocol']
-        v = M[k]['models']['lgbm_full']
+        # The delivered model is read, never named here: hardcoding a key made this
+        # reminder quote lgbm_full long after the physical kernel had replaced it.
+        v = M[k]['models'][M['meta']['delivered_model']]
         print(f'Reminder: in-sample validation. Generalisation ({M[k]["label"]}): '
               f'R² {v["r2"]:.2f} [{v["r2_ci95"][0]:.2f}, {v["r2_ci95"][1]:.2f}] / '
               f'MAE {v["mae"]:.2f} dB.')

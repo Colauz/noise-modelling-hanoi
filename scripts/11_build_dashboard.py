@@ -109,7 +109,7 @@ SHORT = {
     'lgbm_full':      'LightGBM v1',
     'lgbm_v2':        'LightGBM v2 (voiries séparées)',
     'physical':       'Noyau physique seul',
-    'hybrid':         'HYBRIDE (livré)',
+    'hybrid':         'HYBRIDE',
     'hybrid_lowcap':  'HYBRIDE conservateur',
 }
 
@@ -278,7 +278,11 @@ def main():
 
     # Le modèle livré est celui que evaluate_models.py a retenu sous le protocole de
     # référence — pas forcément le plus sophistiqué. On le lit, on ne le devine pas.
-    delivered = M['meta'].get('delivered_model', 'hybrid' if 'hybrid' in RM else 'lgbm_full')
+    delivered = M['meta']['delivered_model']
+    # The "(delivered)" marker is attached here, from meta, and never baked into a
+    # label: SHORT used to carry it on 'hybrid', which stayed wrong for a week after
+    # the physical kernel took over.
+    SHORT[delivered] = SHORT.get(delivered, delivered) + ' (livré)'
     D = RM[delivered]
 
     # --- bandeau d'indicateurs -----------------------------------------------------
