@@ -412,33 +412,31 @@ sample and more typologies — not whether hybridisation is a good idea in the a
 
 ## Notes for the authors *(not for the manuscript)*
 
-- **Les chiffres sont désormais réels** (run du 5 août 2026 sur les 363 mesures) et proviennent
-  tous de `models/metrics.json` / `models/model_comparison.md`. Ne pas les
-  recopier à la main ailleurs : si `evaluate_models.py` est relancé, régénérer le tableau de
-  §5.z depuis le JSON.
-- **Protocole de référence = buffered leave-one-out 300 m** (`meta.headline_protocol`), parce
-  que son rayon d'exclusion égale le rayon d'agrégation des features. Chiffre à citer dans
-  l'abstract : **noyau physique R² = 0,246**, devant `log(dist_road)` 0,200, l'hybride 0,123
-  et le LightGBM v1 0,137.
-- **Nuance à ne pas escamoter** : sous block-CV 600 m — le protocole le plus permissif des
-  trois — l'ordre est presque exactement INVERSE (hybride 0,395 en tête, noyau physique
-  0,255 en avant-dernier), et les IC se recouvrent largement. La formulation défendable n'est
-  donc pas « le ML perd partout » mais « le classement s'inverse dès que le découpage teste la
-  généralisation ». §5.z est rédigé ainsi, et affiche les trois colonnes. Un relecteur qui
-  vérifiera le tableau trouvera cette inversion : mieux vaut l'avoir écrite nous-mêmes.
-- **Le modèle livré est choisi PAR LE CODE**, pas par nous : `evaluate_models.py` prend le
-  meilleur R² sous le protocole de référence parmi six candidats arrêtés à l'avance, écrit le
-  choix dans `meta.delivered_model`, et `export_gama_zones.py` lit le drapeau
-  `apply_residual`. C'est ce qui garantit que la carte publiée n'hérite pas silencieusement
-  d'un modèle qui ne gagne que sur un découpage permissif. Si un run futur fait gagner
-  l'hybride sous BLOO, la livraison basculera d'elle-même — et il faudra mettre §5.z à jour.
-- **Ne pas présenter l'hybride comme un échec d'implémentation.** Il est correctement
-  construit et il gagne largement sous block-CV. Le résultat est que cet avantage ne survit
-  pas à un découpage spatial honnête, ce qui est une information sur la méthode, pas sur le
-  code.
-- Le ΔR² « apport de la morphologie » affiché dans `model_comparison.md` (+0,312 / +0,556 /
-  +0,087) est calculé **contre la table site × heure**, pas contre `dist_road`. C'est le second
-  chiffre qui porte l'argument de §5.z ; ne pas confondre les deux dans le manuscrit.
-- La "0.8 % to 4.2 % of variance" et "median offset 15 s" de §5.x viennent de
-  `calibrate_emissions.py` et `build_report.py` ; re-vérifier après tout nouveau run de
-  `count_vehicles.py`.
+- **The figures are real** (run of 2026-08-05 over the 363 measurements) and all come from
+  `models/metrics.json` and `models/model_comparison.md`. Do not copy them by hand anywhere
+  else: if `04_evaluate_models.py` is rerun, regenerate the §5.z table from the JSON.
+- **Reference protocol = buffered leave-one-out at 300 m** (`meta.headline_protocol`), because
+  its exclusion radius equals the feature aggregation radius. The figure to quote in the
+  abstract: **physical kernel R² = 0.246**, ahead of `log(dist_road)` at 0.200, the hybrid at
+  0.123 and LightGBM v1 at 0.137.
+- **A nuance not to gloss over**: under block-CV at 600 m — the most permissive of the three
+  protocols — the ordering is almost exactly REVERSED (hybrid 0.395 in the lead, physical
+  kernel 0.255 second from last), and the confidence intervals overlap substantially. The
+  defensible wording is therefore not "ML loses everywhere" but "the ranking inverts as soon
+  as the split tests generalisation". §5.z is written that way and shows all three columns.
+  A reviewer checking the table will find that inversion: better that we wrote it ourselves.
+- **The delivered model is chosen BY THE CODE**, not by us: `04_evaluate_models.py` takes the
+  best R² under the reference protocol among six candidates fixed in advance, writes the
+  choice into `meta.delivered_model`, and `07_export_gama_inputs.py` reads the
+  `apply_residual` flag. That is what guarantees the published map does not silently inherit
+  a model that only wins a permissive split. If a future run makes the hybrid win under BLOO,
+  delivery will switch on its own — and §5.z will have to be updated.
+- **Do not present the hybrid as an implementation failure.** It is correctly built and it
+  wins comfortably under block-CV. The finding is that this advantage does not survive an
+  honest spatial split, which is information about the method, not about the code.
+- The ΔR² labelled "contribution of morphology" in `model_comparison.md` (+0.312 / +0.556 /
+  +0.087) is computed **against the site × hour table**, not against `dist_road`. It is the
+  second figure that carries the §5.z argument; do not confuse the two in the manuscript.
+- The "0.8 % to 4.2 % of variance" and "median offset 15 s" in §5.x come from
+  `05_calibrate_emissions.py` and `10_build_report.py`; re-check them after any new run of
+  `02_count_vehicles.py`.
