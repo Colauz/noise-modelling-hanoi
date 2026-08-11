@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC--BY--4.0-blue.svg)](LICENSE-DATA)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-14%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen.svg)](tests/)
 
 **What a low-cost smartphone protocol can and cannot establish about urban noise —
 363 field measurements in Hanoi, and three negative results that hold up better

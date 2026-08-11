@@ -63,11 +63,11 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:
 <h1>Hanoi Urban Noise — tableau de bord</h1>
 <p class="sub">Cartographie du bruit urbain par smartphones · Center for Environmental
 Intelligence, VinUniversity</p>
-<p class="meta">Généré le 2026-08-05 · protocole de référence :
+<p class="meta">Généré le 2026-08-11 · protocole de référence :
 Buffered LOO 300 m · toutes les métriques sont lues dans
 <code>outputs/models/metrics.json</code>, aucune n'est recopiée à la main.</p>
 
-<div class="kpis"><div class="kpi"><div class="k">R² modèle livré</div><div class="v">0.246</div><div class="d">Noyau physique seul · IC 95 % [0.10, 0.34] · Buffered LOO 300 m</div></div><div class="kpi"><div class="k">MAE</div><div class="v">5.01 dB</div><div class="d">IC 95 % [4.22, 5.67]</div></div><div class="kpi"><div class="k">mesures terrain</div><div class="v">363</div><div class="d">3 sites · 2026-06-10 → 2026-07-22</div></div><div class="kpi"><div class="k">vidéos suivies</div><div class="v">147</div><div class="d">YOLOv8 + ByteTrack, franchissement de ligne</div></div><div class="kpi"><div class="k">débit moyen (véh/min)</div><div class="v">59</div><div class="d">médiane 59 · max 134 véh/min</div></div></div>
+<div class="kpis"><div class="kpi"><div class="k">R² modèle livré</div><div class="v">0.246</div><div class="d">Noyau physique seul (livré) · IC 95 % [0.10, 0.34] · Buffered LOO 300 m</div></div><div class="kpi"><div class="k">MAE</div><div class="v">5.01 dB</div><div class="d">IC 95 % [4.22, 5.67]</div></div><div class="kpi"><div class="k">mesures terrain</div><div class="v">363</div><div class="d">3 sites · 2026-06-10 → 2026-07-22</div></div><div class="kpi"><div class="k">vidéos suivies</div><div class="v">147</div><div class="d">YOLOv8 + ByteTrack, franchissement de ligne</div></div><div class="kpi"><div class="k">débit moyen (véh/min)</div><div class="v">59</div><div class="d">médiane 59 · max 134 véh/min</div></div></div>
 
 <h2>Comparaison des modèles</h2>
 <div class="card">
@@ -91,11 +91,11 @@ Buffered LOO 300 m · toutes les métriques sont lues dans
 <rect x="619.8" y="170" width="78.5" height="16" rx="4" class="bar off"><title>LightGBM v2 (voiries séparées) : R² +0.099</title></rect>
 <text x="274" y="182" text-anchor="end" class="lbl">LightGBM v2 (voiries séparées)</text>
 <text x="872" y="182" text-anchor="end" class="val">+0.099</text>
-<rect x="619.8" y="200" width="196.2" height="16" rx="4" class="bar on"><title>Noyau physique seul : R² +0.246</title></rect>
-<text x="274" y="212" text-anchor="end" class="lbl on">Noyau physique seul</text>
+<rect x="619.8" y="200" width="196.2" height="16" rx="4" class="bar on"><title>Noyau physique seul (livré) : R² +0.246</title></rect>
+<text x="274" y="212" text-anchor="end" class="lbl on">Noyau physique seul (livré)</text>
 <text x="872" y="212" text-anchor="end" class="val on">+0.246</text>
-<rect x="619.8" y="230" width="98.4" height="16" rx="4" class="bar off"><title>HYBRIDE (livré) : R² +0.123</title></rect>
-<text x="274" y="242" text-anchor="end" class="lbl">HYBRIDE (livré)</text>
+<rect x="619.8" y="230" width="98.4" height="16" rx="4" class="bar off"><title>HYBRIDE : R² +0.123</title></rect>
+<text x="274" y="242" text-anchor="end" class="lbl">HYBRIDE</text>
 <text x="872" y="242" text-anchor="end" class="val">+0.123</text>
 <rect x="619.8" y="260" width="114.6" height="16" rx="4" class="bar off"><title>HYBRIDE conservateur : R² +0.144</title></rect>
 <text x="274" y="272" text-anchor="end" class="lbl">HYBRIDE conservateur</text>
