@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noise-hanoi"
+version = "1.0.0"
+description = "Smartphone-based urban noise mapping and agent-based simulation for Hanoi"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Laurian Jamin" },
+    { name = "Lucas Zborowski" },
+]
+keywords = ["urban noise", "acoustics", "Hanoi", "agent-based modelling", "OpenStreetMap"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+
+# Lower bounds are the versions the published results were produced with, in
+# August 2026; see docs/handover.md for the exact environment. Upper bounds are
+# deliberately absent: this is a research repository meant to stay installable,
+# not a library with downstream consumers.
+dependencies = [
+    "numpy>=2.4",
+    "pandas>=3.0",
+    "scipy>=1.18",
+    "pyarrow>=25.0",
+    "geopandas>=1.1",
+    "shapely>=2.1",
+    "osmnx>=2.1",
+    "lightgbm>=4.7",
+    "scikit-learn>=1.9",
+    "joblib>=1.5",
+    "matplotlib>=3.11",
+    "seaborn>=0.13",
+    "folium>=0.20",
+    "requests>=2.34",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Video counting: only needed to rebuild vehicle_counts.csv from the raw
+# videos, which are not published. The counts themselves ship with the repo.
+vision = [
+    "ultralytics>=8.4",
+    "opencv-python>=5.0",
+]
+# Uganda / Sunbird reproduction, notebooks 01-06.
+sunbird = [
+    "datasets>=2.18",
+    "huggingface_hub>=0.22",
+    "librosa>=0.10",
+    "soundfile>=0.12",
+]
+notebooks = [
+    "jupyter>=1.0",
+    "ipykernel>=6.29",
+]
+dev = [
+    "pytest>=8.0",
+    "nbstripout>=0.7",
+]
+
+[project.urls]
+Repository = "https://github.com/Colauz/noise-modelling-hanoi"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
