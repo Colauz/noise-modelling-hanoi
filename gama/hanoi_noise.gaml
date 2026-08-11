@@ -194,6 +194,19 @@ global {
     float FLOW_LINES_EQUIV <- 1.0 min: 0.2 max: 20.0;
     int   VEH_MAX_HOPS     <- 3;     // segments parcourus avant de sortir du réseau
 
+    // OÙ LE DÉBIT MESURÉ S'APPLIQUE-T-IL ? (correction du 6 août 2026)
+    // Bug constaté : à Hoan Kiem, presque aucun véhicule visible autour du lac alors que
+    // TOUTES les vidéos y ont été tournées. Cause : les véhicules étaient créés sur
+    // `one_of(Road)`, donc UNIFORMÉMENT sur les 673 rues de la zone exportée — laquelle
+    // déborde de 400 m l'emprise des mesures. Avec ~51 véhicules vivants, cela fait 0,076
+    // véhicule par rue : n'importe quelle rue, y compris le tour du lac, est vide 92 % du
+    // temps. Le débit mesuré en UN point était dilué sur un quartier entier.
+    // Correction : le débit ne s'applique qu'au CORRIDOR RÉELLEMENT OBSERVÉ, c'est-à-dire
+    // aux rues situées à moins de FLOW_RADIUS d'un de nos points de mesure. C'est aussi
+    // plus honnête : nous n'avons rien mesuré à 400 m du lac, donc nous n'y injectons rien.
+    float FLOW_RADIUS <- 150.0 min: 50.0 max: 600.0;
+    list<Road> spawn_roads <- [];   // rues qui portent le débit mesuré (calculé à l'init)
+
     // Décomposition fond / trafic (voir la correction physique dans `reflex scenario`).
     float AMBIENT_PCT   <- 0.05;  // percentile bas pris comme ambiance résiduelle non routière
     float MITIG_RADIUS  <- 150.0; // portée d'une mesure de mitigation autour d'une route (m)
@@ -336,6 +349,15 @@ global {
         write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cellules, "
             + string(length(Road)) + " routes, " + string(length(Building)) + " batiments, "
             + string(n_constr) + " chantiers, " + string(length(Measure)) + " mesures terrain.";
+        // Corridor sur lequel le débit mesuré est injecté : les rues proches de nos points
+        // de mesure, c'est-à-dire là où les vidéos ont effectivement été tournées.
+        if (!empty(Measure)) {
+            spawn_roads <- Road where ((each distance_to (Measure closest_to each)) <= FLOW_RADIUS);
+        }
+        // Repli : si aucune mesure n'est disponible pour la zone, on retombe sur tout le
+        // réseau plutôt que de ne rien faire circuler du tout.
+        if (empty(spawn_roads)) { spawn_roads <- copy(Road); }
+
         // Trace de démarrage : dit tout de suite si le noyau physique et les débits ont
         // bien été chargés. Sans elle, un CSV manquant se traduisait par un repli
         // silencieux (share 50/50, débit nul) impossible à distinguer d'un vrai résultat.
@@ -349,6 +371,8 @@ global {
             + string(hour_of_day) + "h (dont motos " + string(flow_moto_now with_precision 1)
             + ", part " + string(moto_share_now with_precision 2) + ") - source "
             + traffic_source;
+        write "  corridor : " + string(length(spawn_roads)) + " rues sur " + string(length(Road))
+            + " portent ce debit (a moins de " + string(int(FLOW_RADIUS)) + " m d'une mesure)";
     }
 
     // ---- lit le DÉBIT mesuré pour (zone, heure) et en déduit la composition du flux ----
@@ -581,7 +605,8 @@ species Vehicle skills: [moving] {
     // hasard, dans un sens ou dans l'autre (flip), et non plus toujours au premier sommet :
     // sinon tout le trafic circulait dans la même direction sur chaque rue.
     action enter_network {
-        my_road <- one_of(Road);
+        // tirage dans le CORRIDOR MESURÉ, pas dans tout le réseau : voir FLOW_RADIUS
+        my_road <- empty(spawn_roads) ? one_of(Road) : one_of(spawn_roads);
         hops <- 0;
         idx <- 0;
         if (my_road != nil) {
@@ -645,6 +670,8 @@ experiment hanoi_noise_sim type: gui {
     parameter "Chantier : début" var: work_start category: "2 · Scénario";
     parameter "Chantier : fin (horaires étendus)" var: work_end category: "2 · Scénario";
     parameter "Densité d'affichage du trafic (sections équivalentes)" var: FLOW_LINES_EQUIV
+              category: "2 · Scénario";
+    parameter "Rayon du corridor mesuré (m) — relancer" var: FLOW_RADIUS
               category: "2 · Scénario";
     parameter "Afficher les véhicules" var: show_vehicles category: "3 · Affichage";
     parameter "Afficher nos points de mesure" var: show_measures category: "3 · Affichage";
@@ -720,6 +747,7 @@ experiment hanoi_noise_sim type: gui {
         // stationnent ou avancent moins vite. C'est le coeur de la distinction v2.
         monitor "  (rappel) part motos en DENSITÉ" value: (fleet_moto[hour_of_day] = nil)
                 ? 0.0 : fleet_moto[hour_of_day] with_precision 2;
+        monitor "Rues portant le débit (corridor mesuré)" value: length(spawn_roads);
         monitor "Véhicules présents (émergent)" value: n_vehicles;
         monitor "Véhicules créés (cumul)" value: spawned_total;
         monitor "L moyen (dB)" value: mean_dB with_precision 1;
