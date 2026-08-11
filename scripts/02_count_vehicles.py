@@ -89,7 +89,7 @@ FLOW_CLASSES = ['moto', 'car', 'bus', 'truck']   # a bicycle is not a motorised 
 MATCH_MAX_S = 300        # video<->measurement matching: 5 min maximum
 SAMPLE_FPS = 10.0        # sampling rate: a trade-off between tracking and CPU cost
 DEADBAND_FRAC = 0.05     # dead band = 5 % of image HEIGHT (resolutions differ)
-MAX_CROSS_PER_DIR = 1    # au plus un franchissement par sens et par trajectoire
+MAX_CROSS_PER_DIR = 1    # at most one crossing per direction per trajectory
 TRACKER = 'bytetrack.yaml'
 
 
