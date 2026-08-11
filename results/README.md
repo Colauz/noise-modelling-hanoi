@@ -8,7 +8,9 @@ all of it derives from `models/metrics.json` and the published datasets.
 | `figures/` | The five field analyses, the simulation validation, and `sunbird/` for the Uganda reproduction |
 
 > **Not everything here is reproducible.** `figures/sunbird/` holds eight frozen images
-> that no longer have a working producer — see
+> that **never had a scripted producer** — they come from notebook cells — and whose
+> input data is absent from the repository. Two causes, and the first would outlive
+> the second being fixed. See
 > [`figures/sunbird/NOT-REGENERABLE.md`](figures/sunbird/NOT-REGENERABLE.md). One of them,
 > `pred_vs_real.png`, carries "R² = 0.250" for the **Uganda** reproduction, which is easily
 > mistaken for the Hanoi delivered model's 0.246. The two are unrelated.
