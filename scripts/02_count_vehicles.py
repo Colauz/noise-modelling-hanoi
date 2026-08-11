@@ -83,12 +83,12 @@ VID_DIR = cfg.VIDEO_DIR
 OUT = cfg.VEHICLE_COUNTS
 MEASURES = cfg.MEASUREMENTS
 
-# classes COCO -> nos catégories
+# COCO classes -> our categories
 CLASSES = {1: 'bicycle', 2: 'car', 3: 'moto', 5: 'bus', 7: 'truck'}
-FLOW_CLASSES = ['moto', 'car', 'bus', 'truck']   # le vélo n'est pas une source motorisée
-MATCH_MAX_S = 300        # appariement vidéo<->mesure : 5 min max
-SAMPLE_FPS = 10.0        # cadence d'échantillonnage : compromis suivi/coût CPU
-DEADBAND_FRAC = 0.05     # bande morte = 5 % de la HAUTEUR d'image (résolutions hétérogènes)
+FLOW_CLASSES = ['moto', 'car', 'bus', 'truck']   # a bicycle is not a motorised source
+MATCH_MAX_S = 300        # video<->measurement matching: 5 min maximum
+SAMPLE_FPS = 10.0        # sampling rate: a trade-off between tracking and CPU cost
+DEADBAND_FRAC = 0.05     # dead band = 5 % of image HEIGHT (resolutions differ)
 MAX_CROSS_PER_DIR = 1    # au plus un franchissement par sens et par trajectoire
 TRACKER = 'bytetrack.yaml'
 
@@ -101,12 +101,12 @@ def video_start(path):
 
 
 def track_video(model, path, sample_fps=SAMPLE_FPS):
-    """Suit les véhicules et compte les franchissements d'une ligne horizontale médiane.
+    """Track the vehicles and count crossings of a median line.
 
-    Retourne un dict de résultats. Le comptage de franchissements est fait en
-    POST-TRAITEMENT sur les trajectoires stockées (`count_crossings`), et non au fil des
-    images : c'est ce qui permet de choisir l'orientation de la ligne une fois la vidéo
-    entièrement vue, et cela rend la règle de comptage testable sans relancer YOLO.
+    Returns a dict of results. Crossings are counted in
+    POST-PROCESSING over the stored trajectories (`count_crossings`), not frame by
+    frame: that is what allows the line orientation to be chosen once the video has
+    been seen in full, and it makes the counting rule testable without rerunning YOLO.
     """
     cap = cv2.VideoCapture(path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
@@ -114,7 +114,7 @@ def track_video(model, path, sample_fps=SAMPLE_FPS):
     w = cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0.0
     step = max(int(round(fps / sample_fps)), 1)
 
-    per_frame = []                       # densité : comptage par image échantillonnée
+    per_frame = []                       # density: count per sampled frame
     traj = defaultdict(list)             # track_id -> [(cx, cy), ...]
     cls_votes = defaultdict(Counter)     # track_id -> votes de classe
     i = n_sampled = 0
@@ -126,8 +126,8 @@ def track_video(model, path, sample_fps=SAMPLE_FPS):
             ok, frame = cap.retrieve()
             if not ok:
                 break
-            # persist=False sur la 1re image : réinitialise le tracker entre deux vidéos,
-            # sinon les identifiants de la vidéo précédente fuient dans celle-ci.
+            # persist=False on the first frame: resets the tracker between videos,
+            # otherwise the previous video's identifiers leak into this one.
             r = model.track(frame, imgsz=640, conf=0.3, tracker=TRACKER,
                             persist=(n_sampled > 0), verbose=False)[0]
             n_sampled += 1
@@ -145,7 +145,7 @@ def track_video(model, path, sample_fps=SAMPLE_FPS):
                     cls_votes[tid][name] += 1
                     traj[tid].append((cx, cy))
             elif r.boxes is not None:
-                for cl in r.boxes.cls.tolist():   # image sans identifiants : densité seule
+                for cl in r.boxes.cls.tolist():   # frame without ids: density only
                     if int(cl) in CLASSES:
                         c[CLASSES[int(cl)]] += 1
             per_frame.append(c)
@@ -154,7 +154,7 @@ def track_video(model, path, sample_fps=SAMPLE_FPS):
 
     duration_s = i / fps if fps else 0.0
     flows, axis = count_crossings(traj, cls_votes, w, h)
-    # temps de présence moyen d'une trajectoire : sert au contrôle par la loi de Little
+    # mean residence time of a trajectory: used for the Little's law check
     dwell_s = (np.mean([len(v) for v in traj.values()]) / sample_fps) if traj else 0.0
     return {'density': pd.DataFrame(per_frame), 'flows': flows, 'n_frames': n_sampled,
             'duration_s': duration_s, 'n_tracks': len(traj), 'dwell_s': dwell_s,
@@ -162,31 +162,31 @@ def track_video(model, path, sample_fps=SAMPLE_FPS):
 
 
 def count_crossings(traj, cls_votes, w, h):
-    """Compte les franchissements de la ligne médiane, orientation choisie sur les données.
+    """Count crossings of the median line, with the orientation chosen from the data.
 
-    1. ORIENTATION. On somme l'amplitude de déplacement de chaque trajectoire selon x et
-       selon y, chacune RAPPORTÉE À LA DIMENSION CORRESPONDANTE DE L'IMAGE. Si le
-       mouvement dominant est horizontal, la ligne doit être VERTICALE (au milieu de la
-       largeur) ; sinon horizontale. Une ligne parallèle au flux ne serait jamais
+    1. ORIENTATION. We sum the displacement amplitude of each trajectory along x and
+       along y, each one NORMALISED BY THE CORRESPONDING IMAGE DIMENSION. If the
+       dominant motion is horizontal, the line must be VERTICAL (at mid-width);
+       otherwise horizontal. A line parallel to the flow would never be
        franchie — c'est le garde-fou n°3.
 
-       La normalisation n'est pas cosmétique. Comparer des amplitudes en PIXELS BRUTS
-       favorise mécaniquement la plus grande dimension de l'image : sur nos vidéos
-       portrait (1080x1920, 2160x3840), un déplacement latéral traversant tout le champ
-       compte moins de pixels qu'un déplacement vertical qui n'en traverse qu'une
-       fraction. Sur IMG_20260622_062700 le test brut désigne l'axe y (span 5139 contre
-       3681) et le test normalisé désigne x (3,41 contre 2,68) — c'est le second qui
-       décrit le mouvement réel.
-    2. COMPTAGE. Pour chaque trajectoire on mémorise de quel côté elle se trouvait la
-       dernière fois qu'elle était franchement d'un côté (au-delà de la bande morte) ;
-       un franchissement est compté au changement de côté, au plus MAX_CROSS_PER_DIR
-       fois par SENS (garde-fou n°2 : les identifiants ré-utilisés par le tracker
+       The normalisation is not cosmetic. Comparing amplitudes in RAW PIXELS
+       mechanically favours the larger image dimension: on our portrait videos
+       (1080x1920, 2160x3840), a lateral movement crossing the whole field spans
+       fewer pixels than a vertical movement crossing only a fraction of it.
+       On IMG_20260622_062700 the raw test picks the y axis (span 5139 against
+       3681) and the normalised test picks x (3.41 against 2.68) -- the second is the
+       one that describes the real motion.
+    2. COUNTING. For each trajectory we remember which side it was on the last time
+       it was clearly on one side (beyond the dead band); a crossing is counted on a
+       change of side, at most MAX_CROSS_PER_DIR times per DIRECTION (guard 2: the
+       identifiers reused by the tracker
        produisent sinon des dizaines de faux franchissements).
     """
     span_x = sum(max(p[0] for p in t) - min(p[0] for p in t) for t in traj.values() if t)
     span_y = sum(max(p[1] for p in t) - min(p[1] for p in t) for t in traj.values() if t)
-    # amplitudes rapportées à la dimension de l'image : comparer des pixels bruts
-    # favoriserait mécaniquement le côté le plus long (cf. docstring).
+    # amplitudes normalised by the image dimension: comparing raw pixels
+    # would mechanically favour the longer side (see docstring).
     axis = 0 if (span_x / (w or 1)) > (span_y / (h or 1)) else 1   # 0 = x (ligne verticale)
     extent = (w if axis == 0 else h) or 1.0
     line, deadband = extent / 2.0, DEADBAND_FRAC * extent
@@ -213,16 +213,16 @@ def count_crossings(traj, cls_votes, w, h):
 
 
 def find_videos():
-    """Recherche RÉCURSIVE sous data/raw/hanoi/ : selon la façon dont les vidéos ont été
-    rapatriées (Drive, téléphone, clé USB) elles atterrissent dans des sous-dossiers
-    variés (ex. drive-download-2026.../). On ne déplace pas les fichiers de l'utilisateur."""
+    """RECURSIVE search under the video directory: depending on how the videos were
+    brought back (Drive, phone, USB stick) they land in assorted subfolders
+    (e.g. drive-download-2026.../). We do not move the user's files."""
     roots = [VID_DIR]
     seen, videos = set(), []
     for r in roots:
         for ext in ('mov', 'mp4', 'MOV', 'MP4'):
             for f in glob.glob(f'{r}/**/*.{ext}', recursive=True):
                 key = os.path.basename(f)
-                if key not in seen:          # un même nom = une même vidéo
+                if key not in seen:          # same filename = same video
                     seen.add(key)
                     videos.append(f)
     return sorted(videos, key=os.path.basename)
@@ -230,7 +230,7 @@ def find_videos():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--limit', type=int, default=None, help='ne traiter que N vidéos (test)')
+    ap.add_argument('--limit', type=int, default=None, help='process only N videos (test)')
     ap.add_argument('--force', action='store_true',
                     help='ignorer le CSV existant et tout recalculer (requis v1 -> v2)')
     args = ap.parse_args()
@@ -239,17 +239,17 @@ def main():
     if args.limit:
         videos = videos[:args.limit]
     meas = pd.read_csv(MEASURES, parse_dates=['timestamp'])
-    model = YOLO('yolov8n.pt')  # nano : bon compromis vitesse/qualité
+    model = YOLO('yolov8n.pt')  # nano: a speed/quality trade-off -- NOT validated, see docstring
 
-    # reprise : on repart de l'existant et on ne refait pas les vidéos déjà traitées.
-    # Un CSV v1 (sans colonne de débit) est rejeté : ses lignes ne sont pas comparables.
+    # resume: we start from what exists and do not redo videos already processed.
+    # A v1 CSV (no flow column) is rejected: its rows are not comparable.
     prev = pd.DataFrame(columns=['video'])
     if os.path.exists(OUT) and not args.force:
         prev = pd.read_csv(OUT)
         if 'vehicles_flow' not in prev.columns:
             raise SystemExit(
-                f'{OUT} est au format v1 (densité seule, pas de colonne de débit).\n'
-                '  -> relancer avec --force pour recalculer les 147 vidéos en v2.')
+                f'{OUT} is in v1 format (density only, no flow column).\n'
+                '  -> rerun with --force to recompute the 147 videos in v2.')
     rows = prev.to_dict('records')
     done = set(prev['video'])
 
@@ -261,20 +261,20 @@ def main():
         R = track_video(model, v)
         df, flows, duration_s = R['density'], R['flows'], R['duration_s']
         if df.empty or duration_s <= 0:
-            print(f'  [{k+1}/{len(videos)}] {name} : illisible, ignorée', flush=True)
+            print(f'  [{k+1}/{len(videos)}] {name}: unreadable, skipped', flush=True)
             continue
         minutes = duration_s / 60.0
         row = {'video': name, 'video_start': start, 'duration_s': round(duration_s, 1),
                'n_frames': R['n_frames'], 'sample_fps': SAMPLE_FPS,
                'n_tracks': R['n_tracks'], 'dwell_s': round(R['dwell_s'], 2),
                'line_axis': R['axis']}
-        for c in df.columns:                              # densité (rétro-compatible v1)
+        for c in df.columns:                              # density (v1 backward-compatible)
             row[f'{c}_mean'] = round(df[c].mean(), 2)
         row['vehicles_mean'] = round(df.sum(axis=1).mean(), 2)
-        for c, n in flows.items():                        # débit (nouveau)
+        for c, n in flows.items():                        # flow (new)
             row[f'{c}_flow'] = round(n / minutes, 2)
         row['vehicles_flow'] = round(sum(flows[c] for c in FLOW_CLASSES) / minutes, 2)
-        # appariement à la mesure la plus proche
+        # match to the nearest measurement
         if start is not None:
             gaps = (meas.timestamp - start).abs()
             j = gaps.idxmin()
@@ -283,37 +283,37 @@ def main():
                 row['matched_dB'] = meas.loc[j, 'noise_dB']
                 row['match_gap_s'] = int(gaps[j].total_seconds())
         rows.append(row)
-        print(f'  [{k+1}/{len(videos)}] {name} : {row["vehicles_flow"]:6.1f} véh/min '
-              f'({row["vehicles_mean"]:5.2f} véh/image, {R["n_tracks"]:3d} traj., '
+        print(f'  [{k+1}/{len(videos)}] {name}: {row["vehicles_flow"]:6.1f} veh/min '
+              f'({row["vehicles_mean"]:5.2f} veh/frame, {R["n_tracks"]:3d} tracks, '
               f'ligne {"|" if R["axis"] == "x" else "-"})'
-              + (f' <-> {row.get("matched_dB", "?")} dB' if 'matched_dB' in row else ' (non appariée)'),
+              + (f' <-> {row.get("matched_dB", "?")} dB' if 'matched_dB' in row else ' (unmatched)'),
               flush=True)
-        pd.DataFrame(rows).to_csv(OUT, index=False)  # sauvegarde incrémentale
+        pd.DataFrame(rows).to_csv(OUT, index=False)  # incremental save
 
     print(f'\nOK -> {OUT}')
     final = pd.read_csv(OUT)
-    print(f'{len(final)} vidéos traitées, {final["matched_dB"].notna().sum()} appariées à une mesure')
+    print(f'{len(final)} videos processed, {final["matched_dB"].notna().sum()} matched to a measurement')
     m = final.dropna(subset=['matched_dB'])
     if len(m) > 5:
-        print('\ncorrélation avec le niveau mesuré :')
-        print(f'  densité (v1, véh/image) : r = {m.vehicles_mean.corr(m.matched_dB):+.3f}')
-        print(f'  DÉBIT   (v2, véh/min)   : r = {m.vehicles_flow.corr(m.matched_dB):+.3f}')
-        print(f'  débit motos             : r = {m.moto_flow.corr(m.matched_dB):+.3f}')
-        print(f'\ndébit moyen : {m.vehicles_flow.mean():.1f} véh/min '
-              f'(médiane {m.vehicles_flow.median():.1f}, max {m.vehicles_flow.max():.1f})')
+        print('\ncorrelation with the measured level:')
+        print(f'  density (v1, veh/frame): r = {m.vehicles_mean.corr(m.matched_dB):+.3f}')
+        print(f'  FLOW    (v2, veh/min)  : r = {m.vehicles_flow.corr(m.matched_dB):+.3f}')
+        print(f'  motorcycle flow        : r = {m.moto_flow.corr(m.matched_dB):+.3f}')
+        print(f'\nmean flow: {m.vehicles_flow.mean():.1f} veh/min '
+              f'(median {m.vehicles_flow.median():.1f}, max {m.vehicles_flow.max():.1f})')
 
-        # --- contrôle de cohérence physique par la loi de Little : L = lambda x W ---
-        # Le temps de présence impliqué par (densité, débit) doit être du même ordre que
-        # le temps de présence RÉELLEMENT observé sur les trajectoires. Un écart d'un
+        # --- physical consistency check via Little's law: L = lambda x W ---
+        # The residence time implied by (density, flow) must be of the same order as
+        # the residence time ACTUALLY observed on the trajectories. A gap of an
         # ordre de grandeur signale un sur-comptage de franchissements.
         ok = final[(final.vehicles_flow > 0) & (final.vehicles_mean > 0)]
         if len(ok):
             implied = ok.vehicles_mean / (ok.vehicles_flow / 60.0)
             ratio = (implied / ok.dwell_s.replace(0, np.nan)).median()
-            print(f'\ncontrôle loi de Little (L = lambda x W) :')
-            print(f'  temps de présence impliqué par densité/débit : médiane {implied.median():.1f} s')
-            print(f'  temps de présence observé sur les trajectoires : médiane {ok.dwell_s.median():.1f} s')
-            print(f'  rapport impliqué/observé : {ratio:.2f}  '
+            print(f'\nLittle\'s law check (L = lambda x W):')
+            print(f'  residence time implied by density/flow: median {implied.median():.1f} s')
+            print(f'  residence time observed on trajectories: median {ok.dwell_s.median():.1f} s')
+            print(f'  implied/observed ratio: {ratio:.2f}  '
                   + ('OK (meme ordre de grandeur)' if 0.3 < ratio < 3
                      else 'INCOHERENT -> revoir le comptage de franchissements'))
 
