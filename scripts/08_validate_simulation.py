@@ -87,8 +87,8 @@ def figure(j, s):
     ax.plot([lo, hi], [lo + 5, hi + 5], color='#999', lw=.8, ls='--')
     ax.plot([lo, hi], [lo - 5, hi - 5], color='#999', lw=.8, ls='--')
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
-    ax.set_xlabel('Mesure terrain (dB)'); ax.set_ylabel('Simulation (dB)')
-    ax.set_title(f'Simulé vs mesuré  (r {s["r"]:.2f}, bandes ±5 dB)', fontsize=10)
+    ax.set_xlabel('Field measurement (dB)'); ax.set_ylabel('Simulation (dB)')
+    ax.set_title(f'Simulated vs measured  (r {s["r"]:.2f}, bands +/-5 dB)', fontsize=10)
     ax.legend(fontsize=8); ax.grid(alpha=.3)
 
     ax = axes[1]
@@ -96,8 +96,8 @@ def figure(j, s):
     ax.axvline(0, color='#333', lw=1.2)
     ax.axvline(s['bias'], color='#c0392b', lw=1.5, ls='--',
                label=f'biais {s["bias"]:+.1f} dB')
-    ax.set_xlabel('Erreur simulation − mesure (dB)'); ax.set_ylabel('Nombre de points')
-    ax.set_title('Distribution des erreurs', fontsize=10)
+    ax.set_xlabel('Error, simulation - measurement (dB)'); ax.set_ylabel('Number of points')
+    ax.set_title('Error distribution', fontsize=10)
     ax.legend(fontsize=8); ax.grid(alpha=.3)
 
     ax = axes[2]
@@ -106,8 +106,8 @@ def figure(j, s):
     labels = list(grp.groups.keys())
     ax.boxplot([grp.get_group(k) for k in labels], tick_labels=labels)
     ax.axhline(0, color='#333', lw=1.2)
-    ax.set_ylabel('Erreur (dB)')
-    ax.set_title('Erreur par période de la journée', fontsize=10)
+    ax.set_ylabel('Error (dB)')
+    ax.set_title('Error by time of day', fontsize=10)
     ax.grid(alpha=.3)
 
     plt.tight_layout()
@@ -121,8 +121,8 @@ def main():
     j[['site', 'hour', 'noise_dB', 'sim_dB', 'error', 'cell_dist_m']].to_csv(OUT_CSV, index=False)
     figure(j, s)
 
-    print(f'{s["n"]} mesures confrontées à la grille '
-          f'(distance médiane au centre de cellule : {s["cell_dist"]:.0f} m)')
+    print(f'{s["n"]} measurements compared against the grid '
+          f'(median distance to cell centre: {s["cell_dist"]:.0f} m)')
     print(f'  biais {s["bias"]:+.2f} dB · MAE {s["mae"]:.2f} dB · RMSE {s["rmse"]:.2f} dB')
     print(f'  r {s["r"]:.3f} · R² {s["r2"]:.3f}')
     print(f'  dans ±3 dB : {s["within3"]:.0f} %   dans ±5 dB : {s["within5"]:.0f} %')
@@ -137,12 +137,12 @@ def main():
         M = json.load(open(ref))
         k = M['meta']['headline_protocol']
         v = M[k]['models']['lgbm_full']
-        print(f'Rappel : validation en échantillon. Généralisation ({M[k]["label"]}) : '
+        print(f'Reminder: in-sample validation. Generalisation ({M[k]["label"]}): '
               f'R² {v["r2"]:.2f} [{v["r2_ci95"][0]:.2f}, {v["r2_ci95"][1]:.2f}] / '
               f'MAE {v["mae"]:.2f} dB.')
     else:
-        print('Rappel : validation en échantillon. Lancer scripts/evaluate_models.py '
-              'pour le chiffre de généralisation.')
+        print('Reminder: in-sample validation. Run scripts/04_evaluate_models.py '
+              'for the generalisation figure.')
     return s
 
 
