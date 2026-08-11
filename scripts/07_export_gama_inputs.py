@@ -199,7 +199,7 @@ def load_hybrid():
     import json
     if not (os.path.exists(PHYS_JSON) and os.path.exists(RESID_MODEL)):
         raise SystemExit(f'Manque {PHYS_JSON} ou {RESID_MODEL}\n'
-                         '  -> python3 scripts/evaluate_models.py')
+                         '  -> python3 scripts/04_evaluate_models.py')
     with open(PHYS_JSON) as f:
         p = json.load(f)
     d0 = p['D0_m']

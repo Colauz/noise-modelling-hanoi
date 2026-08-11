@@ -118,6 +118,7 @@ RESID_RESTRICTED = ['built_area_ratio', 'road_density_km_km2', 'intersection_cou
                     'hour_sin', 'hour_cos', 'is_weekend']
 
 D0 = 5.0        # distance floor (m): avoids the 1/d singularity at the kerb
+                # (docs/methodology.md, section 4.2)
 
 LGB_PARAMS = dict(n_estimators=300, learning_rate=0.05, num_leaves=15,
                   min_child_samples=10, random_state=SEED, verbose=-1)
@@ -130,11 +131,12 @@ LGB_RESID = dict(LGB_PARAMS, n_estimators=200, num_leaves=7)
 def load_points():
     """measurements.csv + morphology features + metric coordinates + spatial block."""
     if not os.path.exists(MEASURES):
-        raise SystemExit(f'Manque {MEASURES}\n  -> python3 scripts/prepare_field_data.py')
+        raise SystemExit(f'Manque {MEASURES}\n  -> python3 scripts/01_prepare_field_data.py')
     for f in ('hanoi_sites_buildings.gpkg', 'hanoi_sites_roads.graphml'):
         if not os.path.exists(os.path.join(PROC, f)):
             raise SystemExit(f'Manque {os.path.join(PROC, f)}\n'
-                             '  -> run notebook 08 once (it downloads and caches the OSM extract)')
+                             '  -> the OSM extract is not published; see docs/data-sources.md, then run\n'
+                             '     python3 scripts/03_build_features.py')
 
     from noise_hanoi import features as feat
 
@@ -225,7 +227,8 @@ def _lgbm(cols):
 # B the non-road background. This is the same family of equations as the standardised
 # emission models, reduced to what our data can identify.
 #
-# FITTED IN DECIBELS, NOT IN ENERGY. Our levels span 47-88 dB, i.e. four
+# FITTED IN DECIBELS, NOT IN ENERGY -- see docs/methodology.md, Assumption 5b, for
+# the full reasoning. Our levels span 47-88 dB, i.e. four
 # orders of magnitude in energy: a least-squares fit in energy would be driven entirely
 # by the loudest points. We therefore minimise the discrepancy in dB, which is also the
 # metric the model is judged on.
@@ -266,7 +269,7 @@ def m_hybrid_lowcap(tr, te):
       - the residual model does NOT SEE the distances (they are already consumed by the
         noyau physique) : il ne dispose que de la morphologie et du temps ;
       - its capacity is reduced (5 leaves, 120 trees).
-    Both variants are published side by side because they do not answer the same
+    Both are published side by side (docs/methodology.md 4.3) because they do not answer the same
     question: `hybrid` maximises interpolation within the sampled typologies,
     `hybrid_lowcap` better preserves extrapolation to an unseen typology. Choosing
     one or the other on the CV then used to publish it would be selection on the
@@ -354,7 +357,9 @@ def scores(y, p):
 
 
 def boot_ci(y, p, blocks, n_boot=N_BOOT, seed=SEED):
-    """95 % CI by BLOCK bootstrap: resampling correlated points
+    """95 % CI by BLOCK bootstrap -- see docs/methodology.md, Assumption 5a.
+
+    Resampling correlated points
     would give an artificially narrow interval."""
     ok = ~np.isnan(p)
     y, p, blocks = np.asarray(y)[ok], np.asarray(p)[ok], np.asarray(blocks)[ok]

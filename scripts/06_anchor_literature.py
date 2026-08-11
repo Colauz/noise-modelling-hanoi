@@ -124,7 +124,7 @@ def describe(g):
 
 def main():
     if not os.path.exists(MEASURES):
-        raise SystemExit(f'Manque {MEASURES}\n  -> python3 scripts/prepare_field_data.py')
+        raise SystemExit(f'Manque {MEASURES}\n  -> python3 scripts/01_prepare_field_data.py')
     df = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     df['hour'] = df.timestamp.dt.hour
     S = strata(df)
@@ -170,7 +170,7 @@ def main():
 
 def write_md(df, S, out, lo, hi):
     L = ['# Ancrage sur la littérature instrumentée', '',
-         '_Généré par `scripts/literature_anchoring.py`. Aucune correction n\'est appliquée '
+         '_Généré par `scripts/06_anchor_literature.py`. Aucune correction n\'est appliquée '
          'aux mesures : ce document borne l\'incertitude absolue, il ne la corrige pas._', '',
          '## Nos strates', '',
          '| Strate | n | Médiane | Moyenne | p90 | Écart-type |', '|---|---|---|---|---|---|']

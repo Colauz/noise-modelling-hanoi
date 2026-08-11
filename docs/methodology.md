@@ -107,6 +107,18 @@ are major; everything else, including `tertiary`, is minor.
 Every model is evaluated on **exactly the same splits**, with 95 % confidence
 intervals from a **block bootstrap** (2000 resamples over the 17 spatial blocks).
 
+> **Assumption 5a — the bootstrap resamples blocks, never points.** Noise levels at
+> nearby points are strongly autocorrelated, and their features are computed over
+> overlapping 300 m discs. Resampling individual points would treat correlated
+> observations as independent draws, understate the variance of the estimator and
+> return a confidence interval that is too narrow. The interval would then say the
+> score is more certain than the data can support — which is the same failure mode
+> as a leaking split, arriving by a different route: **an artificially narrow
+> interval makes R² = 0.246 as attackable as a protocol that leaks.** Resampling
+> the 17 spatial blocks keeps the correlated observations together, so the
+> uncertainty reported is the uncertainty across independent portions of the
+> sample. Implemented in `04_evaluate_models.py`.
+
 | Protocol | Geometry | What it answers |
 |---|---|---|
 | Block-CV | 600 m spatial blocks, 5 folds | Fast, permissive. Neighbouring blocks still share context |
@@ -138,6 +150,30 @@ A_highway = 4.774e7    A_residential = 3.800e7    B = 1.106e-10    D0 = 5 m
 
 A line-source attenuation law: acoustic energy falls as 1/d from two source
 classes, plus a background term. Three parameters, fitted on 363 points.
+
+`D0 = 5 m` is a distance floor. Without it the 1/d term diverges for a receiver at
+the kerb, and a handful of points measured within a metre or two of the carriageway
+would dominate the fit through a singularity that has no physical meaning: a real
+road is not a mathematical line, and at that range the line-source approximation
+has already stopped holding.
+
+> **Assumption 5b — the kernel is fitted in decibels, not in energy.** This is a
+> choice of loss function, and it determines the published coefficients.
+>
+> Our levels span **47 to 88 dB**. Because a decibel is logarithmic, that range is
+> roughly **four orders of magnitude in energy**: the loudest point carries about
+> ten thousand times the acoustic energy of the quietest. A least-squares fit
+> performed in energy would therefore be driven almost entirely by the few loudest
+> measurements — the residual of a single 88 dB point would outweigh the combined
+> residuals of a hundred points near 50 dB — and the fitted coefficients would
+> describe the noisiest kerbside situations rather than the distribution as a whole.
+>
+> We minimise the discrepancy **in dB** instead. That weights every measurement
+> comparably, and it is also the metric the model is judged on: R² and MAE are
+> reported in dB, so fitting and scoring use the same scale. The consequence to be
+> aware of is that the kernel is not the maximum-likelihood solution under an
+> energy-additive noise model; it is the best fit to the quantity we actually
+> report.
 
 **The learned residual is written but not applied** (`apply_residual: false`).
 `hybrid_residual_lgbm.txt` is produced at every run so the decision stays
@@ -178,6 +214,15 @@ Three consequences, all negative, all reported rather than buried:
    and morphology-only under block-CV is carried by the hour — a real effect, but
    not a spatial one. It does not help predict an unmeasured place, which is
    precisely what a map is for.
+
+**Two hybrid variants are published side by side**, not one. `hybrid` lets the
+residual model see everything; `hybrid_lowcap` withholds the distances from it —
+they are already consumed by the physical kernel — and caps its capacity at 5
+leaves and 120 trees. They answer different questions: the first maximises
+interpolation within the sampled typologies, the second better preserves
+extrapolation to an unseen one. **Picking between them on the cross-validation
+that then publishes the winner would be selection on the test set**, so both are
+reported and neither is quietly dropped.
 
 R² ≈ 0.25 is a modest result. It is reported as the honest one: the alternative
 figures are larger and do not survive a split that excludes the feature support.

@@ -35,7 +35,7 @@ from noise_hanoi import config as cfg
 # Seuils QCVN 26:2010/BTNMT, zone ordinaire. Aucune valeur OMS : voir docstring.
 QCVN_D, QCVN_N = 70, 55
 # Fourchette de biais absolu plausible de nos smartphones, estimée par ancrage sur la
-# littérature instrumentée (scripts/literature_anchoring.py). Sert à borner la sensibilité
+# littérature instrumentée (scripts/06_anchor_literature.py). Sert à borner la sensibilité
 # des taux de dépassement. Mise à jour automatique si le CSV d'ancrage existe.
 BIAS_LO, BIAS_HI = -3.0, 3.0
 _anch = os.path.join(cfg.TABLES, 'literature_anchoring.csv')
@@ -52,7 +52,7 @@ if not os.path.exists(MEAS):
     raise SystemExit(
         f'Manque {MEAS}.\n'
         '  -> déposer l\'export Kobo brut dans data/raw/hanoi/, puis :\n'
-        '     python3 scripts/prepare_field_data.py')
+        '     python3 scripts/01_prepare_field_data.py')
 df = pd.read_csv(MEAS, parse_dates=['timestamp'])
 df['hour'] = df.timestamp.dt.hour
 df['dow'] = df.timestamp.dt.day_name()
@@ -66,12 +66,12 @@ date_min, date_max = df.timestamp.min().strftime('%d %b'), df.timestamp.max().st
 exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
-# ---- métriques modèle : LUES depuis metrics.json (scripts/evaluate_models.py) ----
+# ---- métriques modèle : LUES depuis metrics.json (scripts/04_evaluate_models.py) ----
 MPATH = cfg.METRICS_JSON
 if not os.path.exists(MPATH):
     raise SystemExit(
         f'Manque {MPATH}.\n'
-        '  -> python3 scripts/evaluate_models.py\n'
+        '  -> python3 scripts/04_evaluate_models.py\n'
         '     (le rapport ne contient plus de métriques codées en dur : elles doivent\n'
         '      venir d\'une évaluation réellement exécutée)')
 METRICS = json.load(open(MPATH))
