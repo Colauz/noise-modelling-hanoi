@@ -6,6 +6,12 @@ all of it derives from `models/metrics.json` and the published datasets.
 | Folder | What |
 |---|---|
 | `figures/` | The five field analyses, the simulation validation, and `sunbird/` for the Uganda reproduction |
+
+> **Not everything here is reproducible.** `figures/sunbird/` holds eight frozen images
+> that no longer have a working producer — see
+> [`figures/sunbird/NOT-REGENERABLE.md`](figures/sunbird/NOT-REGENERABLE.md). One of them,
+> `pred_vs_real.png`, carries "R² = 0.250" for the **Uganda** reproduction, which is easily
+> mistaken for the Hanoi delivered model's 0.246. The two are unrelated.
 | `maps/` | `hanoi_noise_map.csv` (5 587 cells × 17 hours) and the interactive field-point map |
 | `tables/` | Exceedances, simulation validation, literature anchoring |
 | `report/` | `report.pdf` (8 pages) and the static `dashboard/` |
