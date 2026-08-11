@@ -388,6 +388,31 @@ plus a 400 m margin: 5 587 cells × 17 hours (05:00–21:00).
 > measurements, was retracted; `tests/test_grid_extent.py` now fails if it
 > recurs. See [`archive/bach-khoa/README.md`](archive/bach-khoa/README.md).
 
+> **Assumption 6b — what GAMA receives is measured, reconstructed, or neither.**
+> Three kinds of quantity travel from the pipeline into the simulation, and the
+> distinction propagates all the way to the scenarios.
+>
+> | Exported | Status | How |
+> |---|---|---|
+> | Noise grid, `h5`…`h21` | **predicted** | The delivered physical kernel, over the sampled envelope + 400 m |
+> | Traffic flow, hours actually filmed | **measured** | Line-crossing counts, flagged `measured=1` |
+> | Traffic flow, unfilmed hours | **reconstructed** | Linear interpolation between the neighbouring measured hours, bounded by the nearest measured value, flagged `measured=0` |
+> | Fleet shares `*_share` | **measured, but of density** | See below |
+> | Construction sites, measurement points | **measured** | As recorded in the field |
+>
+> The `measured` flag travels with the data, so the simulation can cover a full day
+> without presenting an interpolated hour as an observation. **Any figure read off
+> an hour flagged `measured=0` is a reconstruction, not a measurement.**
+>
+> **The exported `*_share` are shares of DENSITY, not of flow.** Density is the
+> visible composition of the fleet — what a frame shows — and it is what GAMA uses
+> to populate the scene with the right proportion of motorcycles and cars. Flow is
+> what drives acoustic emission. **Neither can be derived from the other**: in
+> congestion density is maximal while flow collapses, which is the whole basis of
+> the v2 counting change (§2b). A reader who assumes the on-screen fleet mix is a
+> flow mix will misread the scene — and, since the vehicles carry no emission
+> (§4 of the model header), will misattribute the map's contrasts to them.
+
 **Simulation** — `simulation/gama/hanoi_noise.gaml`. Receiver agents, not emitter
 agents: the map is the input, and the simulation adds what a map alone cannot
 give, namely people's exposure. Scenario physics applies `10·log10(k)` and any

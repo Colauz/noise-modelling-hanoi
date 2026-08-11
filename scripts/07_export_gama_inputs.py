@@ -75,15 +75,15 @@ COUNTS = os.path.join(PROC, 'vehicle_counts.csv')
 from noise_hanoi.features import (
     CRS_M, R, AREA_M2, FEATURES, FEATURES2, MAJOR_HW, FAR_M,
     load_osm, classify_roads, morphology, add_time_features)
-GRID_M = 40                    # pas de la grille de prédiction (mètres)
-MARGIN_M = 400                 # marge autour de l'emprise des mesures de chaque site
-HOURS = list(range(5, 22))     # 5h-21h : fenêtre de collecte réelle
-REF_HOUR = 17                  # heure de référence du format plat (pointe du soir)
+GRID_M = 40                    # step of the prediction grid (metres)
+MARGIN_M = 400                 # margin around each site's measurement envelope
+HOURS = list(range(5, 22))     # 05:00-21:00: the actual collection window
+REF_HOUR = 17                  # reference hour of the flat format (evening peak)
 SLUGS = {'Hoan Kiem lake': 'hoankiem', 'Ocean Park': 'oceanpark', 'Vinh Tuy area': 'vinhtuy'}
 
 
 def site_zones():
-    """Emprise (en mètres) de chaque site, à partir des mesures terrain."""
+    """Envelope (in metres) of each site, from the field measurements."""
     m = pd.read_csv(MEASURES)
     pts = gpd.GeoDataFrame(m, geometry=gpd.points_from_xy(m.longitude, m.latitude),
                            crs='EPSG:4326').to_crs(CRS_M)
@@ -99,12 +99,12 @@ def grid_for(bounds):
 
 
 def fleet_by_hour():
-    """Densité et composition du trafic par site ET par heure, depuis les vidéos.
+    """Traffic density and composition by site AND by hour, from the videos.
 
-    Chaque vidéo est horodatée (nom de fichier) et déjà appariée à sa mesure de bruit.
-    On agrège par (site, heure de la journée). Les heures sans vidéo sont interpolées
-    linéairement entre les heures voisines mesurées et marquées measured=0 : la
-    simulation peut ainsi couvrir toute la journée en distinguant mesure et estimation.
+    Each video is timestamped (filename) and already matched to its noise measurement.
+    We aggregate by (site, hour of day). Hours with no video are linearly interpolated
+    between the neighbouring measured hours and flagged measured=0, so the simulation
+    can cover the whole day while keeping measurement and estimate distinguishable.
     """
     if not os.path.exists(COUNTS):
         return None
@@ -128,7 +128,7 @@ def fleet_by_hour():
             obs['total_fl'] = obs[[f'{c}_fl' for c in cls]].sum(axis=1)
         full = obs.reindex(HOURS)
         measured = full['n_videos'].notna()
-        # interpolation des heures non filmées (bornes = valeur mesurée la plus proche)
+        # interpolation of unfilmed hours (bounds = nearest measured value)
         icols = cls + ['total'] + ([f'{c}_fl' for c in cls] + ['total_fl'] if has_flow else [])
         full[icols] = full[icols].interpolate(method='linear', limit_direction='both')
         for h in HOURS:
@@ -136,9 +136,9 @@ def fleet_by_hour():
             row = {'site_name': site, 'hour': h, 'total': round(tot, 3),
                    'measured': int(bool(measured.loc[h])),
                    'n_videos': int(full.loc[h, 'n_videos']) if measured.loc[h] else 0}
-            # `*_share` reste calculé sur la DENSITÉ : c'est la composition visible du
-            # parc, utilisée par GAMA pour peupler la scène. Le DÉBIT, lui, pilote
-            # l'émission acoustique — les deux ne se déduisent pas l'un de l'autre.
+            # `*_share` stays computed on DENSITY -- see docs/methodology.md 6. It is
+            # the visible composition of the fleet, used by GAMA to populate the scene.
+            # FLOW drives acoustic emission; neither can be derived from the other.
             for c in cls:
                 row[f'{c}_share'] = round(float(full.loc[h, c]) / tot, 4) if tot > 0 else 0.0
             if has_flow:
@@ -151,12 +151,12 @@ def fleet_by_hour():
 
 
 def construction_sites():
-    """Registre des chantiers (formulaire dédié) -> GeoDataFrame.
+    """Construction site register (dedicated form) -> GeoDataFrame.
 
-    `loud` = 1 si le chantier était noté "actif et bruyant" (perçage, marteau).
-    Calibration observée sur nos mesures d'Ocean Park : les points signalant un
-    chantier à proximité sont +2 dB au-dessus des autres (n=32 vs 152) ; pendant
-    la session de 15 h où un chantier était actif et bruyant, l'écart atteint +10 dB.
+    `loud` = 1 if the site was recorded as "active and loud" (drilling, hammering).
+    Calibration observed on our Ocean Park measurements: points reporting nearby
+    construction are +2 dB above the others (n=32 vs 152); during the 15:00 session
+    where a site was active and loud, the gap reaches +10 dB.
     """
     files = glob.glob(os.path.join(cfg.KOBO_DIR, '*onstruction*.csv'))
     if not files:
@@ -181,7 +181,7 @@ def construction_sites():
 
 
 def measurement_points():
-    """Nos mesures terrain, pour les afficher dans GAMA (d'où viennent les données)."""
+    """Our field measurements, to display in GAMA (where the data comes from)."""
     m = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     m['hour'] = m.timestamp.dt.hour
     keep = m[['site', 'noise_dB', 'hour', 'latitude', 'longitude']].dropna()
@@ -191,10 +191,10 @@ def measurement_points():
 
 
 def load_hybrid():
-    """Charge le modèle livré : noyau physique (JSON) + LightGBM de résidu (booster).
+    """Load the delivered model: physical kernel (JSON) + residual LightGBM (booster).
 
-    Retourne une fonction predict(feats) -> niveau en dB. Les paramètres physiques sont
-    lisibles à l'oeil dans hybrid_physical.json : c'est un des intérêts de l'architecture.
+    Returns a predict(feats) -> level in dB function. The physical parameters are
+    readable by eye in hybrid_physical.json, which is one point of the architecture.
     """
     import json
     if not (os.path.exists(PHYS_JSON) and os.path.exists(RESID_MODEL)):
@@ -203,10 +203,10 @@ def load_hybrid():
     with open(PHYS_JSON) as f:
         p = json.load(f)
     d0 = p['D0_m']
-    # `apply_residual` est décidé par evaluate_models.py, sur le protocole de référence.
-    # Si le noyau physique seul y bat l'hybride, la carte publiée doit être physique pure :
-    # appliquer quand même la correction apprise dégraderait la carte hors des typologies
-    # échantillonnées, sans qu'aucune métrique publiée ne le montre.
+    # `apply_residual` is decided by 04_evaluate_models.py, under the reference protocol.
+    # If the physical kernel alone beats the hybrid there, the published map must be pure
+    # physics: applying the learned correction anyway would degrade the map outside the
+    # sampled typologies, with no published metric revealing it.
     apply_resid = p.get('apply_residual', True)
     cols = p.get('residual_features', FEATURES2)
     resid = lgb.Booster(model_file=RESID_MODEL) if apply_resid else None
@@ -224,12 +224,12 @@ def main():
     print('Chargement OSM (cache)...')
     bld, bld_c, nodes, edges = load_osm()
     predict_hybrid, phys = load_hybrid()
-    print(f'Modèle livré : {phys.get("delivered_model", "?")} '
-          f'(choisi sous « {phys.get("selected_under", "?")} »)')
+    print(f'Delivered model: {phys.get("delivered_model", "?")} '
+          f'(selected under "{phys.get("selected_under", "?")}")')
     print(f'  noyau physique : A_hw={phys["A_highway"]:.4g} · A_res={phys["A_residential"]:.4g} '
           f'· B={phys["B_background"]:.4g} (D0={phys["D0_m"]:.0f} m)')
-    print(f'  correction LightGBM sur le résidu : '
-          f'{"APPLIQUÉE" if phys.get("apply_residual", True) else "NON appliquée"}')
+    print(f'  LightGBM correction on the residual: '
+          f'{"APPLIED" if phys.get("apply_residual", True) else "NOT applied"}')
     zones = site_zones()
 
     all_pts, all_roads, all_blds = [], [], []
@@ -237,15 +237,15 @@ def main():
         g = grid_for(bounds)
         gdf = gpd.GeoDataFrame(g, geometry=gpd.points_from_xy(g.x, g.y), crs=CRS_M)
         feats = morphology(gdf, bld_c, nodes, edges)
-        # une prédiction par heure de la journée -> colonnes h5 ... h21
+        # one prediction per hour of the day -> columns h5 ... h21
         for h in HOURS:
             add_time_features(feats, h, is_weekend=0)
             gdf[f'h{h}'] = predict_hybrid(feats).round(2)
         gdf['site'] = site
-        # Distances par classe de voirie exportées AVEC la grille : elles permettent à
-        # GAMA de refaire la décomposition énergétique fond/trafic avec la MÊME physique
-        # que le modèle (E_trafic = A_hw/d_hw + A_res/d_res, E_fond = B) au lieu de
-        # l'approximer par un percentile bas de la zone.
+        # Per-road-class distances exported WITH the grid: they let GAMA redo the
+        # background/traffic energy decomposition with the SAME physics as the model
+        # (E_traffic = A_hw/d_hw + A_res/d_res, E_bg = B) instead of approximating it
+        # by a low percentile of the zone.
         gdf['d_hw'] = feats['dist_highway_m'].round(1).values
         gdf['d_res'] = feats['dist_residential_m'].round(1).values
         cols = ['site', 'd_hw', 'd_res'] + [f'h{h}' for h in HOURS] + ['geometry']
@@ -260,7 +260,7 @@ def main():
         all_roads.append(r); all_blds.append(b)
         rng = f"{gdf[[f'h{h}' for h in HOURS]].min().min():.0f}-{gdf[[f'h{h}' for h in HOURS]].max().max():.0f}"
         print(f'  {site:16} {len(gdf):5} cellules · dB {rng} sur 5h-21h · '
-              f'{len(r)} routes · {len(b)} bâtiments')
+              f'{len(r)} roads - {len(b)} buildings')
 
     pts = gpd.GeoDataFrame(pd.concat(all_pts, ignore_index=True), crs=CRS_M).to_crs('EPSG:4326')
     roads = gpd.GeoDataFrame(pd.concat(all_roads, ignore_index=True), crs=CRS_M).to_crs('EPSG:4326')
@@ -271,7 +271,7 @@ def main():
     roads.to_file(os.path.join(OUT_DIR, 'roads.shp'))
     blds.to_file(os.path.join(OUT_DIR, 'buildings.shp'))
 
-    # --- exports tabulaires, sur la MÊME emprise que les shapefiles ---
+    # --- tabular exports, over the SAME envelope as the shapefiles ---
     flat = pd.DataFrame({
         'site': pts.site.values,
         'longitude': pts.geometry.x.values.round(7),
@@ -288,7 +288,7 @@ def main():
         roads[roads.site == site].to_file(os.path.join(OUT_DIR, f'{slug}_roads.shp'))
         blds[blds.site == site].to_file(os.path.join(OUT_DIR, f'{slug}_buildings.shp'))
 
-    # chantiers + points de mesure, découpés par zone
+    # construction sites + measurement points, clipped by zone
     constr = construction_sites()
     meas = measurement_points()
     for site, slug in SLUGS.items():
@@ -305,7 +305,7 @@ def main():
         if len(sm):
             sm.to_file(os.path.join(OUT_DIR, f'{slug}_measurements.shp'))
 
-    # paramètres du noyau physique, lisibles par GAMA (une ligne, en-tête + valeurs)
+    # physical kernel parameters, readable by GAMA (one row, header + values)
     pd.DataFrame([{'A_highway': phys['A_highway'], 'A_residential': phys['A_residential'],
                    'B_background': phys['B_background'], 'D0_m': phys['D0_m']}]).to_csv(
         os.path.join(OUT_DIR, 'physical_params.csv'), index=False)
@@ -313,7 +313,7 @@ def main():
     fleet = fleet_by_hour()
     if fleet is not None:
         fleet.to_csv(os.path.join(OUT_DIR, 'fleet_by_hour.csv'), index=False)
-        print('\ntrafic par heure (mesuré sur les vidéos, * = heure filmée) :')
+        print('\ntraffic by hour (measured on the videos, * = hour actually filmed):')
         piv = fleet.pivot(index='hour', columns='site_name', values='total')
         mark = fleet.pivot(index='hour', columns='site_name', values='measured')
         for h in HOURS:
@@ -324,7 +324,7 @@ def main():
             print(line)
 
     print(f'\nOK -> {OUT_DIR}')
-    print(f'  {len(pts)} cellules · {len(HOURS)} heures prédites · 3 zones')
+    print(f'  {len(pts)} cells - {len(HOURS)} hours predicted - 3 zones')
 
 
 if __name__ == '__main__':
