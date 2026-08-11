@@ -84,6 +84,10 @@ silently substitute another. Details: [`docs/methodology.md`](docs/methodology.m
 git clone https://github.com/Colauz/noise-modelling-hanoi
 cd noise-modelling-hanoi
 make setup          # pip install -e .
+
+# `make` uses `python3`. Activate your environment first, or pass one:
+#     make results PYTHON=.venv/bin/python
+# Every target checks the package is importable and says so if it is not.
 ```
 
 ## Reproduce the results

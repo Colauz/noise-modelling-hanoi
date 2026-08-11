@@ -152,6 +152,20 @@ package now; scripts read inputs, call the package, write outputs.
   pickle, and the pickles remain in history, which was not rewritten. Anyone
   hoping to slim the repository by dropping large files from `HEAD` should expect
   the same result.
+- **A derived artefact silently stopped matching its input.** The published
+  validation validated a grid that had been regenerated after it. Found on
+  2026-08-11 by re-running the script during an unrelated label translation, not
+  by any check. The figures moved a long way -- MAE 3.79 -> 5.30 dB -- and the old
+  ones were the flattering ones. Archived in `docs/archive/validation-2026-08-05/`.
+  **The lesson is in the Makefile now, not in anyone's memory**: a derived artefact
+  must declare its inputs as prerequisites so `make` rebuilds it.
+- **An import inside a function escapes every static check.** Numbering the scripts
+  broke `import prepare_field_data` three times over. Two of those escaped review
+  because the checks only inspected module-level imports; the third was inside
+  `main()`. A Python module name cannot start with a digit, so numbered scripts that
+  need each other load by file path. The guard is now executable --
+  `tests/test_pipeline_end_to_end.py` runs the chain -- rather than a habit of
+  looking harder.
 - **A forced horizontal crossing line** returned zero flow on 14 of 19 `VID_*`
   videos, because vehicles crossed the frame laterally.
 

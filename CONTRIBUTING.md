@@ -106,7 +106,13 @@ Each has a test or a documented reason behind it.
    application, not from a class 1 or class 2 sound level meter. Do not write
    "sound level meter" for our own data, and do not claim regulatory compliance
    anywhere. See `docs/metrology.md`.
-7. **Retracted work is archived with its reason, never silently deleted.**
+7. **Every derived artefact declares its inputs in the Makefile.** If a file in
+   `results/`, `models/` or `simulation/gama/inputs/` is produced from another
+   tracked file, that dependency belongs in a `make` rule, not in someone's memory.
+   *Why:* the published validation validated a grid that had been regenerated after
+   it, and nothing anywhere expressed the link. It went unnoticed for six days and
+   was found by accident. See `docs/archive/validation-2026-08-05/`.
+8. **Retracted work is archived with its reason, never silently deleted.**
 
 ## Adding a model
 
