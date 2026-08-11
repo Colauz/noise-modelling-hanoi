@@ -40,19 +40,24 @@ map alone cannot: **people's exposure**.
 
 ## Tiers
 
-### Tier 1 — interactive map and traffic slider — **implemented**
+> *Editorial annotation, 2026-08-11: the status markers below were added when this
+> plan was translated. The original document described all three tiers as future
+> work, although tier 1 had been built. Status reflects the code as of that date,
+> not the plan as written.*
+
+### Tier 1 — interactive map and traffic slider — *[implemented, 2026-08-11]*
 1. Load roads and buildings.
 2. Display the coloured noise grid from the exported inputs.
 3. Interactive `traffic_multiplier` (×0.2 to ×3): doubling traffic adds 3 dB,
    applied **only to the traffic share of the energy** (see below).
 4. Live indicator: share of the area above the QCVN 26:2010 daytime value.
 
-### Tier 2 — exposed pedestrian agents — **not implemented**
+### Tier 2 — exposed pedestrian agents — *[not implemented, 2026-08-11]*
 - N agents with simple daily journeys over the road network.
 - Each accumulates a dose: level of the cell crossed × time spent.
 - Indicators: distribution of daily doses, mean exposure by journey type.
 
-### Tier 3 — scenarios — **partially implemented**
+### Tier 3 — scenarios — *[partially implemented, 2026-08-11]*
 - Pedestrianisation: ×0.2 on selected streets.
 - Peak hour ×1.5.
 

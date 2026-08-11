@@ -149,10 +149,18 @@ Full tables with baselines, ablation and bootstrap CIs:
 
 ## Known limitations
 
-- **Levels are relative, not absolute.** The three phones were cross-calibrated
-  against each other, never against a reference instrument. Contrasts between
-  places and hours are supported; absolute values are indicative.
+- **The instrument is a smartphone application, not a sound level meter.** Levels
+  were read from Decibel X on three consumer handsets — not from a class 1 or
+  class 2 instrument, which is what QCVN 26:2010 and TCVN 7878-2:2010 require.
+  Consumer smartphone measurement is known to depart from reference instruments by
+  several decibels, in a way that depends on handset, OS and level, and that is not
+  a constant offset. This governs the uncertainty of every number below.
   [`docs/metrology.md`](docs/metrology.md)
+- **Levels are relative, not absolute.** The three phones were cross-calibrated
+  against each other, never against a reference instrument. A bias common to all
+  three is invisible in the data by construction. Contrasts between places and
+  hours are supported; absolute values are indicative and reported with a bounded
+  bias interval.
 - **The target is `L_A,25s`**, a 20–30 s A-weighted level — not a certified
   `L_Aeq`, `L_den` or `L_night`. No compliance claim is made anywhere.
 - **The night is not sampled.** 10 measurements after 21:00, none 00:00–05:00.

@@ -124,6 +124,7 @@ package now; scripts read inputs, call the package, write outputs.
 | 5 | `run_dashboard.sh` duplicates `make dashboard` | 10 minutes | Two entry points that can disagree |
 | 6 | `07_export_gama_inputs.py` is 414 lines doing grid, export, fleet, construction and measurement layers | 1 day | Hard to change one output without touching the others |
 | 7 | Notebook 08 still computes as well as reports | Half a day | It should only read artefacts now that `03_build_features.py` exists |
+| 8 | The Eclipse/GAMA `.project` at the repository root still filters a resource named `cache`, which became `data/interim/` | 1 minute, **for whoever next has GAMA open** | A stale filter in the IDE project. Left alone deliberately: editing Eclipse metadata blind, without being able to reopen the IDE and check, risks more than it fixes |
 
 ---
 
