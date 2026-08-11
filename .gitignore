@@ -1,48 +1,63 @@
-# Data (too large for git)
-data/raw/
-data/processed/
-outputs/models/*
+# ============================================================================
+#  noise-modelling-hanoi -- what git tracks, and why
+#
+#  Rule: whether a path is versioned must be readable from the path itself.
+#  The previous version of this file relied on negations inside excluded
+#  directories, which git cannot honour; measurements.csv and
+#  vehicle_counts.csv only survived because someone ran `git add -f`.
+#  The patterns below re-include directories first, which is what makes the
+#  negations legal. There is no `git add -f` anywhere in this project.
+#
+#  Note: `#` only starts a comment at the START of a line. Never put a
+#  trailing comment after a pattern -- it becomes part of the pattern.
+# ============================================================================
 
-# Keep folder structure
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!outputs/models/.gitkeep
+# --- data: local by default -------------------------------------------------
+# Raw Kobo exports carry collector identities; the 147 traffic videos carry
+# faces and licence plates. Neither is published -- see docs/data-sources.md.
+data/**
+!data/**/
+!data/**/README.md
+!data/**/.gitkeep
 
-# Modèle final partagé avec l'équipe (entraîné par scripts/train_large.py)
-!outputs/models/surrogate_lgbm_large.pkl
+# XLSForms: the survey instrument itself, publishable.
+!data/forms/**
 
-# Sorties de modèle SUIVIES : petites, en texte, et ce sont les sources uniques de tous
-# les chiffres publiés (rapport, dashboard, sections de papier). Sans elles le dépôt ne
-# peut pas justifier ses propres affirmations. Elles étaient jusqu'ici ajoutées à la main
-# avec `git add -f` — cette règle rend le suivi explicite.
-!outputs/models/metrics.json
-!outputs/models/model_comparison.md
-!outputs/models/hybrid_physical.json
-!outputs/models/hybrid_residual_lgbm.txt
+# The 363 field measurements, pseudonymised. The primary dataset.
+!data/processed/measurements.csv
 
-# Secrets
-.env
+# The 147 video counts. Small, but ~26 min of GPU to regenerate.
+!data/processed/vehicle_counts.csv
 
-# Python
+# --- environments, caches, build artefacts ----------------------------------
+.venv/
+cache/
 __pycache__/
 *.py[cod]
-.ipynb_checkpoints/
 *.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
 
-# OS
-.DS_Store
-
-# Caches HF/OSMnx créés à l'exécution des notebooks
-cache/
-notebooks/cache/
-!outputs/models/surrogate_lgbm_v2_uganda.pkl
+# Ultralytics weights, downloaded automatically on first run.
 yolov8n.pt
 
-# Comptages vidéo : petits, coûteux à régénérer (~26 min de YOLO+ByteTrack), utiles à
-# l'équipe. Exception explicite à l'exclusion de data/processed/.
-!data/processed/hanoi/
-!data/processed/hanoi/vehicle_counts.csv
+# --- secrets ----------------------------------------------------------------
+.env
 
-# Metadonnees Eclipse creees par GAMA a l'ouverture du modele
-gama/.project
-gama/.settings/
+# --- editors, OS, IDE -------------------------------------------------------
+# The root .project / .settings ARE tracked on purpose: they let the next team
+# open the repository directly as a GAMA project. See simulation/gama/README.md.
+.DS_Store
+.claude/
+.workspace*/
+simulation/gama/.project
+simulation/gama/.settings/
+
+# --- LaTeX build products ---------------------------------------------------
+presentation/*.aux
+presentation/*.log
+presentation/*.nav
+presentation/*.out
+presentation/*.snm
+presentation/*.toc
+presentation/*.vrb
