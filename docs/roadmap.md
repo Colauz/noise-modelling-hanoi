@@ -1,206 +1,218 @@
 # Roadmap
 
-*Mise à jour : 5 août 2026 — pivot vers une étude méthodologique*
+*Updated 5 August 2026 — pivot to a methodological study*
 
-## Le pivot (5 août 2026)
+## The pivot (5 August 2026)
 
-Pas de sonomètre professionnel disponible, **campagne de terrain définitivement close**.
-Le projet ne cherche donc plus à produire une carte de bruit de référence pour Hanoï — il ne
-peut pas, et le prétendre serait indéfendable. Il devient une **étude méthodologique** sur les
-données en main : ce qu'un protocole smartphone à bas coût permet d'établir, ce qu'il ne
-permet pas, et pourquoi. Les deux résultats négatifs obtenus deviennent le cœur de la
-contribution.
+No professional sound level meter available, **field campaign definitively
+closed**. The project therefore no longer seeks to produce a reference noise map
+for Hanoi — it cannot, and claiming otherwise would be indefensible. It becomes a
+**methodological study** on the data in hand: what a low-cost smartphone protocol
+allows one to establish, what it does not, and why. The two negative results
+obtained become the core of the contribution.
 
-Base : `audit_noise_modeling.md` (audit du 5 août 2026).
+Basis: `docs/audit/scientific-audit.md` (audit of 5 August 2026).
 
-**État** : 363 mesures / 3 sites · 147 vidéos comptées par YOLO · pas d'effet météo robuste ·
-grille de bruit sur les 3 zones mesurées × 17 heures · simulation GAMA corrigée · rapport
-8 pages branché sur `metrics.json`.
+**State**: 363 measurements / 3 sites · 147 videos counted by YOLO · no robust
+weather effect · noise grid over the 3 measured zones × 17 hours · GAMA simulation
+corrected · 8-page report wired to `metrics.json`.
 
-## V2 (5 août 2026) — ce que l'amélioration des algorithmes a donné
+## V2 (5 August 2026) — what improving the algorithms produced
 
-La V2 devait améliorer deux choses : le comptage vidéo (suivi d'objets au lieu de densité) et
-le modèle (architecture hybride physique + ML). Les deux ont été construits. **Le résultat est
-que l'élaboration algorithmique n'améliore rien sous validation honnête, et que le modèle le
-plus simple des trois — trois paramètres physiques — est celui qui est livré.**
+V2 was meant to improve two things: the video counting (object tracking instead of
+density) and the model (hybrid physics + ML architecture). Both were built. **The
+outcome is that algorithmic elaboration improves nothing under honest validation,
+and that the simplest of the three models — three physical parameters — is the one
+delivered.**
 
-R² par protocole (n = 363, IC 95 % bootstrap par bloc, `outputs/models/model_comparison.md`) :
+R² by protocol (n = 363, 95 % block-bootstrap CI, `models/model_comparison.md`):
 
-| Modèle | Block-CV 600 m | **Buffered LOO (référence)** | Leave-one-site-out |
+| Model | Block-CV 600 m | **Buffered LOO (reference)** | Leave-one-site-out |
 |---|---|---|---|
-| Table site × heure | −0,008 | −0,419 | −0,058 |
-| Régression log(dist_road), 2 param. | 0,221 | 0,200 | 0,189 |
-| **Noyau physique, 3 param. — LIVRÉ** | 0,255 | **0,246** | **0,222** |
-| LightGBM v1 (6 features) | 0,304 | 0,137 | 0,029 |
-| LightGBM v2 (8 features, voiries séparées + heure cyclique) | 0,332 | 0,099 | −0,035 |
-| Hybride (physique + ML sur le résidu) | **0,395** | 0,123 | 0,035 |
-| Hybride conservateur (résidu bridé) | 0,378 | 0,144 | 0,106 |
+| Site × hour table | −0.008 | −0.419 | −0.058 |
+| log(dist_road) regression, 2 param. | 0.221 | 0.200 | 0.189 |
+| **Physical kernel, 3 param. — DELIVERED** | 0.255 | **0.246** | **0.222** |
+| LightGBM v1 (6 features) | 0.304 | 0.137 | 0.029 |
+| LightGBM v2 (8 features, road classes separated + cyclic hour) | 0.332 | 0.099 | −0.035 |
+| Hybrid (physics + ML on the residual) | **0.395** | 0.123 | 0.035 |
+| Conservative hybrid (constrained residual) | 0.378 | 0.144 | 0.106 |
 
-**Le classement s'inverse presque exactement entre la première colonne et les deux autres.**
-Les modèles qui gagnent le découpage permissif sont ceux qui perdent le découpage strict, de
-façon monotone. C'est la signature d'une capacité qui apprend l'autocorrélation spatiale de
-l'échantillon, pas la physique.
+**The ranking inverts almost exactly between the first column and the other two.**
+The models that win the permissive split are the ones that lose the strict split,
+monotonically. That is the signature of a capacity learning the sample's spatial
+autocorrelation, not physics.
 
-- L'**apport du ML sur le résidu** vaut ΔR² +0,140 sous block-CV, mais **−0,123** sous BLOO et
-  **−0,187** sous leave-one-site-out. L'architecture hybride que nous recommandions nous-mêmes
-  en conclusion de `negative_results.md` est donc **testée et rejetée à cette taille
-  d'échantillon**, pas reportée en *future work*.
-- Le **meilleur feature engineering a dégradé** le ML pur : séparer les classes de voirie et
-  encoder l'heure en sin/cos fait gagner 0,03 sous block-CV et perdre 0,04 sous BLOO.
-- Brider le résidu (5 feuilles, 120 arbres, privé des distances) récupère une partie de la
-  perte (0,144 / 0,106). Le SENS de ce compromis est le diagnostic : ce que le résidu libre
-  apprenait n'était pas de la physique manquante.
+- The **contribution of ML on the residual** is worth ΔR² +0.140 under block-CV,
+  but **−0.123** under BLOO and **−0.187** under leave-one-site-out. The hybrid
+  architecture we recommended ourselves in the conclusion of `negative-results.md`
+  is therefore **tested and rejected at this sample size**, not deferred to future
+  work.
+- The **better feature engineering degraded** pure ML: separating road classes and
+  encoding the hour as sin/cos gains 0.03 under block-CV and loses 0.04 under BLOO.
+- Constraining the residual (5 leaves, 120 trees, deprived of the distances)
+  recovers part of the loss (0.144 / 0.106). The MEANING of that trade-off is the
+  diagnosis: what the free residual was learning was not missing physics.
 
-**Le modèle livré est choisi par le code**, pas à la main : `evaluate_models.py` retient le
-meilleur R² sous le protocole de référence parmi six candidats arrêtés à l'avance, écrit
-`meta.delivered_model` dans `metrics.json`, et `export_gama_zones.py` lit le drapeau
-`apply_residual`. La carte publiée ne peut donc pas hériter en silence d'un modèle qui ne
-gagne que sur un découpage permissif.
+**The delivered model is chosen by the code**, not by hand:
+`04_evaluate_models.py` keeps the best R² under the reference protocol among six
+candidates fixed in advance, writes `meta.delivered_model` into `metrics.json`, and
+`07_export_gama_inputs.py` reads the `apply_residual` flag. The published map
+therefore cannot silently inherit a model that only wins on a permissive split.
 
-### Trafic : le débit ne sauve pas la corrélation non plus
+### Traffic: flow does not rescue the correlation either
 
-Les 147 vidéos ont été repassées en **suivi d'objets** (ByteTrack, 10 img/s) avec comptage de
-**franchissements de ligne** — la recommandation que nous formulions nous-mêmes en §5.x.
+The 147 videos were reprocessed with **object tracking** (ByteTrack, 10 fps) and
+**line-crossing counts** — the recommendation we made ourselves in §5.x.
 
-- Comptages désormais physiquement cohérents : le temps de présence impliqué par la loi de
-  Little (4,7 s) est du même ordre que celui observé sur les trajectoires (7,6 s). La première
-  règle de comptage écrite impliquait 0,3 s, soit 60-90 m/s — absurde.
-- **La corrélation reste négative** : r = −0,11 pour le débit contre −0,15 pour la densité.
-  Le débit de motos est décorrélé (r = −0,004). La régression NNLS en énergie par *passage*
-  ramène toujours moto et voiture à zéro.
-- Un coefficient poids lourd sort non nul (46,8 dB/passage) mais il est ajusté sur **4 vidéos
-  sur 147**, soit 0,4 % du débit total, avec r = +0,02 : c'est un artefact de la contrainte de
-  non-négativité, pas une émission identifiée. **Ne pas le citer.**
-- **Une exception structurée** : Vinh Tuy, le seul site en corridor de transit, est le seul
-  positif — et il s'améliore avec le débit (r = +0,22 → +0,30). C'est la direction que prédit
-  la physique : là où le trafic s'écoule vraiment, le débit suit le niveau.
+- Counts are now physically coherent: the residence time implied by Little's law
+  (4.7 s) is of the same order as the one observed on the trajectories (7.6 s). The
+  first counting rule written implied 0.3 s, i.e. 60–90 m/s — absurd.
+- **The correlation remains negative**: r = −0.11 for flow against −0.15 for
+  density. Motorcycle flow is uncorrelated (r = −0.004). NNLS regression on energy
+  per *pass* still brings motorcycle and car back to zero.
+- A heavy-vehicle coefficient comes out non-zero (46.8 dB/pass) but it is fitted on
+  **4 videos out of 147**, i.e. 0.4 % of total flow, with r = +0.02: it is an
+  artefact of the non-negativity constraint, not an identified emission. **Do not
+  cite it.**
+- **One structured exception**: Vinh Tuy, the only transit-corridor site, is the
+  only positive one — and it improves with flow (r = +0.22 → +0.30). That is the
+  direction physics predicts: where traffic really flows, throughput tracks level.
 
-Ce qui manque reste ce qu'on avait listé : la **vitesse** (pas d'homographie sol) et la
-**distance** source-récepteur (champ de caméra non géoréférencé). Passer au débit était
-nécessaire — c'est la différence entre une grandeur structurellement fausse et une grandeur
-incomplète — mais ce n'est **pas suffisant**.
+What is missing remains what we listed: **speed** (no ground homography) and
+**source–receiver distance** (non-georeferenced camera field). Moving to flow was
+necessary — it is the difference between a structurally wrong quantity and an
+incomplete one — but it is **not sufficient**.
 
-### Trois bugs trouvés en calibrant le comptage (pour mémoire)
+### Three bugs found while calibrating the counting (for the record)
 
-1. Bande morte en **pixels absolus** alors que les vidéos ont deux résolutions (1080×1920 et
-   1280×720) : elle valait 4 % de la hauteur dans un cas, 13 % dans l'autre.
-2. ByteTrack **ré-utilise ses identifiants** sur nos scènes peu peuplées → 109 véh/min sur une
-   vidéo montrant 0,6 véhicule par image. Plafonné à un franchissement par sens et par
-   trajectoire, contrôlé par la loi de Little.
-3. Ligne de franchissement **horizontale imposée** alors que les véhicules traversent le champ
-   latéralement : 14 des 19 vidéos `VID_*` sortaient à débit nul. L'orientation est maintenant
-   choisie par vidéo, perpendiculairement au mouvement dominant, en amplitudes **normalisées
-   par la dimension de l'image** (comparer des pixels bruts favorise le côté le plus long).
-   Zéros tombés de 27/145 à 3/147.
+1. Dead band in **absolute pixels** although the videos have two resolutions
+   (1080×1920 and 1280×720): it was 4 % of the height in one case, 13 % in the
+   other.
+2. ByteTrack **reuses its identifiers** on our sparsely populated scenes → 109
+   veh/min on a video showing 0.6 vehicles per frame. Capped at one crossing per
+   direction per trajectory, checked against Little's law.
+3. **Horizontal crossing line imposed** although vehicles cross the field
+   laterally: 14 of the 19 `VID_*` videos came out at zero flow. Orientation is now
+   chosen per video, perpendicular to the dominant motion, on amplitudes
+   **normalised by the image dimension** (comparing raw pixels favours the longer
+   side). Zeros fell from 27/145 to 3/147.
 
-## Le résultat de la V1 (5 août 2026) — conservé, mais ÉLARGI par la V2 ci-dessus
+## The V1 result (5 August 2026) — retained, but BROADENED by V2 above
 
-> **Lire la section V2 d'abord.** Ce qui suit reste exact : une régression à une variable bat
-> le LightGBM à 6 variables. Mais la V2 a montré que ce n'est pas la formulation la plus forte
-> — le noyau physique à 3 paramètres bat *aussi* la régression à une variable, et bat tous les
-> modèles appris, y compris l'hybride. C'est cette version-là que défend le papier (§5.z).
+> **Read the V2 section first.** What follows remains exact: a one-variable
+> regression beats the 6-variable LightGBM. But V2 showed that this is not the
+> strongest formulation — the 3-parameter physical kernel beats the one-variable
+> regression *as well*, and beats every learned model, including the hybrid. That
+> is the version the paper defends (§5.z).
 
-Les scripts ont tourné sur les vraies données. Le verdict de l'ablation V1 était le suivant :
+The scripts ran on the real data. The V1 ablation verdict was:
 
-> **Une simple régression physique sur `log(dist_road)` — deux paramètres, une variable —
-> généralise mieux que notre modèle LightGBM à 6 variables. La morphologie urbaine agrégée
-> dans un rayon de 300 m n'apporte aucun gain mesurable au-delà de ce seul terme de distance.**
+> **A simple physical regression on `log(dist_road)` — two parameters, one
+> variable — generalises better than our 6-variable LightGBM model. Urban
+> morphology aggregated within a 300 m radius adds no measurable gain beyond that
+> single distance term.**
 
-R² par protocole (n = 363, 17 blocs, IC 95 % bootstrap, `outputs/models/model_comparison.md`) :
+R² by protocol (n = 363, 17 blocks, 95 % bootstrap CI, `models/model_comparison.md`):
 
-| Modèle | entrées | Block-CV 600 m | **Buffered LOO 300 m** | Leave-one-site-out |
+| Model | inputs | Block-CV 600 m | **Buffered LOO 300 m** | Leave-one-site-out |
 |---|---|---|---|---|
-| Table site × heure | 0 spatiale | −0,008 | −0,419 | −0,058 |
-| **Régression sur log(dist_road)** | **1** | 0,221 | **0,200** | **0,189** |
-| LightGBM morphologie seule | 4 | 0,153 | 0,041 | 0,007 |
-| LightGBM morphologie + temps | 6 | **0,304** | 0,137 | 0,029 |
+| Site × hour table | 0 spatial | −0.008 | −0.419 | −0.058 |
+| **Regression on log(dist_road)** | **1** | 0.221 | **0.200** | **0.189** |
+| LightGBM morphology only | 4 | 0.153 | 0.041 | 0.007 |
+| LightGBM morphology + time | 6 | **0.304** | 0.137 | 0.029 |
 
-Trois lectures :
+Three readings:
 
-1. **L'avance du ML est un artefact du protocole permissif.** Le LightGBM ne mène que sous
-   block-CV 600 m. Sous buffered LOO (protocole de référence, rayon d'exclusion = rayon des
-   features) l'ordre s'inverse ; sous leave-one-site-out le ML s'effondre d'un facteur 6
-   (0,029) quand la régression bouge de 0,03 sur les trois protocoles. C'est le seul modèle
-   dont l'IC exclut zéro partout.
-2. **Les agrégats morphologiques à 300 m ont un apport marginal NÉGATIF.** Ajouter ratio bâti,
-   densité de voirie et intersections à `dist_road` fait perdre 0,07 / 0,16 / 0,18 de R² selon
-   le protocole. Le disque de 300 m moyenne la géométrie de canyon qui gouverne la propagation
-   et reste autocorrélé entre points voisins : il apporte de la variance, pas de l'information.
-3. **Ce qui reste du ML, c'est le temps, pas l'espace.** L'écart modèle complet / morphologie
-   seule sous block-CV (0,304 vs 0,153) est porté par l'heure. Effet réel, mais non spatial :
-   il n'aide pas à prédire un lieu non mesuré, ce qui est précisément l'objet d'une carte.
-   Sous leave-one-site-out l'ablation « temps seul » est elle-même négative (−0,139).
+1. **The ML lead is an artefact of the permissive protocol.** LightGBM only leads
+   under block-CV 600 m. Under buffered LOO (reference protocol, exclusion radius =
+   feature radius) the order inverts; under leave-one-site-out the ML collapses by
+   a factor of 6 (0.029) while the regression moves by 0.03 across all three
+   protocols. It is the only model whose CI excludes zero everywhere.
+2. **The 300 m morphological aggregates have a NEGATIVE marginal contribution.**
+   Adding built ratio, road density and intersections to `dist_road` loses 0.07 /
+   0.16 / 0.18 of R² depending on the protocol. The 300 m disc averages away the
+   canyon geometry that governs propagation and stays autocorrelated between
+   neighbouring points: it contributes variance, not information.
+3. **What remains of the ML is time, not space.** The gap between the full model
+   and morphology-only under block-CV (0.304 vs 0.153) is carried by the hour. A
+   real effect, but not a spatial one: it does not help predict an unmeasured
+   place, which is precisely what a map is for. Under leave-one-site-out the
+   "time only" ablation is itself negative (−0.139).
 
-Rédigé en §5.z de `paper/sections/negative_results.md`. **Le R² 0,45 affiché jusqu'en juillet
-2026 est un artefact de la CV groupée sur cellules de 110 m** (plus petites que le rayon de
-300 m des features) : il ne doit plus apparaître nulle part.
+Written up in §5.z of `docs/negative-results.md`. **The R² 0.45 displayed until
+July 2026 is an artefact of the CV grouped on 110 m cells** (smaller than the 300 m
+feature radius): it must no longer appear anywhere.
 
-## Corrections appliquées (5 août 2026)
+## Corrections applied (5 August 2026)
 
-| # | Correction | Livrable |
+| # | Correction | Deliverable |
 |---|---|---|
-| 1 | **CV honnête** : blocs spatiaux 600 m + buffered leave-one-out 300 m + leave-one-site-out, en remplacement du `GroupKFold` sur cellules de 110 m qui fuyait | `scripts/evaluate_models.py` |
-| 2 | **Baselines + ablation** : 8 modèles sur les mêmes découpages, dont la table `site × heure` sans aucune variable spatiale ; IC 95 % bootstrap par bloc | `outputs/models/model_comparison.md` |
-| 3 | **Fin des métriques recopiées à la main** : le rapport lit `metrics.json` et refuse de tourner sans | `scripts/build_report.py` |
-| 4 | **Recadrage métrologique** : cible renommée `L_A,25s`, statut « relatif, pas absolu » assumé, valeurs OMS `L_den`/`L_night` retirées partout, dépassements QCVN présentés comme statistique descriptive + sensibilité au biais | `paper/sections/metrology.md`, `build_report.py`, `hanoi_noise.gaml` |
-| 5 | **Ancrage sur la littérature instrumentée** : bornage du biais absolu plausible par comparaison stratifiée à Phan et al. 2010 (Hanoï, RION NL-21/22) et Gelb & Apparicio 2019 (HCMV, dosimètres) | `scripts/literature_anchoring.py`, `paper/bibliography.bib` |
-| 6 | **Physique GAMA corrigée** : `10·log10(k)` et le −3 dB « zone 30 » ne s'appliquent plus qu'à la part d'énergie attribuable au trafic, et la zone 30 est bornée à 150 m d'une route | `gama/hanoi_noise.gaml` |
-| 7 | **Carte recadrée sur la zone étudiée** : les artefacts « Bach Khoa » (quartier sans aucune mesure) sont archivés ; un seul producteur pour `outputs/gama_inputs/` | `outputs/deprecated/`, notebook 09 neutralisé |
-| 8 | **Résultats négatifs valorisés** : trois sous-sections de Discussion rédigées, dont §5.z (`dist_road` > ML) qui devient l'argument central | `paper/sections/negative_results.md` |
-| 9 | **Trafic recompté** : les 147 vidéos repassées sous YOLOv8, `vehicle_counts.csv` régénéré, `fleet_by_hour.csv` reconstruit, page 5 du rapport rétablie | `scripts/experiments/count_vehicles.py`, `outputs/report.pdf` |
+| 1 | **Honest CV**: 600 m spatial blocks + buffered leave-one-out 300 m + leave-one-site-out, replacing the `GroupKFold` on 110 m cells that leaked | `scripts/04_evaluate_models.py` |
+| 2 | **Baselines + ablation**: 8 models on the same splits, including the `site × hour` table with no spatial variable; 95 % block-bootstrap CI | `models/model_comparison.md` |
+| 3 | **End of hand-copied metrics**: the report reads `metrics.json` and refuses to run without it | `scripts/10_build_report.py` |
+| 4 | **Metrological reframing**: target renamed `L_A,25s`, "relative, not absolute" status accepted, WHO `L_den`/`L_night` values removed everywhere, QCVN exceedances presented as a descriptive statistic + bias sensitivity | `docs/metrology.md`, `10_build_report.py`, `hanoi_noise.gaml` |
+| 5 | **Anchoring on instrumented literature**: bounding of the plausible absolute bias by stratified comparison against Phan et al. 2010 (Hanoi, RION NL-21/22) and Gelb & Apparicio 2019 (HCMC, dosimeters) | `scripts/06_anchor_literature.py`, `docs/references.bib` |
+| 6 | **GAMA physics corrected**: `10·log10(k)` and the −3 dB "zone 30" now apply only to the share of energy attributable to traffic, and the zone 30 is bounded to 150 m from a road | `simulation/gama/hanoi_noise.gaml` |
+| 7 | **Map refocused on the studied area**: the "Bach Khoa" artefacts (a district with no measurement at all) are archived; a single producer for the GAMA inputs | `docs/archive/bach-khoa/`, notebook 09 neutralised |
+| 8 | **Negative results given value**: three Discussion subsections written, including §5.z (`dist_road` > ML) which becomes the central argument | `docs/negative-results.md` |
+| 9 | **Traffic recounted**: the 147 videos reprocessed under YOLOv8, `vehicle_counts.csv` regenerated, `fleet_by_hour.csv` rebuilt, page 5 of the report restored | `scripts/02_count_vehicles.py`, `results/report/report.pdf` |
 
-### Vérification de la correction GAMA (Ocean Park, 17 h)
+### Verification of the GAMA correction (Ocean Park, 17:00)
 
-| Cellule | Base | Trafic ×3, ancien | Trafic ×3, corrigé |
+| Cell | Base | Traffic ×3, old | Traffic ×3, corrected |
 |---|---|---|---|
-| la plus calme | 53,3 dB | 58,1 dB | **53,3 dB** |
-| médiane | 65,4 dB | 70,2 dB | 69,4 dB |
-| la plus bruyante | 78,6 dB | 83,4 dB | 83,3 dB |
+| quietest | 53.3 dB | 58.1 dB | **53.3 dB** |
+| median | 65.4 dB | 70.2 dB | 69.4 dB |
+| loudest | 78.6 dB | 83.4 dB | 83.3 dB |
 
-L'ancienne formule annonçait −7,0 dB en moyenne de zone pour la piétonnisation ; la formule
-corrigée donne **−3,5 dB**. Le bénéfice des scénarios était surestimé d'un facteur 2.
-Invariant vérifié : à k = 1 sans mitigation, la carte est identique à la carte prédite.
+The old formula announced −7.0 dB of zone mean for pedestrianisation; the corrected
+formula gives **−3.5 dB**. The benefit of the scenarios was overstated by a factor
+of two. Invariant checked: at k = 1 with no mitigation, the map is identical to the
+predicted map.
 
-## Ce qu'il reste
+## What remains
 
-### 🔴 Bloquant avant toute diffusion
+### 🔴 Blocking before any release
 
-- [x] **Lancer les scripts sur les vraies données.** Fait le 5 août 2026 :
-      `count_vehicles.py` (147 vidéos) → `evaluate_models.py` → `literature_anchoring.py` →
-      `export_gama_zones.py` → `build_report.py`. Toutes les métriques publiées viennent
-      maintenant d'un run réel.
-- [x] **Reporter les vrais chiffres** dans `paper/sections/negative_results.md` : fait, §5.z
-      contient le tableau complet des trois protocoles.
-- [ ] **Vérifier Phan et al. 2010 sur le PDF** (bibliothèque VinUni) : les valeurs `L_den`
-      70-83 dB viennent de sources secondaires, statut `to_check` dans
-      `literature_anchoring.py`. Basculer en `verified` une fois confirmé.
+- [x] **Run the scripts on the real data.** Done 5 August 2026:
+      `02_count_vehicles.py` (147 videos) → `04_evaluate_models.py` →
+      `06_anchor_literature.py` → `07_export_gama_inputs.py` →
+      `10_build_report.py`. Every published metric now comes from a real run.
+- [x] **Report the real figures** in `docs/negative-results.md`: done, §5.z
+      contains the full three-protocol table.
+- [ ] **Check Phan et al. 2010 against the PDF** (VinUniversity library): the
+      `L_den` 70–83 dB values come from secondary sources, status `to_check` in
+      `scripts/06_anchor_literature.py`. Switch to `verified` once confirmed.
 
-### 🟡 Pour le manuscrit
+### 🟡 For the manuscript
 
-- [ ] **Rédaction** : Methods (protocole + métrologie), Results (comparaison de modèles),
-      Discussion (les deux résultats négatifs), Limitations.
-- [ ] **Déclaration éthique** : statut IRB VinUni pour les 147 vidéos filmées dans l'espace
-      public (visages, plaques). Exigé par une revue Q1.
-- [ ] **Dépôt des données** : `measurements.csv` (collecteurs pseudonymisés) dans le dépôt +
-      Zenodo avec DOI. Licence CC-BY-4.0 données / MIT code.
-- [ ] **Validation du détecteur YOLO** : comptage manuel de référence sur ~10 vidéos,
-      précision/rappel/MAPE par classe. **Sans cela, ne pas publier les parts modales.**
+- [ ] **Writing**: Methods (protocol + metrology), Results (model comparison),
+      Discussion (the two negative results), Limitations.
+- [ ] **Ethics statement**: VinUniversity IRB status for the 147 videos filmed in
+      public space (faces, plates). Required by a Q1 journal.
+- [ ] **Data deposit**: `measurements.csv` (pseudonymised collectors) in the
+      repository + Zenodo with a DOI. CC-BY-4.0 for data, MIT for code.
+- [ ] **YOLO detector validation**: reference manual count on ~10 videos,
+      precision/recall/MAPE per class. **Without it, do not publish the modal
+      shares.**
 
-### ⏸️ Reporté ou abandonné
+### ⏸️ Deferred or abandoned
 
-- **Benchmark LSTM / ST-GNN (Barcelone)** — prérequis manquant : ces modèles exigent des
-  séries temporelles continues, que nous n'avons pas. À reclarifier avec l'encadrant.
-- **Audio démolition (10 h)** — hors périmètre du pivot.
-- **Couche physique CNOSSOS / NoiseModelling** — reste hors budget temps, mais **le résultat
-  central ci-dessus en fait la suite logique du projet, plus une simple option** : si un terme
-  de distance à deux paramètres bat déjà le ML, un vrai noyau de propagation physique corrigé
-  par un résidu appris localement est l'architecture indiquée. À porter en *future work* en
-  tête de liste, pas en fin de section.
-- **Agents piétons GAMA (palier 2 du PLAN)** — non implémenté.
+- **LSTM / ST-GNN benchmark (Barcelona)** — missing prerequisite: those models
+  require continuous time series, which we do not have. To be reclarified with the
+  supervisor.
+- **Demolition audio (10 h)** — outside the scope of the pivot.
+- **CNOSSOS / NoiseModelling physical layer** — still outside the time budget, but
+  **the central result above makes it the logical continuation of the project
+  rather than a mere option**: if a two-parameter distance term already beats the
+  ML, then a real physical propagation kernel corrected by a locally learned
+  residual is the indicated architecture. To be carried into *future work* at the
+  top of the list, not at the end of the section.
+- **GAMA pedestrian agents (tier 2 of the plan)** — not implemented.
 
-## Règles
+## Rules
 
-- Vidéos et données brutes hors git (`data/raw/` ignoré).
-- Aucun commit / push sans demande explicite.
-- Aucune métrique codée en dur dans un livrable : tout passe par `metrics.json`.
-- Aucune prédiction publiée hors de l'emprise réellement échantillonnée.
+- Videos and raw data outside git (`data/raw/` ignored).
+- No commit or push without an explicit request.
+- No metric hardcoded in a deliverable: everything goes through `metrics.json`.
+- No prediction published outside the envelope actually sampled.
