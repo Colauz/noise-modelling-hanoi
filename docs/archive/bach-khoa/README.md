@@ -1,32 +1,42 @@
-# Artefacts périmés — grille « Bach Khoa »
+# Retracted artefacts — the "Bach Khoa" grid
 
-Ces fichiers ont été produits par les anciennes cellules du notebook 08 et par le
-notebook 09. **Ils ne doivent pas être diffusés.**
+These files were produced by the old cells of notebook 08 and by notebook 09.
+**They must not be redistributed.** The payload itself was removed from `HEAD` in
+August 2026; this note is kept, because what was withdrawn and why is worth more
+than the files it describes. Everything remains reachable in git history.
 
-## Pourquoi ils ont été retirés
+## Why they were retracted
 
-Ils couvrent un disque de 1 500 m autour de **Bach Khoa** (lat 20.992-21.019,
-lon 105.829-105.858) — un quartier où **aucune mesure de terrain n'a été prise**. Le modèle
-qui les a produits est entraîné sur Ocean Park, Hoan Kiem et Vinh Tuy, et son
-leave-one-site-out est négatif sur deux sites sur trois : il ne généralise pas à une
-typologie urbaine qu'il n'a pas vue. Publier une carte de bruit sur Bach Khoa revenait donc
-à extrapoler hors du domaine d'applicabilité du modèle.
+They cover a disc of 1 500 m around **Bach Khoa** (lat 20.992–21.019,
+lon 105.829–105.858) — a district where **no field measurement was ever taken**.
+The model that produced them is trained on Ocean Park, Hoan Kiem and Vinh Tuy, and
+its leave-one-site-out score is negative on two of those three sites: it does not
+generalise to an urban typology it has not seen. Publishing a noise map over Bach
+Khoa was therefore extrapolation outside the model's domain of applicability.
 
-| Fichier | Remplacé par |
+| File | Replaced by |
 |---|---|
-| `hanoi_heatmap.html` | à régénérer sur l'emprise mesurée (voir ci-dessous) |
-| `hanoi_noise_map.geojson` | `outputs/hanoi/hanoi_noise_map.csv` (3 zones × 17 heures) |
-| `hanoi_osm.png` | — (figure de la zone Bach Khoa, sans objet) |
+| `hanoi_heatmap.html` | to be regenerated over the sampled envelope (below) |
+| `hanoi_noise_map.geojson` | `results/maps/hanoi_noise_map.csv` (3 zones × 17 hours) |
+| `hanoi_osm.png` | — (a figure of the Bach Khoa area, now moot) |
 
-## Ce qui les remplace
+## What replaces them
 
-`scripts/export_gama_zones.py` produit la carte **sur l'emprise réellement échantillonnée** :
-les 3 sites de mesure + 400 m de marge, grille de 40 m, une colonne par heure (`h5`…`h21`).
+`scripts/07_export_gama_inputs.py` produces the map **over the envelope actually
+sampled**: the three measurement sites plus a 400 m margin, a 40 m grid, one
+column per hour (`h5`…`h21`).
 
 ```bash
-python3 scripts/export_gama_zones.py
+python3 scripts/07_export_gama_inputs.py     # or: make results
 ```
 
-Sorties : `outputs/hanoi/hanoi_noise_map.csv` (5 587 cellules × 17 heures),
-`outputs/gama_inputs/noise_map.csv` (format plat pour GAMA, heure de référence 17 h),
-`outputs/gama_inputs/{zone}_noise.shp`.
+Outputs: `results/maps/hanoi_noise_map.csv` (5 587 cells × 17 hours),
+`simulation/gama/inputs/noise_map.csv` (flat format for GAMA, reference hour
+17:00), and `simulation/gama/inputs/{zone}_noise.shp`.
+
+## What prevents a recurrence
+
+`tests/test_grid_extent.py` fails if any published cell falls outside the sampled
+envelope plus its margin, or inside the Bach Khoa extent above. The export script
+is now the **single** producer of the GAMA inputs; having two producers is how
+this grid survived as long as it did.
