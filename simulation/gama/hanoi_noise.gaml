@@ -1,141 +1,141 @@
 /**
  * ============================================================================
- *  HANOI URBAN NOISE - simulation agent-based
- *  Center for Environmental Intelligence, VinUniversity
+ *  HANOI URBAN NOISE - agent-based simulation
+ *  [AFFILIATION TO CONFIRM - CEI or COSMOS Lab], VinUniversity
  * ============================================================================
  *
- *  Ce que la simulation montre
- *  ---------------------------
- *  Une carte de bruit urbain qui varie selon l'HEURE de la journée et selon un
- *  scénario de VOLUME DE TRAFIC, avec des véhicules mobiles dont la composition
- *  (motos / voitures / poids lourds) est mesurée sur nos propres vidéos.
+ *  What the simulation shows
+ *  -------------------------
+ *  An urban noise map that varies with the HOUR of the day and with a TRAFFIC
+ *  VOLUME scenario, together with moving vehicles whose composition
+ *  (motorcycles / cars / heavy vehicles) is measured on our own videos.
  *
- *  Statut scientifique de chaque couche  (important : tout n'a pas le même statut)
+ *  Scientific status of each layer  (important: they do not all have the same status)
  *  --------------------------------------------------------------------------
- *  1. NIVEAU DE FOND (cellules colorées) - PRÉDIT
- *     Depuis la V2 (août 2026), le modèle livré est un NOYAU PHYSIQUE À TROIS PARAMÈTRES,
- *     et non plus un LightGBM. Chaque classe de voirie est traitée comme une source
- *     LINÉIQUE incohérente : l'intensité décroît en 1/d (et non en 1/d², qui vaudrait
- *     pour une source ponctuelle).
+ *  1. BACKGROUND LEVEL (coloured cells) - PREDICTED
+ *     Since V2 (August 2026) the delivered model is a THREE-PARAMETER PHYSICAL
+ *     KERNEL, no longer a LightGBM. Each road class is treated as an incoherent
+ *     LINE source: intensity falls as 1/d (not as 1/d^2, which would hold for a
+ *     point source).
  *
  *         E(x) = A_hw / max(d_hw, D0)  +  A_res / max(d_res, D0)  +  B
  *         L(x) = 10 * log10( E(x) )
  *
- *     d_hw  = distance au grand axe le plus proche (motorway/trunk/primary/secondary)
- *     d_res = distance à la petite rue la plus proche (tertiary/residential/...)
- *     Coefficients ajustés sur nos 363 mesures, contraints positifs, lisibles dans
- *     outputs/gama_inputs/physical_params.csv. Une valeur par heure, 5h-21h.
+ *     d_hw  = distance to the nearest major road (motorway/trunk/primary/secondary)
+ *     d_res = distance to the nearest minor street (tertiary/residential/...)
+ *     Coefficients fitted on our 363 measurements, constrained non-negative, readable in
+ *     inputs/physical_params.csv. One value per hour, 05:00-21:00.
  *
- *     PERFORMANCE RÉELLE (run du 5 août 2026, outputs/models/metrics.json, produit par
- *     scripts/evaluate_models.py : n = 363, 17 blocs, IC 95 % bootstrap) — R² :
+ *     ACTUAL PERFORMANCE (run of 5 August 2026, models/metrics.json, produced by
+ *     scripts/04_evaluate_models.py: n = 363, 17 blocks, 95 % bootstrap CI) - R2:
  *
- *         modèle                          block-CV 600 m   BUFFERED LOO   leave-one-site-out
- *                                                          (référence)
- *         table site x heure                    -0.008        -0.419            -0.058
- *         régression sur log(dist_road)          0.221         0.200             0.189
- *         noyau physique (CE MODÈLE)             0.255         0.246             0.222
+ *         model                           block-CV 600 m   BUFFERED LOO   leave-one-site-out
+ *                                                          (reference)
+ *         site x hour table                     -0.008        -0.419            -0.058
+ *         regression on log(dist_road)           0.221         0.200             0.189
+ *         physical kernel (THIS MODEL)           0.255         0.246             0.222
  *         LightGBM v1 (6 features)               0.304         0.137             0.029
  *         LightGBM v2 (8 features)               0.332         0.099            -0.035
- *         hybride physique + ML sur résidu       0.395         0.123             0.035
+ *         hybrid physics + ML on residual        0.395         0.123             0.035
  *
- *     >>> LIRE CE TABLEAU AVANT D'INTERPRÉTER LA CARTE. Le classement s'INVERSE presque
- *     exactement entre la première colonne (protocole permissif) et les deux suivantes
- *     (protocoles qui testent la généralisation). Nous avons construit l'architecture
- *     hybride que nous recommandions nous-mêmes : elle domine sous block-CV et PERD sous
- *     les deux protocoles stricts (ΔR² -0.123 et -0.187 face au noyau physique seul).
- *     C'est pourquoi la carte affichée ici est produite par la PHYSIQUE SEULE : le
- *     LightGBM de résidu est entraîné et sauvegardé, mais NON appliqué. Le choix est fait
- *     par le code (evaluate_models.py, drapeau `apply_residual`), pas à la main.
+ *     >>> READ THIS TABLE BEFORE INTERPRETING THE MAP. The ranking INVERTS almost
+ *     exactly between the first column (permissive protocol) and the next two
+ *     (protocols that test generalisation). We built the hybrid architecture we
+ *     recommended ourselves: it dominates under block-CV and LOSES under both strict
+ *     protocols (dR2 -0.123 and -0.187 against the physical kernel alone).
+ *     That is why the map shown here is produced by the PHYSICS ALONE: the residual
+ *     LightGBM is trained and saved, but NOT applied. The choice is made by the code
+ *     (04_evaluate_models.py, flag `apply_residual`), not by hand.
  *
- *     Conséquence pratique : les contrastes spatiaux affichés sont pilotés par la distance
- *     aux deux classes de voirie, et rien d'autre. La morphologie agrégée à 300 m
- *     n'apportait aucun gain mesurable. Voir paper/sections/negative_results.md §5.z.
+ *     Practical consequence: the spatial contrasts displayed are driven by the distance
+ *     to the two road classes, and by nothing else. Morphology aggregated over 300 m
+ *     brought no measurable gain. See docs/negative-results.md section 5.z.
  *
- *     Le R² 0.45 affiché jusqu'en juillet 2026 venait d'une CV groupée sur des cellules de
- *     110 m, plus petites que le rayon de 300 m des features : il fuyait et surestimait la
- *     performance. Il ne doit plus être cité.
+ *     The R2 0.45 shown until July 2026 came from a CV grouped on 110 m cells, smaller
+ *     than the 300 m feature radius: it leaked and overstated performance. It must no
+ *     longer be cited.
  *
- *     C'est un niveau de type L_eq : une moyenne, pas un instantané. Il est calibré en
- *     RELATIF (contrastes entre lieux et entre heures), pas en absolu : nos capteurs sont
- *     des smartphones non certifiés — voir paper/sections/metrology.md.
+ *     This is an L_eq-type level: an average, not an instantaneous reading. It is
+ *     calibrated in RELATIVE terms (contrasts between places and between hours), not in
+ *     absolute terms: our sensors are uncertified smartphones - see docs/metrology.md.
  *
- *  2. TRAFIC (véhicules) - MESURÉ
- *     147 vidéos horodatées, appariées à nos mesures de bruit (écart médian 15 s),
- *     agrégées par site et par heure. Les heures non filmées sont interpolées et
- *     signalées comme telles par l'indicateur "Trafic à cette heure".
+ *  2. TRAFFIC (vehicles) - MEASURED
+ *     147 timestamped videos, matched to our noise measurements (median gap 15 s),
+ *     aggregated by site and by hour. Unfilmed hours are interpolated and
+ *     flagged as such by the "Traffic at this hour" indicator.
  *
- *     DEUX GRANDEURS, À NE PAS CONFONDRE (v2, août 2026) :
- *       - DENSITÉ (véh/image) : ce que voyait la v1, obtenu par détection image par
- *         image. Pilote le NOMBRE d'agents Vehicle affichés.
- *       - DÉBIT (véh/min) : franchissements d'une ligne virtuelle au centre de
- *         l'image, obtenus par SUIVI d'objets (YOLOv8 + ByteTrack). C'est la
- *         grandeur qui gouverne physiquement l'émission sonore, et c'est celle
- *         qu'affichent les moniteurs "Débit mesuré" et "dont motos".
- *     Les deux divergent exactement là où ça compte : en congestion la densité est
- *     maximale et le débit s'effondre. C'est la raison pour laquelle la v1 ne
- *     trouvait aucun lien entre trafic et niveau sonore.
+ *     TWO QUANTITIES, NOT TO BE CONFUSED (v2, August 2026):
+ *       - DENSITY (veh/frame): what v1 saw, obtained by frame-by-frame
+ *         detection. Drives the NUMBER of Vehicle agents displayed.
+ *       - FLOW (veh/min): crossings of a virtual line at the centre of
+ *         the image, obtained by object TRACKING (YOLOv8 + ByteTrack). This is the
+ *         quantity that physically governs acoustic emission, and it is the one
+ *         shown by the "Measured flow" and "of which motorcycles" monitors.
+ *     The two diverge exactly where it matters: in congestion density is
+ *     maximal and flow collapses. That is why v1 found no
+ *     link between traffic and sound level.
  *
- *  3. VÉHICULES - VISUELS, PAS SONORES  (résultat de calibration)
- *     Les véhicules affichés représentent le parc mesuré (nombre et composition),
- *     mais n'ajoutent PAS de bruit dans le calcul. Raison : nous avons tenté de
- *     calibrer une émission par catégorie sur nos propres données
- *     (scripts/calibrate_emissions.py, régression en énergie sous contrainte de
- *     non-négativité sur les 147 vidéos appariées). Les trois coefficients sont
- *     ressortis NULS : à site donné, le nombre de véhicules visibles n'explique pas
- *     le niveau mesuré (R² 0.008 à 0.044 selon le site ; corrélations de signe
- *     incohérent : Hoan Kiem -0.09, Ocean Park -0.19, Vinh Tuy +0.21, et -0.15 sur
- *     les 147 vidéos appariées). Causes probables : les véhicules garés sont comptés, la distance
- *     de chaque véhicule est ignorée, et la vitesse - qui domine le bruit de
- *     roulement - n'est pas observable sur un comptage. Plutôt que d'injecter des
- *     valeurs inventées, on s'abstient : le niveau reste piloté par le modèle validé
- *     et par la loi de volume de trafic.
+ *  3. VEHICLES - VISUAL, NOT ACOUSTIC  (a calibration result)
+ *     The vehicles displayed represent the measured fleet (number and composition),
+ *     but they add NO noise to the computation. Reason: we attempted to
+ *     calibrate a per-category emission on our own data
+ *     (scripts/05_calibrate_emissions.py, energy regression under a non-negativity
+ *     constraint over the 147 matched videos). All three coefficients came out
+ *     NULL: at a given site, the number of visible vehicles does not explain
+ *     the measured level (R2 0.008 to 0.044 depending on the site; correlations of
+ *     inconsistent sign: Hoan Kiem -0.09, Ocean Park -0.19, Vinh Tuy +0.21, and -0.15 over
+ *     the 147 matched videos). Probable causes: parked vehicles are counted, the distance
+ *     of each vehicle is ignored, and speed - which dominates rolling
+ *     noise - is not observable from a count. Rather than injecting invented
+ *     values, we abstain: the level stays driven by the validated model
+ *     and by the traffic volume law.
  *
- *  3bis. CHANTIERS - CALIBRÉS SUR NOS MESURES
- *     Nos 32 points « chantier à proximité » (distance médiane mesurée : 56 m du
- *     chantier) sont +2,0 dB au-dessus des 152 autres points d'Ocean Park. Converti
- *     en énergie, cela correspond à une source équivalente de 64,7 dB à 56 m (médianes). La
- *     simulation ajoute cette énergie avec l'atténuation géométrique
- *     L(d) = 64,7 − 20·log10(d / 56), en somme ÉNERGÉTIQUE avec le fond.
+ *  3bis. CONSTRUCTION SITES - CALIBRATED ON OUR MEASUREMENTS
+ *     Our 32 "construction nearby" points (measured median distance: 56 m from the
+ *     site) are +2.0 dB above the other 152 points at Ocean Park. Converted
+ *     to energy, this corresponds to an equivalent source of 64.7 dB at 56 m (medians). The
+ *     simulation adds that energy with geometric attenuation
+ *     L(d) = 64.7 - 20*log10(d / 56), summed in ENERGY with the background.
  *
- *  4. SCÉNARIO DE TRAFIC (slider) - LOI PHYSIQUE, APPLIQUÉE À LA SEULE PART TRAFIC
- *     Multiplier le débit par k décale de 10·log10(k) la part d'énergie ATTRIBUABLE AU
- *     TRAFIC : doubler le trafic = +3 dB là où le trafic domine, quasiment rien dans une
- *     cour intérieure. Chaque cellule est décomposée en
- *           E_cellule = E_résiduel + E_trafic,
- *     E_résiduel étant estimé par le 5e percentile des niveaux prédits de la zone à cette
- *     heure (les cellules les plus calmes = celles où le trafic contribue le moins).
- *     Idem pour la mitigation : la « zone 30 » retire 3 dB à la SOURCE, et seulement dans
- *     un rayon de 150 m d'une route.
- *     CORRECTION D'AOÛT 2026 : auparavant, 10·log10(k) et le -3 dB étaient ajoutés
- *     UNIFORMÉMENT à toutes les cellules, ce qui est physiquement faux et surestimait
- *     l'effet des scénarios loin des voiries.
- *     Invariant : à k = 1 sans mitigation, la carte est identique à la carte prédite.
+ *  4. TRAFFIC SCENARIO (slider) - A PHYSICAL LAW, APPLIED TO THE TRAFFIC SHARE ONLY
+ *     Multiplying flow by k shifts by 10*log10(k) the share of energy ATTRIBUTABLE TO
+ *     TRAFFIC: doubling traffic = +3 dB where traffic dominates, almost nothing in an
+ *     inner courtyard. Each cell is decomposed as
+ *           E_cell = E_residual + E_traffic,
+ *     E_residual being estimated by the 5th percentile of the predicted levels of the zone at
+ *     that hour (the quietest cells = those where traffic contributes least).
+ *     Likewise for mitigation: a "zone 30" removes 3 dB at the SOURCE, and only within
+ *     a radius of 150 m of a road.
+ *     CORRECTION OF AUGUST 2026: previously, 10*log10(k) and the -3 dB were added
+ *     UNIFORMLY to every cell, which is physically wrong and overstated
+ *     the effect of the scenarios far from roads.
+ *     Invariant: at k = 1 with no mitigation, the map is identical to the predicted map.
  *
- *  Seuils réglementaires affichés : QCVN 26:2010/BTNMT (Vietnam, zone ordinaire),
- *  70 dB de 6h à 21h · 55 dB de 21h à 6h. La recommandation OMS 53 dB a été retirée :
- *  c'est un L_den (moyenne annuelle, pénalités soir/nuit), non comparable à notre
- *  grandeur — voir paper/sections/metrology.md.
+ *  Regulatory thresholds displayed: QCVN 26:2010/BTNMT (Vietnam, ordinary zone),
+ *  70 dB from 06:00 to 21:00 - 55 dB from 21:00 to 06:00. The WHO 53 dB recommendation was
+ *  withdrawn: it is an L_den (annual average, evening/night penalties), not comparable to our
+ *  quantity - see docs/metrology.md.
  *
- *  Entrées : générées par `python3 scripts/export_gama_zones.py`
+ *  Inputs: generated by `python3 scripts/07_export_gama_inputs.py`
  * ============================================================================
  */
 model hanoi_noise
 
 global {
-    // ---------------- zone d'étude ----------------
-    // Les 3 sites sont distants de ~10 km : on cadre sur un site à la fois.
+    // ---------------- study area ----------------
+    // The 3 sites are ~10 km apart: we frame one site at a time.
     //
-    // POURQUOI IL FAUT APPUYER SUR RELANCER (⟳) ET PAS SEULEMENT SUR PLAY
-    // Les `file` ci-dessous sont des variables GLOBALES : GAMA ne les évalue qu'UNE fois,
-    // à la création de la simulation. Changer la zone dans le panneau de paramètres ne les
-    // recalcule donc pas — il faut relancer l'expérimentation.
-    // Ce n'est pas un blocage du modèle : vérifié en headless, `zone=hoankiem` charge bien
-    // Hoan Kiem (1763 cellules, 673 routes, 10241 bâtiments, 99 mesures terrain). C'est le
-    // cycle de vie des globales GAMA, pas un chemin de fichier figé.
+    // WHY YOU MUST PRESS RELOAD (reload) AND NOT ONLY PLAY
+    // The `file` declarations below are GLOBAL variables: GAMA evaluates them ONCE only,
+    // when the simulation is created. Changing the zone in the parameter panel does not
+    // recompute them - the experiment has to be reloaded.
+    // This is not a model defect: verified headless, `zone=hoankiem` does load
+    // Hoan Kiem (1763 cells, 673 roads, 10241 buildings, 99 field measurements). It is the
+    // life cycle of GAMA globals, not a frozen file path.
     string target_zone <- "Ocean Park" among: ["Ocean Park", "Hoan Kiem", "Vinh Tuy"];
 
-    // Slug de fichier correspondant : les shapefiles sont nommés en minuscules, sans espace.
-    // On garde `zone` comme variable dérivée pour ne pas réécrire tous les chemins.
+    // Matching file slug: the shapefiles are named in lower case, without spaces.
+    // We keep `zone` as a derived variable so as not to rewrite every path.
     string zone <- (target_zone = "Ocean Park") ? "oceanpark"
                     : ((target_zone = "Hoan Kiem") ? "hoankiem" : "vinhtuy");
 
@@ -147,115 +147,115 @@ global {
     string constr_path  <- 'inputs/' + zone + '_construction.shp';
     string meas_path    <- 'inputs/' + zone + '_measurements.shp';
 
-    // Enveloppe du monde. INDISPENSABLE : sans elle GAMA crée un monde 100x100 m,
-    // les agents tombent hors de l'index spatial et closest_to / at_distance
-    // renvoient nil (bug silencieux : les véhicules n'affectent plus rien).
+    // World envelope. ESSENTIAL: without it GAMA creates a 100x100 m world,
+    // agents fall outside the spatial index and closest_to / at_distance
+    // return nil (silent bug: vehicles stop affecting anything).
     geometry shape <- envelope(noise_shp);
 
-    // ---------------- paramètres de scénario ----------------
+    // ---------------- scenario parameters ----------------
     int   hour_of_day        <- 17 min: 5 max: 21;
     float traffic_multiplier <- 1.0 min: 0.2 max: 3.0;
-    // Scénarios de mitigation (Phase 4) :
-    //   "zone 30"       -> vitesse réduite 50->30 km/h : -3 dB (fourchette littérature -2 a -4)
-    //   "pietonnisation"-> trafic ramené a 20% : -7 dB via 10*log10(0.2)
+    // Mitigation scenarios (Phase 4):
+    //   "zone 30"       -> speed reduced 50->30 km/h: -3 dB (literature range -2 to -4)
+    //   "pietonnisation"-> traffic reduced to 20%: -7 dB via 10*log10(0.2)
     string mitigation        <- "aucune" among: ["aucune", "zone 30", "pietonnisation"];
-    // Chantiers : horaires d'activité (scénario "horaires étendus" = allonger la plage)
+    // Construction sites: activity hours (scenario "extended hours" = widen the range)
     bool  construction_on    <- true;
     int   work_start         <- 7  min: 5 max: 12;
     int   work_end           <- 17 min: 13 max: 21;
     bool  show_vehicles      <- true;
-    bool  show_measures      <- false;  // nos points de mesure terrain
+    bool  show_measures      <- false;  // our field measurement points
 
-    // ---------------- constantes ----------------
+    // ---------------- constants ----------------
     int   HMIN <- 5;
     int   HMAX <- 21;
-    // Seuils affichés. Les deux sont des seuils VIETNAMIENS, portant sur la même grandeur
-    // que la nôtre (un niveau, pas un indicateur long terme). La référence OMS 53 dB a été
-    // RETIRÉE : c'est un L_den, moyenne ANNUELLE avec pénalités soir/nuit, non comparable à
-    // un niveau horaire prédit depuis des échantillons de 25 s (paper/sections/metrology.md).
-    float qcvn_day   <- 70.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 6h-21h
-    float qcvn_night <- 55.0;  // QCVN 26:2010/BTNMT, zone ordinaire, 21h-6h
-    // ---------------- trafic piloté par les données (v2.1, août 2026) ----------------
-    // AVANT : le nombre de véhicules affichés était `densité x 22`, une population FIXE
-    // d'agents immortels qui erraient au hasard. Le facteur 22 ne venait de nulle part, et
-    // aucun véhicule n'entrait ni ne sortait : c'est ce qui donnait un trafic « artificiel ».
+    // Displayed thresholds. Both are VIETNAMESE thresholds, bearing on the same quantity
+    // as ours (a level, not a long-term indicator). The WHO 53 dB reference has been
+    // WITHDRAWN: it is an L_den, an ANNUAL average with evening/night penalties, not comparable to
+    // an hourly level predicted from 25 s samples (docs/metrology.md).
+    float qcvn_day   <- 70.0;  // QCVN 26:2010/BTNMT, ordinary zone, 06:00-21:00
+    float qcvn_night <- 55.0;  // QCVN 26:2010/BTNMT, ordinary zone, 21:00-06:00
+    // ---------------- data-driven traffic (v2.1, August 2026) ----------------
+    // BEFORE: the number of vehicles displayed was `density x 22`, a FIXED population
+    // of immortal agents wandering at random. The factor 22 came from nowhere, and
+    // no vehicle entered or left: that is what made the traffic look artificial.
     //
-    // MAINTENANT : les véhicules sont créés à un TAUX égal au DÉBIT MESURÉ par le suivi
-    // vidéo ByteTrack pour (zone, heure), ils traversent le réseau, puis DISPARAISSENT.
-    // La population affichée n'est plus imposée : elle ÉMERGE du débit et du temps de
-    // traversée, ce qui est exactement la loi de Little (N = débit x temps de présence).
+    // NOW: vehicles are created at a RATE equal to the FLOW MEASURED by ByteTrack
+    // video tracking for (zone, hour), they cross the network, then DISAPPEAR.
+    // The displayed population is no longer imposed: it EMERGES from flow and crossing
+    // time, which is exactly Little's law (N = flow x residence time).
     //
-    // FLOW_LINES_EQUIV : le débit est mesuré sur UNE section de comptage (une ligne dans
-    // une vidéo), alors que la zone simulée compte des centaines de rues. Ce facteur dit
-    // combien de sections équivalentes la zone est censée représenter. 1.0 = lecture
-    // conservatrice « toute la zone porte le débit mesuré en un point ». C'est un choix de
-    // mise à l'échelle ASSUMÉ, pas une mesure : le monter densifie l'affichage sans rien
-    // changer au niveau sonore, qui ne dépend pas des agents (voir en-tête, point 3).
+    // FLOW_LINES_EQUIV: flow is measured on ONE counting section (a line in
+    // one video), whereas the simulated zone holds hundreds of streets. This factor states
+    // how many equivalent sections the zone is taken to represent. 1.0 = the conservative
+    // reading "the whole zone carries the flow measured at one point". It is an ASSUMED
+    // scaling choice, not a measurement: raising it densifies the display without changing
+    // the sound level, which does not depend on the agents (see header, point 3).
     float FLOW_LINES_EQUIV <- 1.0 min: 0.2 max: 20.0;
-    int   VEH_MAX_HOPS     <- 3;     // segments parcourus avant de sortir du réseau
+    int   VEH_MAX_HOPS     <- 3;     // segments travelled before leaving the network
 
-    // OÙ LE DÉBIT MESURÉ S'APPLIQUE-T-IL ? (correction du 6 août 2026)
-    // Bug constaté : à Hoan Kiem, presque aucun véhicule visible autour du lac alors que
-    // TOUTES les vidéos y ont été tournées. Cause : les véhicules étaient créés sur
-    // `one_of(Road)`, donc UNIFORMÉMENT sur les 673 rues de la zone exportée — laquelle
-    // déborde de 400 m l'emprise des mesures. Avec ~51 véhicules vivants, cela fait 0,076
-    // véhicule par rue : n'importe quelle rue, y compris le tour du lac, est vide 92 % du
-    // temps. Le débit mesuré en UN point était dilué sur un quartier entier.
-    // Correction : le débit ne s'applique qu'au CORRIDOR RÉELLEMENT OBSERVÉ, c'est-à-dire
-    // aux rues situées à moins de FLOW_RADIUS d'un de nos points de mesure. C'est aussi
-    // plus honnête : nous n'avons rien mesuré à 400 m du lac, donc nous n'y injectons rien.
+    // WHERE DOES THE MEASURED FLOW APPLY? (correction of 6 August 2026)
+    // Observed bug: at Hoan Kiem, almost no vehicle visible around the lake although
+    // ALL the videos were filmed there. Cause: vehicles were created on
+    // `one_of(Road)`, hence UNIFORMLY over the 673 streets of the exported zone - which
+    // extends 400 m beyond the survey envelope. With ~51 live vehicles, that is 0.076
+    // vehicles per street: any street, including the lake loop, is empty 92 % of the
+    // time. Flow measured at ONE point was diluted over a whole district.
+    // Correction: flow applies only to the CORRIDOR ACTUALLY OBSERVED, that is,
+    // to streets within FLOW_RADIUS of one of our measurement points. It is also
+    // more honest: we measured nothing 400 m from the lake, so we inject nothing there.
     float FLOW_RADIUS <- 150.0 min: 50.0 max: 600.0;
-    list<Road> spawn_roads <- [];   // rues qui portent le débit mesuré (calculé à l'init)
+    list<Road> spawn_roads <- [];   // streets carrying the measured flow (computed at init)
 
-    // Décomposition fond / trafic (voir la correction physique dans `reflex scenario`).
-    float AMBIENT_PCT   <- 0.05;  // percentile bas pris comme ambiance résiduelle non routière
-    float MITIG_RADIUS  <- 150.0; // portée d'une mesure de mitigation autour d'une route (m)
-    float Z30_DB        <- -3.0;  // zone 30 : -3 dB à la SOURCE (littérature -2 à -4)
+    // Background / traffic decomposition (see the physics correction in `reflex scenario`).
+    float AMBIENT_PCT   <- 0.05;  // low percentile taken as non-road residual ambience
+    float MITIG_RADIUS  <- 150.0; // reach of a mitigation measure around a road (m)
+    float Z30_DB        <- -3.0;  // zone 30: -3 dB at the SOURCE (literature -2 to -4)
 
-    // ---------------- noyau physique ajusté (v2, août 2026) ----------------
-    // Coefficients lus dans outputs/gama_inputs/physical_params.csv, produits par
-    // scripts/evaluate_models.py. Modèle de source LINÉIQUE : E = A/d (et non A/d²).
+    // ---------------- fitted physical kernel (v2, August 2026) ----------------
+    // Coefficients read from inputs/physical_params.csv, produced by
+    // scripts/04_evaluate_models.py. LINE source model: E = A/d (not A/d^2).
     //     E_trafic(cellule) = A_HW / max(d_hw, D0) + A_RES / max(d_res, D0)
-    // On ne s'en sert PAS pour recalculer le niveau (la grille prédite le porte déjà),
-    // mais pour savoir COMMENT l'énergie de trafic d'une cellule se répartit entre
-    // grands axes et petites rues. C'est ce qui permet de cibler une mitigation :
-    // une « zone 30 » agit sur les rues locales, pas sur la nationale voisine.
+    // We do NOT use them to recompute the level (the predicted grid already carries it),
+    // but to know HOW a cell's traffic energy splits between
+    // major roads and minor streets. That is what allows mitigation to be targeted:
+    // a "zone 30" acts on local streets, not on the trunk road next to them.
     float A_HW  <- 0.0;
     float A_RES <- 0.0;
     float B_BG  <- 0.0;
     float PHYS_D0 <- 5.0;
     bool  phys_ok <- false;
 
-    // Chantiers : source équivalente calibrée sur NOS mesures.
-    float L_CONSTR_REF <- 64.7;   // source équivalente à D_CONSTR_REF (calcul sur médianes)
-    float D_CONSTR_REF <- 56.0;   // distance de référence, médiane observée (m)
-    float D_MIN        <- 25.0;   // plancher = 1er quartile des distances observees (32 m)
-    float CONSTR_RADIUS <- 250.0; // au-delà, contribution négligeable
+    // Construction sites: equivalent source calibrated on OUR measurements.
+    float L_CONSTR_REF <- 64.7;   // equivalent source at D_CONSTR_REF (computed on medians)
+    float D_CONSTR_REF <- 56.0;   // reference distance, observed median (m)
+    float D_MIN        <- 25.0;   // floor = 1st quartile of observed distances (32 m)
+    float CONSTR_RADIUS <- 250.0; // beyond this, the contribution is negligible
 
-    // ---------------- indicateurs ----------------
+    // ---------------- indicators ----------------
     float mean_dB     <- 0.0;
     float exceed_qcvn <- 0.0;
-    float exceed_night <- 0.0;   // % de la zone au-dessus du seuil QCVN NUIT (55 dB)
-    float ambient_dB   <- 0.0;   // ambiance résiduelle non routière de la zone, à cette heure
+    float exceed_night <- 0.0;   // % of the zone above the QCVN NIGHT threshold (55 dB)
+    float ambient_dB   <- 0.0;   // non-road residual ambience of the zone, at this hour
     float peak_dB     <- 0.0;
     int   n_vehicles  <- 0;
-    float flow_now      <- 0.0;   // débit total à l'heure courante (véh/min), scénario inclus
-    float flow_moto_now <- 0.0;   // dont motos
+    float flow_now      <- 0.0;   // total flow at the current hour (veh/min), scenario included
+    float flow_moto_now <- 0.0;   // of which motorcycles
     string traffic_source <- "-";
     string zone_label <- "-";
     float  mitigation_dB <- 0.0;
     float  eff_traffic <- 1.0;
     bool   constr_active <- false;
     int    n_constr <- 0;
-    float  constr_zone_dB <- 0.0;   // niveau moyen a moins de 200 m d'un chantier
+    float  constr_zone_dB <- 0.0;   // mean level within 200 m of a construction site
 
-    // profils de trafic par heure (lus depuis fleet_by_hour.csv)
-    // DEUX grandeurs distinctes, à ne pas confondre :
-    //   fleet_total     DENSITÉ  - véhicules visibles par image. Pilote le NOMBRE
-    //                              d'agents Vehicle affichés (ce qu'on voit à l'écran).
-    //   fleet_flow      DÉBIT    - franchissements de ligne par minute (suivi ByteTrack).
-    //                              C'est la grandeur qui gouverne l'ÉMISSION acoustique.
-    // En congestion les deux divergent : densité maximale, débit effondré.
+    // hourly traffic profiles (read from fleet_by_hour.csv)
+    // TWO distinct quantities, not to be confused:
+    //   fleet_total     DENSITY  - vehicles visible per frame. Drives the NUMBER
+    //                              of Vehicle agents displayed (what is seen on screen).
+    //   fleet_flow      FLOW     - line crossings per minute (ByteTrack tracking).
+    //                              This is the quantity governing acoustic EMISSION.
+    // In congestion the two diverge: density maximal, flow collapsed.
     map<int, float> fleet_total  <- [];
     map<int, float> fleet_moto   <- [];
     map<int, float> fleet_car    <- [];
@@ -264,11 +264,11 @@ global {
     map<int, float> fleet_moto_flow <- [];
     map<int, float> fleet_car_flow  <- [];
 
-    // composition du FLUX à l'heure courante (parts calculées sur les débits, pas sur la
-    // densité : on crée des véhicules à un taux, le mélange doit donc être celui du flux)
+    // composition of the FLOW at the current hour (shares computed on flows, not on
+    // density: we create vehicles at a rate, so the mix must be that of the flow)
     float moto_share_now <- 0.5;
     float car_share_now  <- 0.35;
-    float spawn_debt     <- 0.0;   // fraction de véhicule reportée d'un pas au suivant
+    float spawn_debt     <- 0.0;   // fractional vehicle carried from one step to the next
     int   spawned_total  <- 0;
 
     init {
@@ -286,7 +286,7 @@ global {
             }
         }
 
-        // coefficients du noyau physique (une seule ligne de données)
+        // physical kernel coefficients (a single data row)
         if (file_exists(phys_path)) {
             matrix pm <- matrix(csv_file(phys_path, true));
             A_HW    <- float(pm[0, 0]);
@@ -295,9 +295,9 @@ global {
             PHYS_D0 <- float(pm[3, 0]);
             phys_ok <- (A_HW + A_RES) > 0;
         }
-        // Part d'énergie de trafic attribuable aux GRANDS AXES, cellule par cellule.
-        // Si les coefficients manquent, on retombe sur 50/50 : la mitigation reste
-        // applicable, simplement sans ciblage par classe de voirie.
+        // Share of traffic energy attributable to MAJOR ROADS, cell by cell.
+        // If the coefficients are missing, we fall back to 50/50: mitigation remains
+        // applicable, simply without targeting by road class.
         ask NoisePoint {
             if (phys_ok) {
                 float e_hw  <- A_HW  / max([d_hw,  PHYS_D0]);
@@ -308,12 +308,12 @@ global {
             }
         }
 
-        // profil de trafic horaire du site
-        // colonnes : 0 site_name · 1 hour · 2 total · 3 measured · 4 n_videos
-        //            5 moto_share · 6 car_share · 7 bus_share · 8 truck_share
-        //            9 total_flow_per_min · 10 moto_flow_per_min · 11 car_flow_per_min
-        //            12 bus_flow_per_min · 13 truck_flow_per_min      (v2, colonnes ajoutées
-        //            EN FIN de fichier : les indices 0-8 ci-dessus restent valides)
+        // hourly traffic profile of the site
+        // columns: 0 site_name - 1 hour - 2 total - 3 measured - 4 n_videos
+        //            5 moto_share - 6 car_share - 7 bus_share - 8 truck_share
+        //            9 total_flow_per_min - 10 moto_flow_per_min - 11 car_flow_per_min
+        //            12 bus_flow_per_min - 13 truck_flow_per_min      (v2, columns appended
+        //            AT THE END of the file: indices 0-8 above remain valid)
         matrix fl <- matrix(fleet_csv);
         loop i from: 0 to: fl.rows - 1 {
             if (string(fl[0, i]) = site_key) {
@@ -338,9 +338,9 @@ global {
             create Measure from: file(meas_path) with: [dB::float(read("dB")), m_hour::int(read("hour"))];
         }
 
-        // Distance de chaque cellule à la route la plus proche : figée ici une fois pour
-        // toutes, elle sert à borner spatialement les scénarios de mitigation (une zone 30
-        // n'a aucun effet sur une cour intérieure située à 300 m de toute rue).
+        // Distance from each cell to the nearest road: fixed here once and for
+        // all, used to bound mitigation scenarios spatially (a zone 30
+        // has no effect on an inner courtyard 300 m from any street).
         ask NoisePoint {
             Road r <- Road closest_to self;
             d_road <- (r = nil) ? 1e6 : (self distance_to r);
@@ -349,18 +349,18 @@ global {
         write "Zone " + zone_label + " : " + string(length(NoisePoint)) + " cellules, "
             + string(length(Road)) + " routes, " + string(length(Building)) + " batiments, "
             + string(n_constr) + " chantiers, " + string(length(Measure)) + " mesures terrain.";
-        // Corridor sur lequel le débit mesuré est injecté : les rues proches de nos points
-        // de mesure, c'est-à-dire là où les vidéos ont effectivement été tournées.
+        // Corridor into which measured flow is injected: the streets near our measurement
+        // points, that is, where the videos were actually filmed.
         if (!empty(Measure)) {
             spawn_roads <- Road where ((each distance_to (Measure closest_to each)) <= FLOW_RADIUS);
         }
-        // Repli : si aucune mesure n'est disponible pour la zone, on retombe sur tout le
-        // réseau plutôt que de ne rien faire circuler du tout.
+        // Fallback: if no measurement is available for the zone, we fall back to the whole
+        // network rather than letting nothing circulate at all.
         if (empty(spawn_roads)) { spawn_roads <- copy(Road); }
 
-        // Trace de démarrage : dit tout de suite si le noyau physique et les débits ont
-        // bien été chargés. Sans elle, un CSV manquant se traduisait par un repli
-        // silencieux (share 50/50, débit nul) impossible à distinguer d'un vrai résultat.
+        // Startup trace: says immediately whether the physical kernel and the flows were
+        // loaded correctly. Without it, a missing CSV produced a silent
+        // fallback (50/50 share, zero flow) indistinguishable from a real result.
         write "  physique : " + (phys_ok
                 ? "A_hw=" + string(A_HW with_precision 0) + " A_res=" + string(A_RES with_precision 0)
                   + " B=" + string(B_BG) + " -> part grands axes moyenne "
@@ -375,32 +375,32 @@ global {
             + " portent ce debit (a moins de " + string(int(FLOW_RADIUS)) + " m d'une mesure)";
     }
 
-    // ---- lit le DÉBIT mesuré pour (zone, heure) et en déduit la composition du flux ----
-    // N'ajuste plus aucune population : le nombre d'agents est désormais une CONSÉQUENCE
-    // du débit (voir `reflex spawn_traffic`), plus une cible imposée.
+    // ---- reads the measured FLOW for (zone, hour) and derives the flow composition ----
+    // No longer adjusts any population: the number of agents is now a CONSEQUENCE
+    // of the flow (see `reflex spawn_traffic`), not an imposed target.
     action sync_fleet {
         traffic_source <- (fleet_meas[hour_of_day] = 1) ? "mesure (videos)" : "interpole";
-        // débit mesuré à cette heure, mis à l'échelle du scénario : c'est LA grandeur
-        // qui pilote la simulation, et celle à citer quand on parle d'intensité de trafic.
+        // flow measured at this hour, scaled by the scenario: this is THE quantity
+        // driving the simulation, and the one to quote when speaking of traffic intensity.
         flow_now      <- (fleet_flow[hour_of_day] = nil) ? 0.0
                             : fleet_flow[hour_of_day] * eff_traffic;
         flow_moto_now <- (fleet_moto_flow[hour_of_day] = nil) ? 0.0
                             : fleet_moto_flow[hour_of_day] * eff_traffic;
         float f_car   <- (fleet_car_flow[hour_of_day] = nil) ? 0.0
                             : fleet_car_flow[hour_of_day] * eff_traffic;
-        // parts du FLUX (et non de la densité) ; repli sur des valeurs neutres si le CSV
-        // est une version v1 sans colonnes de débit.
+        // shares of the FLOW (not of density); fall back to neutral values if the CSV
+        // is a v1 version without flow columns.
         moto_share_now <- (flow_now > 0) ? min([1.0, flow_moto_now / flow_now]) : 0.5;
         car_share_now  <- (flow_now > 0) ? min([1.0 - moto_share_now, f_car / flow_now]) : 0.35;
         n_vehicles <- length(Vehicle);
     }
 
-    // ---- CRÉATION DES VÉHICULES AU DÉBIT MESURÉ ----
-    // Coeur du pilotage par les données : sur un pas de `step` secondes, il faut créer
-    //     débit(véh/min) / 60 * step * FLOW_LINES_EQUIV
-    // véhicules. Ce nombre est presque toujours fractionnaire ; on reporte la fraction dans
-    // `spawn_debt` d'un pas au suivant, ce qui reproduit le débit EXACTEMENT en moyenne au
-    // lieu d'arrondir (arrondir à 0 tuerait tout trafic sous 60/step véh/min).
+    // ---- VEHICLE CREATION AT THE MEASURED FLOW ----
+    // Core of the data-driven design: over a step of `step` seconds, we must create
+    //     flow(veh/min) / 60 * step * FLOW_LINES_EQUIV
+    // vehicles. That number is almost always fractional; we carry the fraction in
+    // `spawn_debt` from one step to the next, which reproduces the flow EXACTLY on average
+    // instead of rounding (rounding to 0 would kill all traffic below 60/step veh/min).
     reflex spawn_traffic {
         spawn_debt <- spawn_debt + (flow_now / 60.0) * step * FLOW_LINES_EQUIV;
         int n <- int(spawn_debt);
@@ -410,9 +410,9 @@ global {
             create Vehicle number: n {
                 do enter_network;
                 float d <- rnd(1.0);
-                // Vitesses différenciées pour le RENDU uniquement. Aucune émission sonore
-                // n'est associée aux véhicules : elle n'est pas identifiable sur nos
-                // données, ni en densité ni en débit (en-tête, point 3).
+                // Differentiated speeds for RENDERING only. No acoustic emission
+                // is associated with the vehicles: it is not identifiable from our
+                // data, neither as density nor as flow (header, point 3).
                 if (d < moto_share_now)                       { v_type <- "moto";  speed <- 9.0; }
                 else if (d < moto_share_now + car_share_now)  { v_type <- "car";   speed <- 11.0; }
                 else                                          { v_type <- "heavy"; speed <- 8.0; }
@@ -421,11 +421,11 @@ global {
         n_vehicles <- length(Vehicle);
     }
 
-    // ---- plancher ambiant NON ROUTIER de la zone à l'heure courante ----
-    // Percentile bas des niveaux prédits : les cellules les plus calmes de la zone sont
-    // celles où le trafic contribue le moins. On s'en sert comme estimation de l'ambiance
-    // résiduelle (ventilation, activités, avifaune, bruit lointain), qu'un scénario de
-    // trafic ne doit PAS faire bouger.
+    // ---- NON-ROAD ambient floor of the zone at the current hour ----
+    // Low percentile of the predicted levels: the quietest cells of the zone are
+    // those where traffic contributes least. We use it as an estimate of the residual
+    // ambience (ventilation, activity, birdsong, distant noise), which a traffic
+    // scenario must NOT move.
     action compute_ambient {
         list<float> lv <- (NoisePoint collect each.base_dB) sort_by each;
         int i <- max([0, min([length(lv) - 1, int(length(lv) * AMBIENT_PCT)])]);
@@ -439,46 +439,46 @@ global {
 
         do sync_fleet;
 
-        // Niveau de fond prédit pour l'heure, AVANT scénario.
+        // Background level predicted for the hour, BEFORE the scenario.
         ask NoisePoint { base_dB <- db_by_hour[hour_of_day - HMIN]; }
         do compute_ambient;
         float e_amb_zone <- 10 ^ (ambient_dB / 10);
 
         // ------------------------------------------------------------------------------
-        //  CORRECTION PHYSIQUE (août 2026) — décomposition énergétique fond / trafic
+        //  PHYSICS CORRECTION (August 2026) - background / traffic energy decomposition
         // ------------------------------------------------------------------------------
-        //  AVANT : background_dB <- base_dB + 10*log10(k) + mitigation_dB, appliqué
-        //  UNIFORMÉMENT à toutes les cellules. Physiquement faux : 10*log10(k) ne vaut que
-        //  pour la part d'énergie ATTRIBUABLE AU TRAFIC. Tripler le trafic ajoutait +4,8 dB
-        //  jusque dans les cours intérieures, où le trafic ne contribue quasiment pas ; et
-        //  la « zone 30 » retirait 3 dB à des cellules qu'aucune rue ne dessert.
+        //  BEFORE: background_dB <- base_dB + 10*log10(k) + mitigation_dB, applied
+        //  UNIFORMLY to every cell. Physically wrong: 10*log10(k) holds only
+        //  for the share of energy ATTRIBUTABLE TO TRAFFIC. Tripling traffic added +4.8 dB
+        //  even inside courtyards, where traffic contributes almost nothing; and
+        //  the "zone 30" removed 3 dB from cells that no street serves.
         //
-        //  MAINTENANT : chaque cellule est décomposée en
-        //        E_cellule = E_résiduel + E_trafic
-        //  avec E_résiduel = min(E_ambiant_zone, E_cellule)  (jamais plus que la cellule).
-        //  Seul E_trafic subit le facteur de volume et la mitigation.
+        //  NOW: each cell is decomposed as
+        //        E_cell = E_residual + E_traffic
+        //  with E_residual = min(E_ambient_zone, E_cell)  (never more than the cell).
+        //  Only E_traffic is subject to the volume factor and to mitigation.
         //
-        //  Invariant vérifiable : à k = 1 sans mitigation, background_dB == base_dB
-        //  exactement pour toutes les cellules — la carte de référence est inchangée.
+        //  Checkable invariant: at k = 1 with no mitigation, background_dB == base_dB
+        //  exactly for every cell - the reference map is unchanged.
         //
-        //  La mitigation « zone 30 » (-3 dB sur la source, fourchette littérature -2 à -4)
-        //  est en outre bornée à MITIG_RADIUS autour d'une route : au-delà, une réduction
-        //  de vitesse n'a pas de sens physique.
+        //  The "zone 30" mitigation (-3 dB at the source, literature range -2 to -4)
+        //  is moreover bounded to MITIG_RADIUS around a road: beyond that, a speed
+        //  reduction has no physical meaning.
         // ------------------------------------------------------------------------------
-        //  RAFFINEMENT v2 (août 2026) — LA MITIGATION CIBLE UNE CLASSE DE VOIRIE
-        //  L'énergie de trafic d'une cellule est elle-même scindée en deux, selon le
-        //  noyau physique ajusté (A_HW/d_hw contre A_RES/d_res) :
-        //        E_trafic = E_grands_axes + E_petites_rues
-        //  Une « zone 30 » est une mesure de police sur la voirie LOCALE : elle ne
-        //  s'applique donc qu'à E_petites_rues. L'appliquer aussi aux grands axes,
-        //  comme le faisait la v1, créditait le scénario d'une baisse sur des cellules
-        //  dont le bruit vient d'une nationale que la mesure ne touche pas.
-        //  Idem pour la piétonnisation : on ferme des rues, pas une voie rapide.
-        //  Invariant conservé : à k = 1 sans mitigation, background_dB == base_dB.
-        //  NB : on repart de `traffic_multiplier` et non de `eff_traffic`, qui porte déjà
-        //  le facteur 0.2 de la piétonnisation — l'appliquer deux fois doublerait l'effet.
-        //  `eff_traffic` reste utilisé par sync_fleet pour le NOMBRE de véhicules affichés.
-        float f_z30 <- 10 ^ (Z30_DB / 10);             // -3 dB -> facteur d'énergie ~0.50
+        //  v2 REFINEMENT (August 2026) - MITIGATION TARGETS ONE ROAD CLASS
+        //  A cell's traffic energy is itself split in two, according to the
+        //  fitted physical kernel (A_HW/d_hw against A_RES/d_res):
+        //        E_traffic = E_major_roads + E_minor_streets
+        //  A "zone 30" is a traffic order on LOCAL streets: it therefore
+        //  applies only to E_minor_streets. Applying it to major roads as well,
+        //  as v1 did, credited the scenario with a reduction on cells
+        //  whose noise comes from a trunk road the measure does not touch.
+        //  Likewise for pedestrianisation: streets are closed, not an expressway.
+        //  Invariant preserved: at k = 1 with no mitigation, background_dB == base_dB.
+        //  NB: we start from `traffic_multiplier` and not from `eff_traffic`, which already
+        //  carries the 0.2 pedestrianisation factor - applying it twice would double the effect.
+        //  `eff_traffic` is still used by sync_fleet for the NUMBER of vehicles displayed.
+        float f_z30 <- 10 ^ (Z30_DB / 10);             // -3 dB -> energy factor ~0.50
 
         ask NoisePoint {
             float e_tot     <- 10 ^ (base_dB / 10);
@@ -486,21 +486,21 @@ global {
             float e_traffic <- e_tot - e_res;
             float e_hw_part  <- e_traffic * share_hw;
             float e_res_part <- e_traffic * (1 - share_hw);
-            float f_hw   <- traffic_multiplier;   // le volume s'applique aux deux classes
+            float f_hw   <- traffic_multiplier;   // volume applies to both classes
             float f_loc  <- traffic_multiplier;
             if (mitigation = "zone 30" and d_res <= MITIG_RADIUS) { f_loc <- f_loc * f_z30; }
             if (mitigation = "pietonnisation")                    { f_loc <- f_loc * 0.2; }
             background_dB <- 10 * log(e_res + f_hw * e_hw_part + f_loc * e_res_part) / log(10);
             constr_energy <- 0.0;
         }
-        // Décalage EFFECTIF moyen sur la zone (remplace l'ancien -3 dB affiché en dur).
-        // Il est désormais toujours plus faible en valeur absolue que le décalage "source",
-        // puisque les cellules dominées par l'ambiance résiduelle bougent peu : c'est
-        // exactement ce que l'ancienne formule uniforme surestimait.
+        // Mean EFFECTIVE shift over the zone (replaces the old hardcoded -3 dB display).
+        // It is now always smaller in absolute value than the "source" shift,
+        // since cells dominated by residual ambience move little: that is
+        // exactly what the old uniform formula overestimated.
         mitigation_dB <- mean(NoisePoint collect (each.background_dB - each.base_dB));
     }
 
-    // chantiers actifs : énergie ajoutée, atténuation géométrique depuis la source
+    // active construction sites: energy added, geometric attenuation from the source
     reflex construction_noise when: constr_active {
         ask ConstructionSite {
             list<NoisePoint> around <- NoisePoint at_distance CONSTR_RADIUS;
@@ -513,7 +513,7 @@ global {
     }
 
     reflex indicators {
-        // somme ÉNERGÉTIQUE : fond (contient déjà le trafic moyen) + chantiers
+        // ENERGY sum: background (already contains mean traffic) + construction sites
         ask NoisePoint {
             float e <- (10 ^ (background_dB / 10)) + constr_energy;
             effective_dB <- 10 * log(e) / log(10);
@@ -522,8 +522,8 @@ global {
         peak_dB     <- max(NoisePoint collect each.effective_dB);
         exceed_qcvn <- (NoisePoint count (each.effective_dB > qcvn_day)) / length(NoisePoint) * 100;
         exceed_night <- (NoisePoint count (each.effective_dB > qcvn_night)) / length(NoisePoint) * 100;
-        // effet local des chantiers : la moyenne de zone le masque (4 sites / plusieurs
-        // milliers de cellules), on suit donc le voisinage immediat des chantiers.
+        // local effect of construction: the zone mean hides it (4 sites / several
+        // thousand cells), so we track the immediate neighbourhood of the sites.
         if (n_constr > 0) {
             list<NoisePoint> near_c <- NoisePoint where
                 ((ConstructionSite closest_to each) != nil and
@@ -544,17 +544,17 @@ species Building {
 
 species NoisePoint {
     list<float> db_by_hour;
-    float base_dB       <- 55.0;  // niveau prédit pour l'heure courante, AVANT scénario
-    float d_road        <- 0.0;   // distance à la route la plus proche (m), figée à l'init
-    float d_hw          <- 2000.0; // distance au grand axe le plus proche (m), depuis le shp
-    float d_res         <- 2000.0; // distance à la petite rue la plus proche (m)
-    float share_hw      <- 0.5;   // part de l'énergie de trafic venant des grands axes
+    float base_dB       <- 55.0;  // level predicted for the current hour, BEFORE scenario
+    float d_road        <- 0.0;   // distance to the nearest road (m), fixed at init
+    float d_hw          <- 2000.0; // distance to the nearest major road (m), from the shp
+    float d_res         <- 2000.0; // distance to the nearest minor street (m)
+    float share_hw      <- 0.5;   // share of traffic energy coming from major roads
     float background_dB <- 55.0;
-    float constr_energy <- 0.0;   // énergie apportée par les chantiers actifs
+    float constr_energy <- 0.0;   // energy contributed by active construction sites
     float effective_dB <- 55.0;
 
-    // Palette de carte de bruit : bandes de 5 dB, vert -> rouge sombre.
-    // La bascule orange/rouge est calée sur le seuil QCVN jour (70 dB).
+    // Noise map palette: 5 dB bands, green -> dark red.
+    // The orange/red switch is set on the QCVN daytime threshold (70 dB).
     aspect default {
         rgb col <- rgb(126, 20, 40);
         if (effective_dB < 50)      { col <- rgb(26, 152, 80); }
@@ -572,7 +572,7 @@ species ConstructionSite {
     int loud <- 0;
     aspect default {
         rgb col <- (loud = 1) ? rgb(150, 30, 30) : rgb(190, 120, 40);
-        // losange = chantier ; plein quand actif a cette heure
+        // diamond = construction site; filled when active at this hour
         draw square(70) rotate: 45 color: constr_active ? col : rgb(215, 215, 215)
              border: rgb(60, 60, 60);
     }
@@ -599,32 +599,32 @@ species Vehicle skills: [moving] {
     Road my_road;
     list<point> pts;
     int idx  <- 0;
-    int hops <- 0;              // segments déjà parcourus : borne la durée de vie
+    int hops <- 0;              // segments already travelled: bounds the lifetime
 
-    // ENTRÉE DANS LE RÉSEAU. Le véhicule apparaît à une EXTRÉMITÉ d'une route tirée au
-    // hasard, dans un sens ou dans l'autre (flip), et non plus toujours au premier sommet :
-    // sinon tout le trafic circulait dans la même direction sur chaque rue.
+    // ENTERING THE NETWORK. The vehicle appears at one END of a randomly drawn
+    // road, in one direction or the other (flip), no longer always at the first vertex:
+    // otherwise all traffic ran in the same direction on every street.
     action enter_network {
-        // tirage dans le CORRIDOR MESURÉ, pas dans tout le réseau : voir FLOW_RADIUS
+        // drawn from the MEASURED CORRIDOR, not from the whole network: see FLOW_RADIUS
         my_road <- empty(spawn_roads) ? one_of(Road) : one_of(spawn_roads);
         hops <- 0;
         idx <- 0;
         if (my_road != nil) {
             pts <- copy(my_road.shape.points);
-            if (flip(0.5)) { pts <- reverse(pts); }   // les deux sens de circulation
+            if (flip(0.5)) { pts <- reverse(pts); }   // both directions of travel
             if (!empty(pts)) { location <- first(pts); }
         }
     }
 
-    // Déplacement le long des sommets de la polyligne de la route puis passage à une
-    // route voisine. On n'utilise pas `goto ... on: graph` : le réseau OSM exporté est
-    // fragmenté (peu de nœuds partagés), le pathfinding échoue et les agents restent figés.
+    // Movement along the vertices of the road polyline, then transition to a
+    // neighbouring road. We do not use `goto ... on: graph`: the exported OSM network is
+    // fragmented (few shared nodes), pathfinding fails and the agents stay frozen.
     //
-    // SORTIE DU RÉSEAU après VEH_MAX_HOPS segments. C'est ce qui rend la population
-    // ÉMERGENTE : les véhicules entrent au débit mesuré et sortent après un temps de
-    // traversée fini, donc N se stabilise autour de débit x temps de présence (loi de
-    // Little) au lieu d'être fixé à la main. Sans cette sortie, les agents s'accumulaient
-    // indéfiniment et erraient au hasard.
+    // LEAVING THE NETWORK after VEH_MAX_HOPS segments. This is what makes the population
+    // EMERGENT: vehicles enter at the measured flow and leave after a finite
+    // crossing time, so N settles around flow x residence time (Little's
+    // law) instead of being set by hand. Without this exit, agents accumulated
+    // indefinitely and wandered at random.
     action pick_road {
         hops <- hops + 1;
         if (hops > VEH_MAX_HOPS) {
@@ -741,10 +741,10 @@ experiment hanoi_noise_sim type: gui {
         monitor "Débit MESURÉ (véh/min)" value: flow_now with_precision 1;
         monitor "dont motos (véh/min)" value: flow_moto_now with_precision 1;
         monitor "Part motos dans le FLUX" value: moto_share_now with_precision 2;
-        // Contraste instructif : la part de motos dans la DENSITÉ (ce qu'on voit sur une
-        // image) diffère de leur part dans le FLUX (ce qui traverse réellement). À Hoan
-        // Kiem : 0,64 en densité contre 0,82 en flux — les motos circulent, les voitures
-        // stationnent ou avancent moins vite. C'est le coeur de la distinction v2.
+        // An instructive contrast: the motorcycle share in DENSITY (what is seen on one
+        // frame) differs from their share in the FLOW (what actually passes). At Hoan
+        // Kiem: 0.64 in density against 0.82 in flow - motorcycles move, cars
+        // are parked or move more slowly. This is the heart of the v2 distinction.
         monitor "  (rappel) part motos en DENSITÉ" value: (fleet_moto[hour_of_day] = nil)
                 ? 0.0 : fleet_moto[hour_of_day] with_precision 2;
         monitor "Rues portant le débit (corridor mesuré)" value: length(spawn_roads);
@@ -758,8 +758,8 @@ experiment hanoi_noise_sim type: gui {
     }
 }
 
-// Expérimentation de contrôle : sans rendu graphique, pour valider la logique
-// (heure, facteur de trafic, indicateurs) rapidement en ligne de commande.
+// Control experiment: without graphical rendering, to validate the logic
+// (hour, traffic factor, indicators) quickly from the command line.
 experiment check type: gui {
     parameter "zone" var: zone;
     parameter "hour_of_day" var: hour_of_day;
