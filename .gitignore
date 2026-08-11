@@ -61,3 +61,9 @@ presentation/*.out
 presentation/*.snm
 presentation/*.toc
 presentation/*.vrb
+
+# LaTeX build products (presentation/main.pdf itself is versioned)
+presentation/*.fls
+presentation/*.fdb_latexmk
+presentation/*.synctex.gz
+presentation/main-notes.*
