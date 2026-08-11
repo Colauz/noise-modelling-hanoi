@@ -10,7 +10,7 @@
 | [`literature-review.md`](literature-review.md) | Verified references and what each one informed |
 | [`references.bib`](references.bib) | BibTeX for the above |
 | [`handover.md`](handover.md) | **Start here if you are taking the project over** |
-| [`roadmap.md`](roadmap.md) | What was done, in what order, and what changed course |
+| [`project-timeline.md`](project-timeline.md) | What was done, in what order, and what changed course |
 | [`audit/`](audit/) | The August 2026 scientific audit and the repository restructuring |
 | [`archive/`](archive/) | Withdrawn work, kept with the reason it was withdrawn |
 

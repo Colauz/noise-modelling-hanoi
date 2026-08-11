@@ -145,7 +145,7 @@ noise-modelling-hanoi/
 │   ├── literature-review.md      #   Phase 4
 │   ├── references.bib            #   ← paper/bibliography.bib, every entry verified
 │   ├── handover.md               #   ← THE handover document
-│   ├── roadmap.md                #   ← ROADMAP.md, translated, results split out
+│   ├── project-timeline.md                #   ← ROADMAP.md, translated, results split out
 │   ├── audit/
 │   │   ├── scientific-audit.md   #   ← audit_noise_modeling.md, translated
 │   │   ├── INVENTORY.md          #   this audit's Phase 0
@@ -294,7 +294,7 @@ acceptance criterion #1 achievable given the ethics decision on the videos.
 | Current | Target | Method |
 |---|---|---|
 | `README.md` | `README.md` | rewritten (Phase 3) |
-| `ROADMAP.md` | `docs/roadmap.md` + results → `docs/methodology.md` | `git mv` + split + translate |
+| `ROADMAP.md` | `docs/project-timeline.md` + results → `docs/methodology.md` | `git mv` + split + translate |
 | `audit_noise_modeling.md` | `docs/audit/scientific-audit.md` | `git mv` + translate |
 | `paper/sections/metrology.md` | `docs/metrology.md` | `git mv` + translate |
 | `paper/sections/negative_results.md` | `docs/negative-results.md` | `git mv` + translate |
