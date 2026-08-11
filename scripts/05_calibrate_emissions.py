@@ -49,7 +49,7 @@ MEASURES = cfg.MEASUREMENTS
 OUT = os.path.join(cfg.GAMA_INPUTS, 'emission_calibration.csv')
 
 TYPES = ['moto', 'car', 'heavy']
-# distance médiane, mesurée, entre nos points « chantier signalé » et le chantier
+# median measured distance between our "construction reported" points and the site
 CONSTR_REF_DIST = 56.0
 
 
@@ -66,32 +66,32 @@ def load():
 
 
 def fit_emissions(v, suffix='_mean'):
-    """NNLS en énergie : E = somme(fond_site) + somme(x_type · e_type).
+    """NNLS in energy: E = sum(background_site) + sum(x_type * e_type).
 
-    Deux formulations, selon `suffix` :
+    Two formulations, depending on `suffix`:
 
-    `_mean` (v1) — x = DENSITÉ, nombre moyen de véhicules visibles par image. `e_type`
-        s'interprète alors comme l'énergie d'un véhicule *présent dans le champ*. C'est
-        la formulation qui a produit le résultat négatif de §5.x : la densité est un
+    `_mean` (v1) - x = DENSITY, mean number of vehicles visible per frame. `e_type`
+        then reads as the energy of a vehicle *present in the field of view*. This is
+        the formulation that produced the negative result of 5.x: density is a
         stock, elle ne dit rien du nombre de passages.
 
-    `_flow` (v2) — x = DÉBIT, franchissements de ligne par minute. C'est la formulation
-        PHYSIQUEMENT CORRECTE : un niveau équivalent intégré sur une période T résulte de
-        la somme des énergies apportées par chaque PASSAGE, donc E = E_fond + somme(Q_c·e_c)
-        avec Q_c le débit de la classe c et e_c l'énergie par passage. C'est cette
-        formulation qui peut, si les données le permettent, identifier une émission.
+    `_flow` (v2) - x = FLOW, line crossings per minute. This is the PHYSICALLY
+        CORRECT formulation: an equivalent level integrated over a period T results from
+        the sum of the energies contributed by each PASS, so E = E_bg + sum(Q_c * e_c)
+        with Q_c the flow of class c and e_c the energy per pass. It is this
+        formulation that can identify an emission, if the data allow it.
     """
     sites = sorted(v.site.unique())
     cols, names = [], []
-    for s in sites:                       # fond propre à chaque site
+    for s in sites:                       # a background of its own for each site
         cols.append((v.site == s).astype(float).values)
         names.append(f'bg::{s}')
-    for t in TYPES:                       # une colonne par type de véhicule
+    for t in TYPES:                       # one column per vehicle type
         cols.append(v[f'{t}{suffix}'].values)
         names.append(t)
 
     X = np.column_stack(cols)
-    y = np.power(10.0, v.matched_dB.values / 10.0)      # dB -> énergie
+    y = np.power(10.0, v.matched_dB.values / 10.0)      # dB -> energy
     coef, _ = nnls(X, y)
 
     pred_e = X @ coef
@@ -111,10 +111,10 @@ def to_dB(e):
 
 
 def construction_excess():
-    """Excès dû aux chantiers, estimé en énergie sur nos mesures d'Ocean Park.
+    """Excess due to construction, estimated in energy on our Ocean Park measurements.
 
-    E(avec chantier) - E(sans) = énergie ajoutée par l'activité de chantier.
-    Comparaison faite à site et heure comparables pour ne pas confondre avec le trafic.
+    E(with construction) - E(without) = energy added by construction activity.
+    Compared at comparable site and hour so as not to confound it with traffic.
     """
     m = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     m['hour'] = m.timestamp.dt.hour
@@ -122,7 +122,7 @@ def construction_excess():
     op['near'] = op.construction_nearby.astype(str).str.lower() == 'yes'
     if op.near.sum() < 5:
         return None
-    # à heure égale, moyenne énergétique avec vs sans chantier signalé
+    # at equal hour, energy mean with vs without reported construction
     rows = []
     for h, g in op.groupby('hour'):
         if g.near.nunique() == 2 and g.near.sum() >= 2 and (~g.near).sum() >= 2:
@@ -136,16 +136,16 @@ def construction_excess():
 
 
 def diagnostics(v):
-    """Le comptage vidéo porte-t-il un signal acoustique exploitable ?
+    """Does the video count carry a usable acoustic signal?
 
-    On compare frontalement les deux prédicteurs : la densité (v1) et le débit (v2).
-    C'est LA question que le passage au suivi d'objets devait trancher.
+    The two predictors are compared head to head: density (v1) and flow (v2).
+    This is THE question the move to object tracking was meant to settle.
     """
     has_flow = 'vehicles_flow' in v.columns
-    print('Pouvoir explicatif du comptage (corrélation du dB mesuré avec le comptage) :')
-    head = f'  {"site":16} {"n":>4}  {"r densité":>10}  {"R²":>6}'
+    print('Explanatory power of the count (correlation of measured dB with the count):')
+    head = f'  {"site":16} {"n":>4}  {"r density":>10}  {"R2":>6}'
     if has_flow:
-        head += f'  |  {"r DÉBIT":>9}  {"R²":>6}'
+        head += f'  |  {"r FLOW":>9}  {"R2":>6}'
     print(head)
     for s, g in v.groupby('site'):
         r = g.vehicles_mean.corr(g.matched_dB)
@@ -161,7 +161,7 @@ def diagnostics(v):
         line += f'  |  {rf:+9.2f}  {rf**2:6.3f}'
     print(line)
     if has_flow:
-        print(f'\n  débit motos seul : r = {v.moto_flow.corr(v.matched_dB):+.2f}')
+        print(f'\n  motorcycle flow alone: r = {v.moto_flow.corr(v.matched_dB):+.2f}')
     print()
 
 
@@ -171,9 +171,9 @@ def main():
 
     has_flow = 'vehicles_flow' in v.columns
     if has_flow:
-        # Formulation physiquement correcte en premier : énergie par PASSAGE.
+        # Physically correct formulation first: energy per PASS.
         coef_f, fit_f = fit_emissions(v, suffix='_flow')
-        print(f'--- v2, régression sur le DÉBIT (énergie par passage) ---')
+        print(f'--- v2, regression on FLOW (energy per pass) ---')
         print(f'  ajustement : MAE {fit_f["mae_dB"]:.2f} dB · biais {fit_f["bias_dB"]:+.2f} dB '
               f'· r {fit_f["r"]:.2f}')
         for t in TYPES:
@@ -184,64 +184,64 @@ def main():
         print()
 
     coef, fit = fit_emissions(v, suffix='_mean')
-    print('--- v1, régression sur la DENSITÉ (conservée pour comparaison) ---')
-    print(f'Calibration sur {fit["n"]} vidéos appariées à une mesure')
-    print(f'  qualité de l\'ajustement : MAE {fit["mae_dB"]:.2f} dB · '
+    print('--- v1, regression on DENSITY (kept for comparison) ---')
+    print(f'Calibration on {fit["n"]} videos matched to a measurement')
+    print(f'  goodness of fit: MAE {fit["mae_dB"]:.2f} dB - '
           f'biais {fit["bias_dB"]:+.2f} dB · r {fit["r"]:.2f}\n')
 
-    print('Fond par site (niveau sans véhicule visible) :')
+    print('Background per site (level with no visible vehicle):')
     for k, e in coef.items():
         if k.startswith('bg::'):
             print(f'  {k[4:]:16} {to_dB(e):5.1f} dB')
 
-    print('\nÉmission par véhicule visible dans le champ :')
+    print('\nEmission per vehicle visible in the field of view:')
     out_rows = []
     for t in TYPES:
         e = coef[t]
         lvl = to_dB(e)
-        print(f'  {t:6} {lvl:5.1f} dB' + ('' if e > 0 else '   (contrainte NNLS -> 0, non séparable)'))
+        print(f'  {t:6} {lvl:5.1f} dB' + ('' if e > 0 else '   (NNLS constraint -> 0, not separable)'))
         out_rows.append({'category': t, 'energy': e, 'level_dB': lvl})
 
     identifiable = any(coef[t] > 0 for t in TYPES)
     if not identifiable:
-        print('\n>> RÉSULTAT : les émissions par véhicule NE SONT PAS IDENTIFIABLES sur nos données.')
-        print('   La contrainte de non-négativité ramène les trois coefficients à zéro : à site')
-        print('   donné, le nombre de véhicules visibles n\'explique pas le niveau mesuré')
-        print('   (R² < 0.05 partout, corrélations de signe incohérent entre sites).')
-        print('   Causes plausibles : les véhicules garés sont comptés (pas de filtre de')
-        print('   mouvement), la distance de chaque véhicule n\'est pas prise en compte, et la')
-        print('   vitesse - qui domine le bruit de roulement - n\'est pas observable sur le comptage.')
-        print('   CONSÉQUENCE POUR LA SIMULATION : les véhicules y sont une représentation')
-        print('   visuelle calibrée du parc, PAS une source acoustique. Le niveau reste piloté')
-        print('   par le modèle validé et par la loi de volume de trafic.')
+        print('\n>> RESULT: per-vehicle emissions ARE NOT IDENTIFIABLE from our data.')
+        print('   The non-negativity constraint drives all three coefficients to zero: at a')
+        print('   given site, the number of visible vehicles does not explain the measured')
+        print('   level (R2 < 0.05 everywhere, correlations of inconsistent sign across sites).')
+        print('   Plausible causes: parked vehicles are counted (no motion filter), the')
+        print('   distance of each vehicle is not accounted for, and speed - which dominates')
+        print('   rolling noise - is not observable from a count.')
+        print('   CONSEQUENCE FOR THE SIMULATION: vehicles there are a calibrated visual')
+        print('   representation of the fleet, NOT an acoustic source. The level stays driven')
+        print('   by the validated model and by the traffic volume law.')
 
-    # Excès chantier. On raisonne sur les MÉDIANES : en énergie, les moyennes sont
-    # dominées par les quelques points les plus bruyants et surestiment la source
-    # (une calibration sur moyennes donnait 74,7 dB, soit +8 dB simulés près des
-    # chantiers, incompatible avec les +2 dB réellement observés).
+    # Construction excess. We reason on MEDIANS -- see docs/methodology.md 5.1. In
+    # energy, means are dominated by the few loudest points and overstate the source
+    # (a calibration on means gave 74.7 dB, i.e. +8 dB simulated near construction
+    # sites, incompatible with the +2 dB actually observed).
     m = pd.read_csv(MEASURES, parse_dates=['timestamp'])
     op = m[m.site == 'Ocean Park'].copy()
     op['near'] = op.construction_nearby.astype(str).str.lower() == 'yes'
     med_w = op[op.near].noise_dB.median()
     med_o = op[~op.near].noise_dB.median()
     add_e = max(np.power(10, med_w / 10) - np.power(10, med_o / 10), 0.0)
-    print(f'\nChantiers (Ocean Park, n={op.near.sum()} avec / {(~op.near).sum()} sans) :')
-    print(f'  niveau médian    : {med_w:.1f} dB avec chantier vs {med_o:.1f} dB sans '
+    print(f'\nConstruction (Ocean Park, n={op.near.sum()} with / {(~op.near).sum()} without):')
+    print(f'  median level    : {med_w:.1f} dB with construction vs {med_o:.1f} dB without '
           f'({med_w - med_o:+.1f} dB)')
-    print(f'  distance médiane des points signalant un chantier : {CONSTR_REF_DIST:.0f} m')
-    print(f'  -> source équivalente : {to_dB(add_e):.1f} dB à {CONSTR_REF_DIST:.0f} m')
-    print('  vérification (atténuation géométrique depuis cette source) :')
+    print(f'  median distance of points reporting construction: {CONSTR_REF_DIST:.0f} m')
+    print(f'  -> equivalent source: {to_dB(add_e):.1f} dB at {CONSTR_REF_DIST:.0f} m')
+    print('  check (geometric attenuation from that source):')
     for d in [25, 56, 200]:
         lvl = to_dB(add_e) - 20 * np.log10(d / CONSTR_REF_DIST)
         tot = to_dB(np.power(10, med_o / 10) + np.power(10, lvl / 10))
-        print(f'    à {d:3d} m -> niveau total {tot:.1f} dB')
+        print(f'    at {d:3d} m -> total level {tot:.1f} dB')
     out_rows.append({'category': 'construction', 'energy': add_e, 'level_dB': to_dB(add_e),
                      'ref_distance_m': CONSTR_REF_DIST})
 
     df = pd.DataFrame(out_rows)
     df['identifiable'] = [int(coef.get(r['category'], 1) > 0) if r['category'] in TYPES else 1
                           for r in out_rows]
-    df['source'] = 'estimé sur nos 147 vidéos et 363 mesures terrain'
+    df['source'] = 'estimated on our 147 videos and 363 field measurements'
     df.to_csv(OUT, index=False)
     print(f'\nOK -> {OUT}')
     return coef, fit

@@ -301,6 +301,20 @@ videos out of 147 (0.4 % of total flow, r = +0.02): an artefact of the
 non-negativity constraint, **not an identified emission, and it must not be
 cited**.
 
+> **Assumption 5c — the construction source is calibrated on medians, not means.**
+> The equivalent construction source is derived from the gap between points that
+> reported nearby construction and those that did not, at Ocean Park. Sound levels
+> add in energy, so the natural move is to compare energy means — and that is what
+> was done first. It gave an equivalent source of **74.7 dB**, which propagates to
+> about **+8 dB** in the simulation near a construction site, against the **+2 dB**
+> actually observed in the field. The mean is dominated by a handful of loud points
+> and overstates the source by a factor of four in level terms.
+>
+> The calibration therefore compares **medians**, which reproduces the observed
+> +2 dB. This is a choice that changes a published parameter, and it is made the way
+> a calibration should be: not by preferring the statistic that behaves better, but
+> by rejecting the one whose output contradicts a field observation.
+
 > **Limitation 3 — flow is not the whole story.** Speed is not observable without
 > a ground homography, and source–receiver distance is not observable from a
 > non-georeferenced camera field. Moving from density to flow was necessary — it
@@ -316,6 +330,33 @@ corrected**, by stratified comparison against instrumented studies of Hanoi and
 Ho Chi Minh City. The result is an interval on the plausible bias, propagated into
 the exceedance statistics as a sensitivity band — never as a correction applied to
 the levels.
+
+**Every anchor carries a reliability status, and the status governs its use.** This
+is the project's source policy; it applies here and in
+[`literature-review.md`](literature-review.md), which uses the same three levels
+rather than inventing a parallel scheme.
+
+| Status | Meaning | Permitted use |
+|---|---|---|
+| `verified` | The value is read in the source's own abstract or summary | Citable as a primary reference |
+| `to_check` | The value is reported second-hand and not yet confirmed against the source PDF | Usable, but flagged as unverified wherever it appears |
+| `grey` | Grey literature — an institute quoted in the press, undocumented protocol, not peer-reviewed | **Never cited as a primary reference.** Contextual orientation only |
+
+The distinction is load-bearing rather than decorative. The figures circulating for
+twelve Hanoi arteries come from an institute via the Vietnamese press with no
+documented protocol; they are the most convenient numbers available and the least
+defensible, so they are marked `grey` and excluded from the bias interval. The
+Phan et al. (2010) `L_den` values, the only professionally instrumented campaign
+published for Hanoi, are `to_check` until confirmed against the PDF — which is
+still open; see [`handover.md`](handover.md).
+
+Alongside the status, each anchor declares `metric_gap_dB`, the systematic gap
+**expected from the difference in quantity alone** — an `L_den` carries evening and
+night penalties and sits mechanically above a daytime level; dosimeters worn by
+cyclists sit inside the traffic stream rather than at the kerb. That expected gap is
+subtracted before the residual is read as instrumental bias. Comparing our numbers
+to a published number without that subtraction would attribute to our smartphones a
+difference that is a property of the indicator.
 
 ### 5.3 Simulation validation — `08_validate_simulation.py`
 

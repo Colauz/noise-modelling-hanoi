@@ -49,58 +49,61 @@ OUT_MD = os.path.join(cfg.TABLES, 'literature_anchoring.md')
 OUT_CSV = os.path.join(cfg.TABLES, 'literature_anchoring.csv')
 
 # --------------------------------------------------------------------------------------
-#  Points d'ancrage publiés. `comparable` décrit la strate de NOS données qui approche le
-#  mieux la situation décrite, et `metric_gap_dB` l'écart systématique ATTENDU du seul fait
-#  de la différence de grandeur (positif = la source doit être au-dessus de nous).
+#  Published anchor points. `comparable` names the stratum of OUR data that best
+#  approximates the situation described, and `metric_gap_dB` the systematic gap EXPECTED
+#  from the difference in quantity alone (positive = the source should sit above us).
 #
-#  `status` : 'verified'  = valeur lue dans le résumé/abstract de la source
-#             'to_check'  = valeur rapportée de seconde main, à confirmer sur le PDF
-#             'grey'      = littérature grise (institut cité par la presse), non revue
-#                           par les pairs — à ne PAS citer comme référence primaire
+#  `status` -- the project's source policy, stated in docs/methodology.md 5.2 and
+#  reused by docs/literature-review.md. Do not introduce a fourth level here
+#  without changing it there.
+#             'verified'  = value read in the source's own abstract or summary
+#             'to_check'  = value reported second-hand, to be confirmed against the PDF
+#             'grey'      = grey literature (an institute quoted in the press), not
+#                           peer-reviewed -- NEVER to be cited as a primary reference
 # --------------------------------------------------------------------------------------
 ANCHORS = [
     dict(key='gelb2019cyclists',
          source='Gelb & Apparicio 2019, Applied Acoustics 148:332-343',
          city='Ho Chi Minh City', year='2016-2017',
-         instrument='dosimètres personnels + GPS',
+         instrument='personal dosimeters + GPS',
          metric='LAeq,1min', value=78.8, spread='moyenne sur 3300 segments',
          comparable='roadside_day', metric_gap_dB=+2.0,
          status='verified',
-         comment="Cyclistes DANS le flux (~1-2 m des véhicules) : plus exposés qu'un "
-                 "observateur en bord de trottoir. L'écart attendu est positif."),
+         comment="Cyclists INSIDE the flow (~1-2 m from vehicles): more exposed than an "
+                 "observer at the kerb. The expected gap is positive."),
     dict(key='phan2010characteristics',
          source='Phan et al. 2010, Applied Acoustics 71(5):479-485',
-         city='Hanoï', year='2005-2007',
-         instrument='RION NL-21 / NL-22 (sonomètres), 24 h continu',
-         metric='Lden', value=76.5, spread='plage rapportée 70-83 dB sur 7 sites',
+         city='Hanoi', year='2005-2007',
+         instrument='RION NL-21 / NL-22 (sound level meters), 24 h continuous',
+         metric='Lden', value=76.5, spread='reported range 70-83 dB over 7 sites',
          comparable='roadside_day', metric_gap_dB=+4.0,
          status='to_check',
-         comment="SEULE campagne publiée à Hanoï avec instrumentation professionnelle. "
-                 "Lden = moyenne annuelle avec pénalités +5 dB soir / +10 dB nuit : "
-                 "mécaniquement au-dessus d'un niveau diurne. Valeur à confirmer sur le PDF."),
+         comment="The ONLY published Hanoi campaign with professional instrumentation. "
+                 "Lden = annual average with +5 dB evening / +10 dB night penalties: "
+                 "mechanically above a daytime level. Value to be confirmed against the PDF."),
     dict(key='phan2010characteristics_night',
          source='Phan et al. 2010, Applied Acoustics 71(5):479-485',
          city='Hanoï', year='2005-2007',
          instrument='RION NL-21 / NL-22, 24 h continu',
-         metric='Lnight (le plus bas des 7 sites)', value=66.0, spread='minimum inter-sites',
+         metric='Lnight (lowest of the 7 sites)', value=66.0, spread='inter-site minimum',
          comparable='night_all', metric_gap_dB=0.0,
          status='to_check',
-         comment="Notre couverture nocturne est trop faible (n≈10) pour que cet ancrage "
-                 "soit informatif : il est reporté pour mémoire."),
+         comment="Our night-time coverage is too thin (n about 10) for this anchor "
+                 "to be informative: it is carried for the record."),
     dict(key='ioh_hanoi_grey',
-         source="Institute of Occupational Health and Environment, 12 grands axes de Hanoï "
-                "(rapporté par la presse vietnamienne)",
-         city='Hanoï', year='années 2010',
-         instrument='non documenté',
+         source="Institute of Occupational Health and Environment, 12 major Hanoi arteries "
+                "(as reported by the Vietnamese press)",
+         city='Hanoi', year='2010s',
+         instrument='not documented',
          metric='moyenne diurne dBA', value=77.9, spread='plage 77,8-78,1 dBA',
          comparable='roadside_day_major', metric_gap_dB=+1.0,
          status='grey',
-         comment="Littérature grise : source secondaire, protocole non documenté. "
-                 "À utiliser comme repère contextuel, jamais comme référence primaire."),
+         comment="Grey literature: secondary source, undocumented protocol. "
+                 "To be used as contextual orientation, never as a primary reference."),
 ]
 
-# strates de NOS données rendues comparables à chaque ancrage
-ROADSIDE = '0-2|0-10|2-10'          # classes de distance à la route « bord de voirie »
+# strata of OUR data made comparable to each anchor
+ROADSIDE = '0-2|0-10|2-10'          # distance-to-road classes counted as "roadside"
 
 
 def strata(df):
@@ -132,13 +135,13 @@ def main():
     print('Nos strates :')
     for k, g in S.items():
         d = describe(g)
-        print(f'  {k:20} n={d["n"]:4}  médiane {d["median"]:5.1f}  moy {d["mean"]:5.1f}  '
+        print(f'  {k:20} n={d["n"]:4}  median {d["median"]:5.1f}  mean {d["mean"]:5.1f}  '
               f'p90 {d["p90"]:5.1f}  sd {d["sd"]:4.1f}')
 
     rows = []
     for a in ANCHORS:
         d = describe(S[a['comparable']])
-        # écart brut, puis écart corrigé de la différence de grandeur ATTENDUE
+        # raw gap, then the gap corrected for the EXPECTED difference in quantity
         raw = np.nan if d['n'] == 0 else a['value'] - d['median']
         resid = np.nan if d['n'] == 0 else raw - a['metric_gap_dB']
         rows.append({**{k: a[k] for k in
@@ -155,25 +158,25 @@ def main():
     lo = usable.gap_after_metric_correction_dB.min() if len(usable) else np.nan
     hi = usable.gap_after_metric_correction_dB.max() if len(usable) else np.nan
 
-    print('\nÉcart résiduel après correction de la différence de grandeur :')
+    print('\nResidual gap after correcting for the difference in quantity:')
     for _, r in out.iterrows():
         g = r.gap_after_metric_correction_dB
         print(f'  [{r.status:8}] {r.source[:52]:52} {"n/a" if g is None else f"{g:+5.1f} dB"}')
     print(f'\n=> Fourchette du biais plausible (sources revues, hors nuit) : '
-          f'{lo:+.1f} à {hi:+.1f} dB')
-    print('   Aucune correction n\'est appliquée aux données : cet intervalle sert à '
-          'encadrer\n   l\'incertitude absolue dans le manuscrit, pas à décaler les mesures.')
+          f'{lo:+.1f} to {hi:+.1f} dB')
+    print('   No correction is applied to the data: this interval is there to bound '
+          'the\n   absolute uncertainty in the manuscript, not to shift the measurements.')
 
     write_md(df, S, out, lo, hi)
     print(f'\nOK -> {OUT_MD}\nOK -> {OUT_CSV}')
 
 
 def write_md(df, S, out, lo, hi):
-    L = ['# Ancrage sur la littérature instrumentée', '',
-         '_Généré par `scripts/06_anchor_literature.py`. Aucune correction n\'est appliquée '
-         'aux mesures : ce document borne l\'incertitude absolue, il ne la corrige pas._', '',
+    L = ['# Anchoring on instrumented literature', '',
+         '_Generated by `scripts/06_anchor_literature.py`. No correction is applied '
+         'to the measurements: this document bounds the absolute uncertainty, it does not correct it._', '',
          '## Nos strates', '',
-         '| Strate | n | Médiane | Moyenne | p90 | Écart-type |', '|---|---|---|---|---|---|']
+         '| Stratum | n | Median | Mean | p90 | Std dev |', '|---|---|---|---|---|---|']
     for k, g in S.items():
         d = describe(g)
         if d['n'] == 0:
@@ -181,26 +184,26 @@ def write_md(df, S, out, lo, hi):
         else:
             L.append(f'| `{k}` | {d["n"]} | {d["median"]:.1f} | {d["mean"]:.1f} | '
                      f'{d["p90"]:.1f} | {d["sd"]:.1f} |')
-    L += ['', '## Points d\'ancrage publiés', '',
-          '| Source | Ville | Instrument | Grandeur | Valeur | Notre strate | Écart brut | '
-          'Écart corrigé | Statut |', '|---|---|---|---|---|---|---|---|---|']
+    L += ['', '## Published anchor points', '',
+          '| Source | City | Instrument | Quantity | Value | Our stratum | Raw gap | '
+          'Corrected gap | Status |', '|---|---|---|---|---|---|---|---|---|']
     for _, r in out.iterrows():
         f = lambda v: '—' if v is None or (isinstance(v, float) and np.isnan(v)) else f'{v:+.1f}'
         L.append(f'| {r.source} | {r.city} | {r.instrument} | {r.metric} | {r.value:.1f} | '
                  f'`{r.comparable}` (n={r.our_n}) | {f(r.gap_raw_dB)} | '
                  f'{f(r.gap_after_metric_correction_dB)} | {r.status} |')
-    L += ['', '_« Écart corrigé » = écart brut moins la différence attendue du seul fait de '
-              'la grandeur (`metric_gap_dB`). Il approche le biais instrumental résiduel._', '',
+    L += ['', '_"Corrected gap" = raw gap minus the difference expected from the '
+              'quantity alone (`metric_gap_dB`). It approximates the residual instrumental bias._', '',
           f'## Conclusion', '',
           f'Biais absolu plausible de nos smartphones : **entre {lo:+.1f} et {hi:+.1f} dB** '
-          '(sources revues par les pairs, hors nuit).', '',
-          'Ce que cela autorise et interdit :', '',
-          '- **Autorisé** : comparer nos lieux entre eux, nos heures entre elles, et discuter '
-          'des contrastes spatiaux et temporels. Le biais est commun aux trois appareils et '
-          's\'annule dans une différence.',
-          '- **Interdit** : annoncer un taux de dépassement réglementaire comme un fait. '
+          '(peer-reviewed sources, night excluded).', '',
+          'What this allows and forbids:', '',
+          '- **Allowed**: comparing our places with each other, our hours with each other, and '
+          'discussing spatial and temporal contrasts. The bias is common to all three devices '
+          'and cancels in a difference.',
+          '- **Forbidden**: stating a regulatory exceedance rate as a fact. '
           'Le seuil QCVN diurne (70 dBA) tombe au milieu de notre distribution : un biais de '
-          'quelques dB déplace fortement le pourcentage de dépassement.', '',
+          'a few dB shifts the exceedance percentage substantially.', '',
           '### Notes par source', '']
     for _, r in out.iterrows():
         L.append(f'- **{r.source}** — {r.comment}')
