@@ -1,38 +1,59 @@
-# Field - protocole & formulaires
+# Field protocol and forms
 
-## Fichiers
+## Forms
 
-- `hanoi_noise_form_v2.xlsx` - formulaire principal (XLSForm Kobo) : dB, GPS, catégorie,
-  distance route/source, orientation téléphone, comptages véhicules, vidéo, chantier audible
-- `hanoi_construction_form.xlsx` - registre des chantiers (1 fiche par site : position GPS,
-  type construction/démolition/rénovation, niveau d'activité, photo)
+- `data/forms/hanoi_noise_form_v2.xlsx` — the main form (Kobo XLSForm): dB, GPS,
+  source category, distance to road and to the dominant source, phone
+  orientation, vehicle counts, traffic video, audible construction.
+- `data/forms/hanoi_construction_form.xlsx` — construction site register, one
+  record per site: GPS position, type (construction / demolition / renovation),
+  activity level, photograph.
 
-## Setup (une fois)
+## Setup (once)
 
-1. **Kobo** : compte sur kobotoolbox.org (serveur Global) → New → Upload XLSForm → Deploy
-2. **Téléphones** : ODK Collect (Play Store), serveur `https://kc.kobotoolbox.org` +
-   identifiants Kobo → Get Blank Form
-3. **Sonomètre** : Decibel X, mêmes réglages partout - pondération **A**, réponse **SLOW**, trim 0.0
+1. **Kobo** — create an account on kobotoolbox.org (Global server), then
+   New → Upload XLSForm → Deploy.
+2. **Phones** — install ODK Collect, set the server to `https://kc.kobotoolbox.org`
+   with the Kobo credentials, then Get Blank Form.
+3. **Sound meter app** — Decibel X, identical settings on every phone:
+   **A**-weighting, **SLOW** response, trim 0.0.
 
-## Calibration croisée (10 min, début de première session, les 3 téléphones ensemble)
+## Cross-calibration (10 min, at the start of the first session, all three phones together)
 
-1. Téléphones côte à côte face à la rue, mesurer 1 min, relever les AVG au même moment
-2. Refaire 30 s pour vérifier la stabilité (~1 dB près)
-3. Téléphone du milieu = référence ; offset = référence − valeur du téléphone
-4. Entrer chaque offset dans Decibel X > settings > Trim → les 3 téléphones affichent pareil
-5. Noter les valeurs + date (et reporter dans `CALIBRATION_OFFSET` de
-   `scripts/prepare_field_data.py` si un trim n'a pas été appliqué sur le terrain)
+1. Place the phones side by side facing the street, measure for 1 min, and read
+   the AVG values at the same moment.
+2. Repeat for 30 s to confirm stability (to within about 1 dB).
+3. Take the middle phone as the reference; offset = reference − phone reading.
+4. Enter each offset in Decibel X > Settings > Trim, so that the three phones
+   display the same value.
+5. Record the values and the date. If a trim was **not** applied in the field,
+   carry the offset into `CALIBRATION_OFFSET` in
+   `scripts/01_prepare_field_data.py` instead.
 
-## Routine par point (~45 s)
+> This procedure makes the three phones **mutually consistent**. It does not
+> anchor them to any absolute scale: there was never a reference instrument. See
+> [`metrology.md`](metrology.md).
 
-1. ODK Collect → Fill Blank Form → Hanoi Urban Noise Survey
-2. Site + collecteur ; GPS : attendre précision < 10 m
-3. Audio ≥ 10 s dans le form, immobile et silencieux ; lire le dB (AVG) sur Decibel X pendant
-4. Distances route/source, comptages si possible ; vidéo trafic pendant les rush hours
-   (nom horodaté = appariement automatique à la mesure)
-5. Fenêtre de capture : 05h-23h, accent sur 08-10h et 16-18h ; varier les distances à la route
+## Per-point routine (about 45 s)
 
-## Chantiers
+1. ODK Collect → Fill Blank Form → Hanoi Urban Noise Survey.
+2. Enter site and collector. For GPS, wait until the reported accuracy is
+   better than 10 m.
+3. Record at least 10 s of audio in the form, standing still and silent, and read
+   the dB (AVG) on Decibel X during that time.
+4. Enter the distances to the road and to the dominant source, and vehicle counts
+   where feasible. Film the traffic during rush hours — the timestamped filename
+   is what matches a video to its measurement automatically.
+5. Capture window 05:00–23:00, with emphasis on 08:00–10:00 and 16:00–18:00.
+   Vary the distance to the road between points.
 
-Une fiche par site dans le form chantiers + 2-3 mesures normales en s'éloignant
-(le rayon dB-distance est calculé au traitement par croisement GPS).
+## Construction sites
+
+One record per site in the construction form, plus two or three ordinary
+measurements taken while walking away from it. The dB-against-distance
+relationship is computed later by matching the GPS positions.
+
+---
+
+*The campaign is closed. This document records how the 363 measurements were
+taken, so that a future campaign can extend the dataset rather than start over.*
