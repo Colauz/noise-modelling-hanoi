@@ -139,13 +139,13 @@ global {
     string zone <- (target_zone = "Ocean Park") ? "oceanpark"
                     : ((target_zone = "Hoan Kiem") ? "hoankiem" : "vinhtuy");
 
-    file roads_file     <- file('../outputs/gama_inputs/' + zone + '_roads.shp');
-    file buildings_file <- file('../outputs/gama_inputs/' + zone + '_buildings.shp');
-    file noise_shp      <- file('../outputs/gama_inputs/' + zone + '_noise.shp');
-    file fleet_csv      <- csv_file('../outputs/gama_inputs/fleet_by_hour.csv', true);
-    string phys_path    <- '../outputs/gama_inputs/physical_params.csv';
-    string constr_path  <- '../outputs/gama_inputs/' + zone + '_construction.shp';
-    string meas_path    <- '../outputs/gama_inputs/' + zone + '_measurements.shp';
+    file roads_file     <- file('inputs/' + zone + '_roads.shp');
+    file buildings_file <- file('inputs/' + zone + '_buildings.shp');
+    file noise_shp      <- file('inputs/' + zone + '_noise.shp');
+    file fleet_csv      <- csv_file('inputs/fleet_by_hour.csv', true);
+    string phys_path    <- 'inputs/physical_params.csv';
+    string constr_path  <- 'inputs/' + zone + '_construction.shp';
+    string meas_path    <- 'inputs/' + zone + '_measurements.shp';
 
     // Enveloppe du monde. INDISPENSABLE : sans elle GAMA crée un monde 100x100 m,
     // les agents tombent hors de l'index spatial et closest_to / at_distance
