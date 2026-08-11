@@ -150,10 +150,23 @@ def build_map(df, out=OUT):
     return m
 
 
+def load_script(stem):
+    """Import a numbered sibling script by path.
+
+    `import 01_prepare_field_data` is not valid Python -- a module name cannot start
+    with a digit -- and the numbering is what makes the pipeline readable from `ls`.
+    So numbered scripts are loaded by file path when one needs another.
+    """
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'{stem}.py')
+    spec = importlib.util.spec_from_file_location(stem, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def main():
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import prepare_field_data as pfd
+    pfd = load_script('01_prepare_field_data')
     df = pfd.build_dataframe()
     build_map(df)
     print(f'OK -> {OUT}  ({len(df)} points)')
