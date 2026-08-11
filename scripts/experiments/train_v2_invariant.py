@@ -131,7 +131,9 @@ log('=== UGANDA v2 (feature invariante) ===')
 log(f'MAE = {mean_absolute_error(yu_te, pu):.2f} dB   R² = {r2_score(yu_te, pu):.3f}   '
     f'r = {pearsonr(yu_te, pu)[0]:.3f}')
 log('(référence v1 : MAE 5.17, R² 0.639, r 0.800)')
-joblib.dump(mu, 'outputs/models/surrogate_lgbm_v2_uganda.pkl')
+# Booster texte : format portable, independant de la version de LightGBM et de
+# sklearn. Le pickle ne se rechargeait qu'avec les versions exactes d'origine.
+mu.booster_.save_model('models/surrogate_lgbm_v2_uganda.txt')
 
 # ---------- 4. Diagnostic transfert vers Barcelone (jamais en entraînement) ----------
 Xb, yb = bcn[FEATURES], bcn['LAeq']

@@ -51,8 +51,8 @@ MODEL_COMPARISON_MD = os.path.join(MODELS, 'model_comparison.md')
 FINAL_MODEL = os.path.join(MODELS, 'surrogate_lgbm_hanoi_direct.txt')
 RESID_MODEL = os.path.join(MODELS, 'hybrid_residual_lgbm.txt')
 PHYS_JSON = os.path.join(MODELS, 'hybrid_physical.json')
-UGANDA_MODEL = os.path.join(MODELS, 'surrogate_lgbm_large.pkl')
-UGANDA_MODEL_V2 = os.path.join(MODELS, 'surrogate_lgbm_v2_uganda.pkl')
+UGANDA_MODEL = os.path.join(MODELS, 'surrogate_lgbm_large.txt')
+UGANDA_MODEL_V2 = os.path.join(MODELS, 'surrogate_lgbm_v2_uganda.txt')
 
 # --- results ----------------------------------------------------------------
 RESULTS = os.path.join(ROOT, 'results')

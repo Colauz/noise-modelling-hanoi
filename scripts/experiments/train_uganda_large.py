@@ -160,5 +160,7 @@ log(f'MAE  : {mae:.2f} dB')
 log(f'RMSE : {rmse:.2f} dB')
 log(f'R²   : {r2:.3f}')
 
-joblib.dump(model, 'outputs/models/surrogate_lgbm_large.pkl')
+# Booster texte : format portable, independant de la version de LightGBM et de
+# sklearn. Le pickle ne se rechargeait qu'avec les versions exactes d'origine.
+model.booster_.save_model('models/surrogate_lgbm_large.txt')
 log('Modèle sauvegardé : outputs/models/surrogate_lgbm_large.pkl')
