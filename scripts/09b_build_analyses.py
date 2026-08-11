@@ -109,7 +109,7 @@ def exceedance_by_hour(df):
     peak = df.groupby('hour').noise_dB.median()
     print(f'Noisiest hour: {peak.idxmax()}h ({peak.max():.0f} dB) | '
           f'quietest: {peak.idxmin()}h ({peak.min():.0f} dB)')
-    print(f'Share of samples above the QCVN threshold: {100 * (df.noise_dB > limit).mean():.0f}%')
+    print(f'Share of samples above the QCVN threshold: {100 * (df.noise_dB > limit).mean():.1f}%')
     print('  /!\\ a descriptive statistic of our sample, NOT a finding of non-compliance:')
     print('      our quantity (L_A,25s) and our sensors are not those the standard prescribes.')
 

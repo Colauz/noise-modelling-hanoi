@@ -120,7 +120,7 @@ fig.text(.5, .882, f'{len(df)} smartphone measurements · 3 sites · {date_min} 
 
 kpis = [('Measurements', f'{len(df)}'), ('Sites', '3'),
         ('L_A,25s range', f'{df.noise_dB.min():.0f}-{df.noise_dB.max():.0f}'),
-        ('Model R²', f'{R2_HEAD:.2f}'), ('> QCVN day', f'{exc_glob:.0f}%')]
+        ('Model R²', f'{R2_HEAD:.2f}'), ('> QCVN day', f'{exc_glob:.1f}%')]   # one decimal: 09b_build_analyses.py prints the same figure
 for i, (k, v) in enumerate(kpis):
     x = .10 + i * .163
     fig.patches.append(plt.Rectangle((x, .80), .15, .055, transform=fig.transFigure,
