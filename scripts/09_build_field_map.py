@@ -19,9 +19,11 @@ import os
 import folium
 import pandas as pd
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RAW_DIR = os.path.join(ROOT, 'data', 'raw', 'hanoi')
-OUT = os.path.join(ROOT, 'outputs', 'hanoi', 'hanoi_field_points.html')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+RAW_DIR = cfg.PROCESSED
+OUT = cfg.FIELD_MAP_HTML
 
 BINS = [(60, '#1e8449'), (70, '#e67e22'), (80, '#c0392b'), (999, '#7b241c')]
 

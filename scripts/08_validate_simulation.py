@@ -26,11 +26,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-GRID = os.path.join(ROOT, 'outputs', 'gama_inputs', 'noise_points.shp')
-OUT_PNG = os.path.join(ROOT, 'outputs', 'hanoi', 'validation_simulation.png')
-OUT_CSV = os.path.join(ROOT, 'outputs', 'hanoi', 'validation_simulation.csv')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+MEASURES = cfg.MEASUREMENTS
+GRID = os.path.join(cfg.GAMA_INPUTS, 'noise_points.shp')
+OUT_PNG = os.path.join(cfg.FIGURES, 'validation_simulation.png')
+OUT_CSV = os.path.join(cfg.TABLES, 'validation_simulation.csv')
 CRS_M = 'EPSG:32648'
 HMIN, HMAX = 5, 21
 
@@ -128,7 +130,7 @@ def main():
         print(f'  {site:16} n={len(g):3}  biais {g.error.mean():+5.2f}  '
               f'MAE {g.error.abs().mean():4.2f}  r {g.sim_dB.corr(g.noise_dB):.2f}')
     print(f'\nOK -> {OUT_PNG}')
-    ref = os.path.join(ROOT, 'outputs', 'models', 'metrics.json')
+    ref = cfg.METRICS_JSON
     if os.path.exists(ref):
         import json
         M = json.load(open(ref))

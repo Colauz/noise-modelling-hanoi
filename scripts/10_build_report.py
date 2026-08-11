@@ -29,13 +29,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+from noise_hanoi import config as cfg
+
 # Seuils QCVN 26:2010/BTNMT, zone ordinaire. Aucune valeur OMS : voir docstring.
 QCVN_D, QCVN_N = 70, 55
 # Fourchette de biais absolu plausible de nos smartphones, estimée par ancrage sur la
 # littérature instrumentée (scripts/literature_anchoring.py). Sert à borner la sensibilité
 # des taux de dépassement. Mise à jour automatique si le CSV d'ancrage existe.
 BIAS_LO, BIAS_HI = -3.0, 3.0
-_anch = 'outputs/hanoi/literature_anchoring.csv'
+_anch = os.path.join(cfg.TABLES, 'literature_anchoring.csv')
 if os.path.exists(_anch):
     _a = pd.read_csv(_anch)
     _u = _a[(_a.status != 'grey') & _a.gap_after_metric_correction_dB.notna()
@@ -44,7 +46,7 @@ if os.path.exists(_anch):
         BIAS_LO = float(_u.gap_after_metric_correction_dB.min())
         BIAS_HI = float(_u.gap_after_metric_correction_dB.max())
 
-MEAS = 'data/raw/hanoi/measurements.csv'
+MEAS = cfg.MEASUREMENTS
 if not os.path.exists(MEAS):
     raise SystemExit(
         f'Manque {MEAS}.\n'
@@ -64,7 +66,7 @@ exc_glob = 100 * df.exceeds.mean()
 peak_h = df.groupby('hour').noise_dB.median().idxmax()
 
 # ---- métriques modèle : LUES depuis metrics.json (scripts/evaluate_models.py) ----
-MPATH = 'outputs/models/metrics.json'
+MPATH = cfg.METRICS_JSON
 if not os.path.exists(MPATH):
     raise SystemExit(
         f'Manque {MPATH}.\n'
@@ -105,7 +107,8 @@ def styled_table(ax, rows, highlight=None, foot=False, colWidths=None,
             cell.set_facecolor('#eafaf1')
     return t
 
-pp = PdfPages('outputs/report.pdf')
+os.makedirs(cfg.REPORT_DIR, exist_ok=True)
+pp = PdfPages(cfg.REPORT_PDF)
 
 # ================= PAGE 1 : couverture + objectif + données =================
 fig = plt.figure(figsize=(8.27, 11.69))
@@ -281,7 +284,7 @@ fig.text(.08, .045,
 footer(fig, 4); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 5 : vidéos trafic (CV) + météo =================
-VC = 'data/processed/hanoi/vehicle_counts.csv'
+VC = cfg.VEHICLE_COUNTS
 if os.path.exists(VC):
     vc = pd.read_csv(VC, parse_dates=['video_start', 'matched_timestamp'])
     vc = vc.merge(df[['timestamp', 'site']], left_on='matched_timestamp',
@@ -452,8 +455,8 @@ fig.text(.08, .04, 'Cross-city transfer (Uganda -> Hanoi) is reported in section
 footer(fig, 6); pp.savefig(fig); plt.close(fig)
 
 # ================= PAGE 7 : simulation GAMA + validation =================
-VALID_PNG = 'outputs/hanoi/validation_simulation.png'
-VALID_CSV = 'outputs/hanoi/validation_simulation.csv'
+VALID_PNG = os.path.join(cfg.FIGURES, 'validation_simulation.png')
+VALID_CSV = os.path.join(cfg.TABLES, 'validation_simulation.csv')
 if os.path.exists(VALID_CSV):
     vd = pd.read_csv(VALID_CSV)
     v_bias = vd.error.mean(); v_mae = vd.error.abs().mean()
@@ -579,4 +582,4 @@ fig.text(.08, .138, summ, fontsize=8, va='top', linespacing=1.45, color='#222')
 footer(fig, 8); pp.savefig(fig); plt.close(fig)
 
 pp.close()
-print('OK -> outputs/report.pdf  (8 pages)')
+print(f'OK -> {cfg.REPORT_PDF}  (8 pages)')

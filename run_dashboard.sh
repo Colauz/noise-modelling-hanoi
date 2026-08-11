@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Construit et ouvre le tableau de bord du projet.
 #
-#   ./run_dashboard.sh              construit puis ouvre outputs/dashboard/index.html
+#   ./run_dashboard.sh              construit puis ouvre results/report/dashboard/index.html
 #   ./run_dashboard.sh --no-open    construit seulement (utile en CI ou sur un serveur)
 #   ./run_dashboard.sh --serve      sert le dossier sur http://localhost:8000 au lieu
 #                                   d'ouvrir un file:// (utile si le navigateur bloque
@@ -47,16 +47,16 @@ fi
 
 # --- construction ------------------------------------------------------------------
 echo "==> construction du tableau de bord"
-python scripts/build_dashboard.py
+python scripts/11_build_dashboard.py
 
-PAGE="outputs/dashboard/index.html"
+PAGE="results/report/dashboard/index.html"
 [ -f "$PAGE" ] || { echo "échec : $PAGE non généré" >&2; exit 1; }
 
 # --- ouverture ---------------------------------------------------------------------
 if [ "$SERVE" -eq 1 ]; then
   echo "==> http://localhost:8000/index.html   (Ctrl+C pour arrêter)"
   [ "$OPEN" -eq 1 ] && { (sleep 1 && xdg-open "http://localhost:8000/index.html" >/dev/null 2>&1 || true) & }
-  exec python -m http.server 8000 --directory outputs/dashboard
+  exec python -m http.server 8000 --directory results/report/dashboard
 fi
 
 if [ "$OPEN" -eq 1 ]; then

@@ -76,10 +76,12 @@ import numpy as np
 import pandas as pd
 from ultralytics import YOLO
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-VID_DIR = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'videos', 'Videos')
-OUT = os.path.join(ROOT, 'data', 'processed', 'hanoi', 'vehicle_counts.csv')
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+VID_DIR = cfg.VIDEO_DIR
+OUT = cfg.VEHICLE_COUNTS
+MEASURES = cfg.MEASUREMENTS
 
 # classes COCO -> nos catégories
 CLASSES = {1: 'bicycle', 2: 'car', 3: 'moto', 5: 'bus', 7: 'truck'}
@@ -214,7 +216,7 @@ def find_videos():
     """Recherche RÉCURSIVE sous data/raw/hanoi/ : selon la façon dont les vidéos ont été
     rapatriées (Drive, téléphone, clé USB) elles atterrissent dans des sous-dossiers
     variés (ex. drive-download-2026.../). On ne déplace pas les fichiers de l'utilisateur."""
-    roots = [VID_DIR, os.path.join(ROOT, 'data', 'raw', 'hanoi')]
+    roots = [VID_DIR]
     seen, videos = set(), []
     for r in roots:
         for ext in ('mov', 'mp4', 'MOV', 'MP4'):

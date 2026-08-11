@@ -30,14 +30,16 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(ROOT, 'outputs', 'dashboard')
-METRICS = os.path.join(ROOT, 'outputs', 'models', 'metrics.json')
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-GRID = os.path.join(ROOT, 'outputs', 'hanoi', 'hanoi_noise_map.csv')
-COUNTS = os.path.join(ROOT, 'data', 'processed', 'hanoi', 'vehicle_counts.csv')
-FLEET = os.path.join(ROOT, 'outputs', 'gama_inputs', 'fleet_by_hour.csv')
-PHYS = os.path.join(ROOT, 'outputs', 'models', 'hybrid_physical.json')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+OUT_DIR = cfg.DASHBOARD_DIR
+METRICS = cfg.METRICS_JSON
+MEASURES = cfg.MEASUREMENTS
+GRID = cfg.NOISE_MAP_CSV
+COUNTS = cfg.VEHICLE_COUNTS
+FLEET = os.path.join(cfg.GAMA_INPUTS, 'fleet_by_hour.csv')
+PHYS = cfg.PHYS_JSON
 
 # Palette de référence du guide de dataviz, validée pour les deux modes
 # (scripts/validate_palette.js : tous les tests passent en clair et en sombre).

@@ -36,9 +36,11 @@ import pandas as pd
 import requests
 
 # Chemins ancrés sur la racine du repo (marche depuis la racine OU depuis notebooks/)
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RAW_DIR = os.path.join(ROOT, 'data', 'raw', 'hanoi')
-OUT = os.path.join(RAW_DIR, 'measurements.csv')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+RAW_DIR = cfg.KOBO_DIR
+OUT = cfg.MEASUREMENTS
 
 CALIBRATION_OFFSET = {'laurian': 0.0, 'lucas': 0.0, 'quang': 0.0}
 # Centres des 3 zones d'étude : le site est réassigné au centre le plus proche

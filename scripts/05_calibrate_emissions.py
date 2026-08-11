@@ -38,10 +38,12 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import nnls
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COUNTS = os.path.join(ROOT, 'data', 'processed', 'hanoi', 'vehicle_counts.csv')
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-OUT = os.path.join(ROOT, 'outputs', 'gama_inputs', 'emission_calibration.csv')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+COUNTS = cfg.VEHICLE_COUNTS
+MEASURES = cfg.MEASUREMENTS
+OUT = os.path.join(cfg.GAMA_INPUTS, 'emission_calibration.csv')
 
 TYPES = ['moto', 'car', 'heavy']
 # distance médiane, mesurée, entre nos points « chantier signalé » et le chantier

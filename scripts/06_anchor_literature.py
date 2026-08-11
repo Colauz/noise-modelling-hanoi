@@ -40,10 +40,12 @@ warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MEASURES = os.path.join(ROOT, 'data', 'raw', 'hanoi', 'measurements.csv')
-OUT_MD = os.path.join(ROOT, 'outputs', 'hanoi', 'literature_anchoring.md')
-OUT_CSV = os.path.join(ROOT, 'outputs', 'hanoi', 'literature_anchoring.csv')
+from noise_hanoi import config as cfg
+
+ROOT = cfg.ROOT
+MEASURES = cfg.MEASUREMENTS
+OUT_MD = os.path.join(cfg.TABLES, 'literature_anchoring.md')
+OUT_CSV = os.path.join(cfg.TABLES, 'literature_anchoring.csv')
 
 # --------------------------------------------------------------------------------------
 #  Points d'ancrage publiés. `comparable` décrit la strate de NOS données qui approche le
