@@ -193,7 +193,7 @@ See [`CITATION.cff`](CITATION.cff). Some author metadata is still marked
 ## Team
 
 Laurian Jamin and Lucas Zborowski, research interns, ISIMA (Clermont-Ferrand,
-France), at [AFFILIATION TO CONFIRM — CEI or COSMOS Lab], VinUniversity, Hanoi,
+France), at [AFFILIATION TO COSMOS Lab], VinUniversity, Hanoi,
 June–August 2026. Supervised by Doanh Nguyen-Ngoc. With Nguyen Thanh Quang,
 VinUniversity.
 
