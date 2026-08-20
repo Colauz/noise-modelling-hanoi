@@ -12,6 +12,8 @@
 *.yml    text
 *.cff    text
 *.tex    text diff=tex
+*.kt     text diff=java
+*.kts    text diff=java
 
 # Binary formats: never diffed, never end-of-line converted.
 *.shp    binary
@@ -27,6 +29,7 @@
 *.jpg    binary
 *.xlsx   binary
 *.pt     binary
+*.jar    binary
 
 # GitHub language statistics: this is an acoustics research project, not a
 # Jupyter project. Notebooks are narrative, generated artefacts are not code.
