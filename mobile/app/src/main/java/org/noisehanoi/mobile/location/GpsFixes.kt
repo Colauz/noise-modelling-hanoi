@@ -67,7 +67,23 @@ object GpsFixes {
         var registered = false
         providers.forEach { provider ->
             try {
-                manager.requestLocationUpdates(provider, 1000L, 0f, listener, Looper.getMainLooper())
+                // Ask for the best the platform will give. Before API 31 the only
+                // lever is the provider itself; from 31 a request can say so, and
+                // on a phone that is the difference between a fused guess and the
+                // GNSS chip working at full rate.
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    manager.requestLocationUpdates(
+                        provider,
+                        android.location.LocationRequest.Builder(500L)
+                            .setQuality(android.location.LocationRequest.QUALITY_HIGH_ACCURACY)
+                            .setMinUpdateIntervalMillis(500L)
+                            .build(),
+                        context.mainExecutor,
+                        listener,
+                    )
+                } else {
+                    manager.requestLocationUpdates(provider, 500L, 0f, listener, Looper.getMainLooper())
+                }
                 // Only if it is recent. A cached fix is a starting point, not a
                 // position, and one from this morning would otherwise win on
                 // accuracy and be accepted as today's measurement location.
@@ -101,8 +117,45 @@ object GpsFixes {
         longitude = longitude,
         altitude = if (hasAltitude()) altitude else 0.0,
         accuracyM = if (hasAccuracy()) accuracy.toDouble() else 0.0,
-        timeMillis = time,
+        // Age from the monotonic clock, not the wall clock: a phone that syncs its
+        // time, or crosses a timezone, makes `time` jump and a fresh fix look
+        // hours old or hours in the future.
+        timeMillis = System.currentTimeMillis() -
+            (android.os.SystemClock.elapsedRealtimeNanos() - elapsedRealtimeNanos) / 1_000_000L,
     )
+
+    /**
+     * Combines several fixes of the same spot into one position.
+     *
+     * Averaging helps: consecutive GNSS fixes scatter around the truth, and their
+     * mean is closer to it than most single fixes are. Weighting by 1/sigma^2 lets
+     * the confident ones lead.
+     *
+     * What it does *not* do is claim the accuracy improves as sqrt(n). Successive
+     * fixes seconds apart share their satellite geometry and their multipath, so
+     * their errors are correlated and the usual combination rule would overstate
+     * the result. The accuracy reported is the best single fix's — pessimistic,
+     * and defensible.
+     */
+    fun combine(fixes: List<GeoPoint>): GeoPoint? {
+        val usable = fixes.filter { it.accuracyM > 0 }
+        if (usable.isEmpty()) return null
+        val best = usable.minBy { it.accuracyM }
+        // Only fixes of comparable quality; a 100 m network fix must not drag the
+        // mean away from a cluster of 5 m ones.
+        val kept = usable.filter { it.accuracyM <= best.accuracyM * 2.0 }
+        var wsum = 0.0
+        var lat = 0.0
+        var lon = 0.0
+        for (f in kept) {
+            val w = 1.0 / (f.accuracyM * f.accuracyM)
+            wsum += w
+            lat += w * f.latitude
+            lon += w * f.longitude
+        }
+        if (wsum <= 0.0) return best
+        return best.copy(latitude = lat / wsum, longitude = lon / wsum)
+    }
 }
 
 /**

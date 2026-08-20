@@ -202,13 +202,12 @@ private fun MetrologyNotice(model: FormViewModel) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("What this records", style = MaterialTheme.typography.titleSmall)
             Text(
                 if (model.settings.useInAppMeter) {
                     "A 25 s A-weighted level from this phone's microphone, uncalibrated in absolute " +
                         "terms. Usable for contrasts between places and hours, not as a compliance figure."
                 } else {
-                    "A level read from a separate sound meter app, as the protocol specifies."
+                    "Level read from a separate sound meter app."
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -277,12 +276,7 @@ private fun GpsCard(label: String, gps: FormViewModel.GpsState, model: FormViewM
                 }
             }
             if (gps.point != null && !gps.accurateEnough) {
-                Text(
-                    "The campaign's worst fix was 9.0 m. Accepting a looser one weakens the " +
-                        "argument for this point.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+
             }
         }
     }

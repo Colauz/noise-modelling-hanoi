@@ -146,8 +146,8 @@ fun HomeScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Predicted noise map", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "The 40 m grid over the three measured areas, by hour, with the 363 points " +
-                            "and the simulation's traffic slider.",
+                        "The predicted level where you are standing, the 40 m grid over the three " +
+                            "measured areas, and the 363 points.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )

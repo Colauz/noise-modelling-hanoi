@@ -227,6 +227,24 @@ package now; scripts read inputs, call the package, write outputs.
       nobody).
 - [ ] **Video retention decision**: custodian, location, deletion or anonymisation
       deadline — `[SUPERVISOR DECISION]` in `data-sources.md`.
+- [ ] **Who holds the data of a public campaign.** The mobile app submits to a
+      KoboToolbox account, and whoever owns that account holds the measurements —
+      GPS positions and timestamps of strangers — and answers for them. It should
+      be an institutional account, not a student's: a personal one leaves with its
+      owner, which is the failure this handover exists to prevent. The account is
+      not compiled into the app (`-Pnoisehanoi.koboUser`), so this is a decision to
+      take rather than a change to make.
+- [ ] **Consent and ethics for collection from the public.** The app shows a
+      consent screen naming what is collected and who holds it, but a public
+      campaign is a new collection campaign, and §7 lists the VinUniversity ethics
+      committee as a prerequisite for one. The video collection went without a
+      review and the repository says so; do not repeat that at a larger scale.
+- [ ] **Where the GAMA server lives, if the simulation screen is to be used away
+      from a laptop.** The app drives a `gama-server` over the network; today that
+      is whichever machine is running `gama-headless.sh -socket 6868`. A
+      demonstration needs it switched on and reachable; anything beyond that needs
+      it hosted, with TLS — a release build will only accept `wss://`. The map
+      screen needs none of this, which is the argument for keeping it.
 - [x] **The 26 measurement points inside OSM building footprints — resolved.**
       13 sit inside footprints tagged residential, but none lies deeper inside one
       than the worst GPS accuracy of the campaign (max depth 7.1 m against 9.0 m),
@@ -287,6 +305,24 @@ reaches R² = 0.240, and the delivered physical kernel 0.246 under buffered
 leave-one-out. **One locally fitted distance term carries more than a
 61 000-point model trained in another city carries at all.**
 
+### The two limits the manuscript should state plainly
+
+Neither is fixable by code, and both will be asked about.
+
+- [ ] **No absolute reference.** Three handsets were cross-calibrated against each
+      other and against no standard, so every level in this project is relative.
+      `metrology.md` argues this well, but a reviewer in acoustics will ask whether
+      one afternoon beside a class 1 or class 2 meter was truly out of reach. It
+      would convert "calibrated in relative terms" into "calibrated", and it would
+      open the comparisons the paper currently forbids itself. The mobile app's
+      calibration screen exists for exactly this and has never been used against a
+      reference.
+- [ ] **Three sites are three typologies.** §5.x already says it: the effective
+      number of independent morphological configurations is close to three whatever
+      the number of points, and three is not a basis for claiming coverage of a
+      city. This bounds generalisation far more than the R² does, and it is the
+      reason every published map stops at the sampled envelope.
+
 ### The scientifically indicated next step
 
 - [ ] **A real propagation kernel: CNOSSOS-EU, via NoiseModelling.** This is no
@@ -295,6 +331,36 @@ leave-one-out. **One locally fitted distance term carries more than a
       locally learned residual is the architecture the data points at. It was out
       of time budget for a three-month internship; it should be first on the list
       now, not in a "future work" paragraph.
+
+### Two directions the supervisor has pointed at, and what separates them
+
+**A real propagation kernel — the continuation.** The figure circulated in August
+2026 is Figure 2 of `bocher2019noisemodelling`, already in `references.bib`: the
+direct path, first-order horizontal diffraction, and first- and second-order
+specular reflections between a source and a receiver. It is precisely what a
+three-parameter distance law does not model — it knows a distance, not the
+buildings that block, reflect and bend around. This is the same next step already
+named above, arriving from outside, and it belongs in the manuscript as future
+work with that figure and a paragraph. Implementing CNOSSOS is months; citing
+what is missing is a page.
+
+**Acoustic event localisation — a different project, not a continuation.** The
+sketched output — *vehicle collision 0.94, estimated location intersection X,
+localization uncertainty ±12 m, detected independently by 5 sensors* — is the
+"gunshot paper" and the sensor-placement problem from the original plan. It
+cannot be done with this campaign's data, for a reason of physics rather than of
+effort: localisation by time difference of arrival needs synchronised clocks, and
+sound travels 343 m/s, so ±12 m demands agreement to about 35 ms across sensors.
+It also needs continuous listening rather than 25 s samples, and at least four
+sensors at known fixed positions for a 2D fix when the emission time is unknown.
+This project has 363 spot measurements from three unsynchronised handsets.
+
+Keep them apart in the writing. The manuscript's contribution is three negative
+results about low-cost spatial prediction; a promise of localisation grafted onto
+it invites the question of where the synchronised sensors are. As future work it
+is strong, and the mobile app is already half of the instrument — it records
+position, timestamp and level. What is missing is synchronisation and continuity,
+which is hardware.
 
 ### Deliberately abandoned
 

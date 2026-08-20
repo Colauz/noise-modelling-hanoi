@@ -158,11 +158,9 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
 
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Why this is needed", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Kobo replaces the XLSForm's identifier on deployment, and a submission " +
-                            "must name the one it assigned or the server answers 404. Do this once " +
-                            "per account, and again after a redeployment.",
+                        "Kobo assigns its own form identifier on deployment; a submission must " +
+                            "name it. Once per account, and after each redeployment.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     fetch?.let {
@@ -192,7 +190,6 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
             }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("What is sent about you", style = MaterialTheme.typography.titleSmall)
                     Text(
                         "In public mode the form stops asking you to pick a name from the campaign " +
                             "team, and files the measurement under \"public\". Alongside it goes the " +
@@ -205,9 +202,8 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Text(
-                        "A random number this phone made up on first run. Not a device id, not an " +
-                            "account, not a name. It lets the pipeline tell one contributor's " +
-                            "points from another's; it never reaches the published dataset.",
+                        "Random, made up on first run. Not a device id, not a name, and never " +
+                            "published.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -246,7 +242,6 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
             }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("What this offset is", style = MaterialTheme.typography.titleSmall)
                     Text(
                         "The entire absolute calibration of this handset, in one number. The default " +
                             "is a plausible constant for a consumer phone, not a measurement. Without a " +
