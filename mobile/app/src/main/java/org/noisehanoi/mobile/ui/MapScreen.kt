@@ -354,6 +354,8 @@ private fun HereCard(study: StudyData) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var reading by remember { mutableStateOf<String?>(null) }
+    var level by remember { mutableStateOf<Double?>(null) }
+    var siteName by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var best by remember { mutableStateOf<GeoPoint?>(null) }
     val collected = remember { mutableStateListOf<GeoPoint>() }
@@ -365,6 +367,8 @@ private fun HereCard(study: StudyData) {
         best = null
         collected.clear()
         reading = null
+        level = null
+        siteName = null
         job = scope.launch {
             // Keep listening past the first good fix: several of them averaged
             // land closer to the truth than any one of them. `first` ends the flow
@@ -387,35 +391,24 @@ private fun HereCard(study: StudyData) {
             }
             searching = false
             val fix = GpsFixes.combine(collected.toList())
-            reading = when {
-                fix == null -> "No fix in ${SEARCH_MS / 1000} s. Try outdoors."
+            val nearest = fix?.let { study.map.nearestCell(it.latitude, it.longitude) }
+            when {
+                fix == null -> reading = "No fix in ${SEARCH_MS / 1000} s. Try outdoors."
+                nearest == null -> reading = "Outside the three measured areas."
                 else -> {
-                    val nearest = study.map.nearestCell(fix.latitude, fix.longitude)
-                    if (nearest == null) {
+                    level = nearest.first.levelAt(NoiseMap.FIRST_HOUR)
+                    siteName = nearest.first.site
+                    // Said only when it matters: a fix wider than a cell makes the
+                    // choice of cell partly chance, and the reader should know.
+                    reading = if (fix.accuracyM > NoiseMap.CELL_SIZE_M) {
                         String.format(
                             Locale.US,
-                            "Outside the three measured areas — no prediction. (%.5f, %.5f, ±%.0f m)",
-                            fix.latitude, fix.longitude, fix.accuracyM,
+                            "The fix is only accurate to %.0f m, wider than a 40 m cell — this " +
+                                "could be the neighbouring one.",
+                            fix.accuracyM,
                         )
                     } else {
-                        val (cell, distance) = nearest
-                        val caveat = if (fix.accuracyM > NoiseMap.CELL_SIZE_M) {
-                            String.format(
-                                Locale.US,
-                                "  The fix is ±%.0f m against 40 m cells, so which cell this is " +
-                                    "is partly chance.",
-                                fix.accuracyM,
-                            )
-                        } else {
-                            ""
-                        }
-                        String.format(
-                            Locale.US,
-                            "%.1f dB predicted — %s, %.0f m from the cell centre, fix ±%.0f m " +
-                                "from %d readings.%s",
-                            cell.levelAt(NoiseMap.FIRST_HOUR), cell.site, distance,
-                            fix.accuracyM, collected.size, caveat,
-                        )
+                        null
                     }
                 }
             }
@@ -432,14 +425,24 @@ private fun HereCard(study: StudyData) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Predicted level where I am", style = MaterialTheme.typography.titleSmall)
             if (searching) {
-                Text(
-                    best?.let { String.format(Locale.US, "Searching… best so far ±%.0f m", it.accuracyM) }
-                        ?: "Searching…",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Text("Searching…", style = MaterialTheme.typography.bodyMedium)
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            reading?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            level?.let { db ->
+                Text(
+                    String.format(Locale.US, "%.0f dB", db),
+                    style = MaterialTheme.typography.displaySmall,
+                    color = levelColour(db),
+                )
+                siteName?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+            reading?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
             OutlinedButton(
                 enabled = !searching,
                 onClick = {
@@ -450,7 +453,7 @@ private fun HereCard(study: StudyData) {
                         )
                     )
                 },
-            ) { Text(if (reading == null) "Read my position" else "Read again") }
+            ) { Text(if (level == null && reading == null) "Read my position" else "Read again") }
         }
     }
 }
