@@ -160,11 +160,9 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Why this is needed", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Kobo does not keep the identifier from the XLSForm. On deployment it gives " +
-                            "the form its own — something like aA8FaTuUVSkRjbUW7rCBz7 — and a " +
-                            "submission has to name that, or the server answers 404 for a form it has " +
-                            "never heard of. The identifier also changes nothing else, so this only " +
-                            "has to be done once per account, and again after a redeployment.",
+                        "Kobo replaces the XLSForm's identifier on deployment, and a submission " +
+                            "must name the one it assigned or the server answers 404. Do this once " +
+                            "per account, and again after a redeployment.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     fetch?.let {
@@ -207,12 +205,9 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
                         fontFamily = FontFamily.Monospace,
                     )
                     Text(
-                        "A random number this phone made up the first time the app ran. Not a device " +
-                            "id, not an account, not a name, and nothing that can be traced back to " +
-                            "you. It exists so the pipeline can tell one contributor's points from " +
-                            "another's — to hold a calibration offset per phone, and to notice a " +
-                            "flood of identical submissions. The published dataset carries no " +
-                            "contributor identifier at all, and this does not change that.",
+                        "A random number this phone made up on first run. Not a device id, not an " +
+                            "account, not a name. It lets the pipeline tell one contributor's " +
+                            "points from another's; it never reaches the published dataset.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -269,11 +264,8 @@ fun SettingsScreen(onBack: () -> Unit, onCalibrate: () -> Unit) {
                 Text("Submit app-measured level and device metadata", style = MaterialTheme.typography.bodyMedium)
             }
             Text(
-                "Leave this off until the v3 form is deployed — it is the one carrying " +
-                    "`app_noise_db`, `measure_method`, `device_model`, `os_version`, `app_version`, " +
-                    "`contributor_id` and the `public` collector. Kobo validates every instance " +
-                    "against the deployed form, so an unknown element is a rejected submission, not " +
-                    "a warning.",
+                "Leave off until the v3 form is deployed. Kobo validates every instance against " +
+                    "the deployed form: an unknown element is a rejected submission.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )

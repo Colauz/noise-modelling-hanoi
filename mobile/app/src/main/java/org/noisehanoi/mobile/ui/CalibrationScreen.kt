@@ -118,18 +118,15 @@ fun CalibrationScreen(onBack: () -> Unit) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("How to do this", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Put this phone and the reference side by side, facing the same way, in a " +
-                            "spot that is not changing much — a steady street, not a junction with " +
-                            "horn bursts. Start a measurement here, read the reference over the same " +
-                            "25 s, and type what it said. Do it three times in different places.",
+                        "Put this phone and the reference side by side, in a spot that is not changing " +
+                            "much. Measure here, read the reference over the same 25 s, type what " +
+                            "it said. Three times, in different places.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
-                        "Against a class 1 or 2 sound level meter this makes the app absolute. " +
-                            "Against Decibel X on the campaign's phones it does not — those were " +
-                            "trimmed to each other and to no standard — but it puts new points on " +
-                            "the same scale as the existing 363, which is what lets them be used " +
-                            "together at all.",
+                        "Against a class 1 or 2 meter this makes the app absolute. Against Decibel X on " +
+                            "the campaign's phones it does not — but it puts new points on the same " +
+                            "scale as the existing 363.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -239,9 +236,8 @@ fun CalibrationScreen(onBack: () -> Unit) {
                         }
                         Text(
                             if (r.attempts < 2) {
-                                "One pair. Traffic noise moves several decibels between one 25 s " +
-                                    "window and the next, so a single agreement can be luck. Do it " +
-                                    "at least twice more."
+                                "One pair. Traffic noise moves several decibels between windows, so a " +
+                                    "single agreement can be luck. Do it twice more."
                             } else {
                                 String.format(
                                     Locale.US,

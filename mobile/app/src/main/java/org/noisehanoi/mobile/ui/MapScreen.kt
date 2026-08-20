@@ -138,14 +138,11 @@ fun MapScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("This map does not vary by hour", style = MaterialTheme.typography.titleSmall)
+                    Text("No hour control", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "The delivered model is a three-parameter distance kernel with no hour " +
-                            "term, so every hour of the published grid holds the same levels. " +
-                            "Traffic does vary by hour — from about 24 vehicles a minute at 21:00 " +
-                            "to 76 at 17:00, measured on 147 videos — but that variation was not " +
-                            "found to move the predicted level, which is one of the study's " +
-                            "negative results rather than a gap in this app.",
+                        "The delivered model has no hour term, so every hour of the grid holds " +
+                            "the same levels. Traffic does vary by hour; the predicted level " +
+                            "does not.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -338,8 +335,8 @@ private fun HereCard(study: StudyData) {
                 )
             }) { Text("Read the map at my position") }
             Text(
-                "Outside the three measured areas the app has no answer, and says so. " +
-                    "The kernel was fitted here; it is not a model of Hanoi.",
+                "Outside the three measured areas there is no answer. The kernel was fitted " +
+                    "here; it is not a model of Hanoi.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -356,23 +353,15 @@ private fun ScopeNotice(multiplier: Float) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("How to read this", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Coloured cells are predicted by a three-parameter physical kernel over a 40 m grid. " +
-                    "The bands are the QCVN 26:2010 references, shown descriptively — this is not a " +
-                    "compliance assessment, and the levels are calibrated in relative terms only.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-                "The dots are the 363 measurements themselves. Spatial contrast comes from distance " +
-                    "to the two road classes and from nothing else: morphology aggregated over 300 m " +
-                    "brought no measurable gain.",
+                "Cells are predicted over a 40 m grid; dots are the 363 measurements. The bands " +
+                    "are QCVN 26:2010, shown descriptively — not a compliance assessment, and the " +
+                    "levels are relative, not absolute.",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (multiplier != 1f) {
                 Text(
-                    "The traffic multiplier scales only the traffic share of the energy, never the " +
-                        "zone's residual ambience. Scaling the total is what once made the model " +
-                        "claim twice the benefit for pedestrianisation that it should have. Checked " +
-                        "against the GAMA model itself: the two agree within 0.2 dB.",
+                    "The multiplier scales the traffic share of the energy, never the zone's " +
+                        "residual ambience. Matches the GAMA model within 0.2 dB.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

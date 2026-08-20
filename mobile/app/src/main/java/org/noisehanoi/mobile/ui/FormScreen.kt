@@ -153,8 +153,7 @@ fun FormScreen(spec: FormSpec, onDone: () -> Unit, onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Save to outbox and send") }
                     Text(
-                        "The submission is written to the phone first and uploaded when there is a " +
-                            "network. Nothing is lost if the signal drops in the field.",
+                        "Written to the phone first, uploaded when there is a network.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -209,7 +208,7 @@ private fun MetrologyNotice(model: FormViewModel) {
                     "A 25 s A-weighted level from this phone's microphone, uncalibrated in absolute " +
                         "terms. Usable for contrasts between places and hours, not as a compliance figure."
                 } else {
-                    "A level you read from a separate sound meter app, as the field protocol specifies."
+                    "A level read from a separate sound meter app, as the protocol specifies."
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -279,9 +278,8 @@ private fun GpsCard(label: String, gps: FormViewModel.GpsState, model: FormViewM
             }
             if (gps.point != null && !gps.accurateEnough) {
                 Text(
-                    "The campaign's worst fix was 9.0 m, and that bound is what let its points inside " +
-                        "building footprints be explained rather than discarded. Accepting a looser one " +
-                        "weakens the same argument for this point.",
+                    "The campaign's worst fix was 9.0 m. Accepting a looser one weakens the " +
+                        "argument for this point.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -311,12 +309,10 @@ private fun MeterCard(
             Text(
                 if (keepsClip) {
                     "One microphone session: ${SplMeter.WINDOW_SECONDS.toInt()} s, A-weighted, " +
-                        "SLOW. The clip submitted is the stretch that was measured, and it never " +
-                        "blocks a submission."
+                        "SLOW. The clip is the stretch that was measured."
                 } else {
-                    "${SplMeter.WINDOW_SECONDS.toInt()} s, A-weighted, SLOW. The level is kept; " +
-                        "the recording is not. Nothing of what the microphone heard leaves this " +
-                        "phone."
+                    "${SplMeter.WINDOW_SECONDS.toInt()} s, A-weighted, SLOW. The level is kept, " +
+                        "the recording is not."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,

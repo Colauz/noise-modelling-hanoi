@@ -245,6 +245,16 @@ package now; scripts read inputs, call the package, write outputs.
       automated requests, and a search engine's summary of a quartile is second-hand
       evidence, which this project classifies `grey` everywhere else.
 
+- [ ] **Make the Uganda transfer reproducible, or soften how it is stated.** The
+      second negative result — the Sunbird surrogate failing at R² < 0 on Hanoi — is
+      asserted in `literature-review.md` and in the header of
+      `barcelona_transfer.py`, but the number is in neither `metrics.json` nor
+      `model_comparison.md`, the Uganda data is not versioned, and
+      `train_uganda_large.py` declares itself unrunnable. A reviewer can ask for it.
+      Either regenerate it into `metrics.json` alongside the twelve local models, or
+      state in the manuscript that it is an internal observation rather than a
+      reproducible result.
+
 - [ ] Validate the YOLO detector on ~10 videos (debt #2). Without it, no modal shares.
 - [ ] Extract `validation.py` and `physics.py` from `04_evaluate_models.py` (debt #1).
 - [ ] Write the two remaining tests (debt #4).
