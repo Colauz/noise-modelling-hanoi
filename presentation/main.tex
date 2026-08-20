@@ -150,13 +150,16 @@
 % neither is there. Every mark is scaled to the same \logoheight and sits on the
 % same baseline, which is what stops a band of four logos looking like an
 % accident. See logos/README.md.
-\newlength{\logoheight}\setlength{\logoheight}{8.5mm}
+\newlength{\logoheight}\setlength{\logoheight}{8mm}
+% Every mark sits ON the baseline rather than straddling it. Straddling looked
+% right in isolation and cost the band half its height at the bottom of a frame,
+% where the depth below the baseline has nowhere to go and gets clipped.
 \newcommand{\logoslot}[2]{%
   \IfFileExists{logos/#1.pdf}%
-    {\raisebox{-.5\logoheight}{\includegraphics[height=\logoheight]{logos/#1.pdf}}}%
+    {\includegraphics[height=\logoheight]{logos/#1.pdf}}%
     {\IfFileExists{logos/#1.png}%
-      {\raisebox{-.5\logoheight}{\includegraphics[height=\logoheight]{logos/#1.png}}}%
-      {\raisebox{-.2\logoheight}{\color{muted}\footnotesize\textsc{#2}}}}%
+      {\includegraphics[height=\logoheight]{logos/#1.png}}%
+      {\raisebox{.3\logoheight}{\color{muted}\footnotesize\textsc{#2}}}}%
 }
 
 % The band itself. Both the title slide and the closing slide use this one
@@ -187,22 +190,25 @@
 % The logo band sits under the date, not above the title: the work is the
 % headline, the institutions are the provenance.
 \makeatletter
-\setbeamertemplate{title page}{
-  \begin{minipage}[b][\textheight]{\textwidth}
-    \vspace*{4mm}
-    \vfill
-    \ifx\inserttitle\@empty\else\usebeamertemplate*{title}\fi
-    \ifx\insertsubtitle\@empty\else\usebeamertemplate*{subtitle}\fi
-    \usebeamertemplate*{title separator}
-    \ifx\beamer@shortauthor\@empty\else\usebeamertemplate*{author}\fi
-    \ifx\insertinstitute\@empty\else\usebeamertemplate*{institute}\fi
-    \ifx\insertdate\@empty\else\usebeamertemplate*{date}\fi
-    \vfill
-    {\color{rule}\hrule height .4pt}
-    \vspace*{6mm}
-    \logoband
-    \vspace*{9mm}
-  \end{minipage}
+% Content flows DOWN from the top and the logo band is pushed to the bottom by
+% \vfill. The previous version set a fixed-height minipage bottom-aligned, so
+% content taller than the box grew upwards and silently cut the title's first
+% line off the top of the slide. Nothing here can clip: if the content grows, the
+% band moves down until it runs out of \vfill, and then the frame reports an
+% overfull box instead of losing a line.
+\setbeamertemplate{title page}{%
+  \vspace*{1mm}
+  \ifx\inserttitle\@empty\else\usebeamertemplate*{title}\fi
+  \ifx\insertsubtitle\@empty\else\usebeamertemplate*{subtitle}\fi
+  \usebeamertemplate*{title separator}
+  \ifx\beamer@shortauthor\@empty\else\usebeamertemplate*{author}\fi
+  \ifx\insertinstitute\@empty\else\usebeamertemplate*{institute}\fi
+  \ifx\insertdate\@empty\else\usebeamertemplate*{date}\fi
+  \vfill
+  {\color{rule}\hrule height .4pt}
+  \vspace*{3.6mm}
+  \logoband
+  \vspace*{4mm}
 }
 \makeatother
 
@@ -375,40 +381,52 @@ docs/data-sources.md, and it says exactly that rather than dressing it up.}
 
 % ----------------------------------------------------------------
 \begin{frame}{Metrology --- the constraint everything else is built around}
-  \begin{alertblock}{The three phones were cross-calibrated against \emph{each other}, never against a reference instrument}
+  \begin{alertblock}{Three phones, cross-calibrated against \emph{each other} and against nothing}
     A bias common to all three is \textbf{invisible in the data by construction}.
   \end{alertblock}
-  \vspace{.3em}
+  \vspace{.2em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \textbf{What that forbids}
       \begin{itemize}
         \item Stating an absolute level as a fact
-        \item Any compliance claim under QCVN 26:2010 --- which requires a
-              class 1 or class 2 instrument
-        \item Comparing a 25\,s sample to an annual $L_\mathrm{den}$
+        \item Any compliance claim under QCVN 26:2010 --- it requires a class 1
+              or 2 instrument
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \textbf{What it still allows}
       \begin{itemize}
-        \item Contrasts \emph{between places} --- bias cancels in a difference
-        \item Contrasts \emph{between hours}
-        \item A \emph{bounded} absolute-bias interval, from instrumented
-              literature: \wn{$+3.0$ to $+7.3\dB$}
+        \item Contrasts \emph{between places} and \emph{between hours} --- a
+              common bias cancels in a difference
+        \item A \emph{bounded} bias interval from instrumented literature:
+              \wn{$+3.0$ to $+7.3\dB$}
       \end{itemize}
     \end{column}
   \end{columns}
   \vfill
-  The target quantity is \LA{}: a 20--30\,s A-weighted sample. \textbf{Not}
-  $L_\mathrm{Aeq}$, $L_\mathrm{den}$ or $L_\mathrm{night}$.
-  \vspace{.2em}
+  \begin{center}
+    The measured quantity, and the only one:\quad
+    $\displaystyle L_{A,25\mathrm{s}} \;=\; 10\log_{10}\!\left(\frac{1}{T}
+      \int_{0}^{T}\frac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right),
+      \quad T \approx 25\,\mathrm{s},\; p_0 = 20\,\mu\mathrm{Pa}$
+  \end{center}
+  \vspace{-.1em}
+  \begin{center}
+    \textbf{Not} $L_\mathrm{Aeq,\,8h}$, \textbf{not} $L_\mathrm{den}$,
+    \textbf{not} $L_\mathrm{night}$ --- those integrate over hours or a year.
+  \end{center}
   \src{docs/metrology.md \; $\cdot$ \; results/tables/literature\_anchoring.md} \; \aside{the interval is estimated, never applied}
 \end{frame}
 \note{This slide is the spine of the talk. Everything downstream --- the modest
 \rr{}, the refusal to publish an exceedance rate, and ultimately the decision to
 build our own app --- follows from one fact: nobody would lend us a class 1 meter,
 and we could not buy one.
+
+EXPECT THIS QUESTION, and do not be defensive about it: \emph{was a single
+side-by-side reading against a class 2 meter really out of reach?} It is the
+right question. A half-day rental would settle the absolute scale for good, and
+the slide on what a reviewer will press on says so in those words.
 
 The +3.0 to +7.3 dB interval comes from anchoring our roadside-day stratum against
 Phan 2010 and Gelb \& Apparicio 2019 after correcting for the quantity mismatch. It
@@ -587,8 +605,8 @@ it cannot generalise. That is exactly the effect Roberts 2017 describes.}
 \begin{frame}{The delivered model}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
-      A line-source attenuation kernel. Two distances, three constants,
-      \textbf{no morphology at all}:
+      A \textbf{line}-source attenuation kernel --- energy falling as $1/d$,
+      not $1/d^{2}$: a street is a line of sources, not a point.
       \begin{block}{}
         \centering
         $E = \dfrac{A_\mathrm{hw}}{\max(d_\mathrm{hw}, D_0)}
@@ -599,8 +617,8 @@ it cannot generalise. That is exactly the effect Roberts 2017 describes.}
       \end{block}
       \aside{$A_\mathrm{hw} = 4.774\times10^{7}$ \; $A_\mathrm{res} = 3.800\times10^{7}$ \; $D_0 = 5$\,m}
       \begin{itemize}
-        \item Positivity-constrained --- every parameter is interpretable
-        \item Ten lines of any language: no runtime, no server
+        \item $-3\dB$ per doubling of distance, not $-6$
+        \item Positivity-constrained: $A_\mathrm{hw}, A_\mathrm{res}, B > 0$
         \item \wn{$B$ fits to $-99.6\dB$}, a boundary solution.
               \textbf{The background term is not identifiable here.}
       \end{itemize}
@@ -634,19 +652,20 @@ planning something with it, that number is the answer.}
 
 % ----------------------------------------------------------------
 \begin{frame}{``$R^2 = 0.25$ --- isn't that very low?''}
-  \fig[.46]{ceiling}{data/processed/measurements.csv \; $\cdot$ \; docs/metrology.md}
+  \fig[.38]{ceiling}{data/processed/measurements.csv \; $\cdot$ \; docs/metrology.md}
   \vspace{-.5em}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
       Two points a few metres apart \emph{at the same hour} must be predicted
-      identically by any spatial model. Whatever they disagree by is variance
-      \textbf{no spatial model can ever explain}.
+      identically. Whatever they disagree by is variance \textbf{no spatial model
+      can explain}: \; $\Delta L \sim \mathcal{N}(0, 2\sigma^{2})
+      \Rightarrow \sigma = \tfrac{\sqrt{\pi}}{2}\mathbb{E}|\Delta L|$, and
+      $R^{2}_{\max} = 1 - \sigma^{2}/s^{2}$.
     \end{column}
     \begin{column}{0.48\textwidth}
       \begin{exampleblock}{At the 40\,m scale the map works at}
-        The ceiling is near \up{$R^2 \approx 0.54$}. The delivered model reaches
-        \textbf{0.246} --- about \textbf{half} of what is attainable, not a
-        tenth of it.
+        The ceiling is near \up{$R^2 \approx 0.54$}. The delivered \textbf{0.246}
+        is about \textbf{half} of what is attainable, not a tenth.
       \end{exampleblock}
     \end{column}
   \end{columns}
@@ -1183,20 +1202,23 @@ hard-codes a number into a screen.}
 % ----------------------------------------------------------------
 \begin{frame}{Three engineering results worth reporting}
   \begin{block}{GAMA does not run on a phone --- so the app reaches it two ways}
-    \textbf{Tier 1, recomputed natively} over the 5\,587 cells already exported:
-    a traffic multiplier, offline, agreeing with the model to within
-    $0.2\dB$. \textbf{The model itself, over \texttt{gama-server}}: the app draws
-    GAMA's own display and drives it, which buys the mitigation scenarios the
-    grid cannot hold --- and needs a server the grid does not.
-    \wn{Drawing a model's display is not embedding it.}
+    \textbf{Tier 1, recomputed natively} over the 5\,587 exported cells: a
+    traffic multiplier, offline, within $0.2\dB$ of the model. \textbf{The model
+    itself, over \texttt{gama-server}}: the app draws GAMA's own display and
+    drives it --- the scenarios the grid cannot hold, and a server the grid does
+    not need. \wn{Drawing a model's display is not embedding it.}
   \end{block}
   \begin{block}{The same correction, found a second time}
-    The first on-device decomposition subtracted the kernel's constant
-    ($-99.6\dB$, i.e.\ nothing) from a cell energy of order $10^6$, so it scaled
-    the total after all: at a fifth of the traffic, $-7.0\dB$ where the model
-    gives $-3.7$. \textbf{Exactly the pedestrianisation error this project had
-    already made and corrected}, rebuilt on another platform. A unit test now
-    asserts that $k=1$ moves nothing.
+    \centering
+    $L(k) = 10\log_{10}\!\big(k\,(E - E_\mathrm{res}) + E_\mathrm{res}\big)$
+    \quad\wn{not}\quad
+    $10\log_{10}(kE) = L + 10\log_{10}k$
+    \par\smallskip\raggedright
+    The first version took $E_\mathrm{res}$ to be the kernel's constant ---
+    $-99.6\dB$, i.e.\ nothing --- so it scaled the total after all: at $k=0.2$,
+    $-7.0\dB$ where the model gives $-3.7$. \textbf{Exactly the pedestrianisation
+    error this project had already corrected}, rebuilt on another platform.
+    $E_\mathrm{res}$ is the zone's own ambience.
   \end{block}
   \begin{block}{KoboToolbox renames your form at deployment}
     The first real submission failed with \textbf{404 for a form the server
@@ -1268,6 +1290,50 @@ phone, not a measurement, and the app says so on the screen.
 If asked about public distribution: an anonymous OpenRosa endpoint accepts whatever
 is posted to it, and the free plan caps submissions. That is phase 6, and it is not
 solved. Do not distribute an APK before it is.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Before this app goes to strangers --- three blockers}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{1 --- Who holds the data}
+        Submissions land in \textbf{a} KoboToolbox account, and whoever owns it
+        holds the positions and timestamps of strangers, and answers for them. It
+        must be \textbf{institutional}: a personal account leaves with its owner.
+        \vspace{.3em}
+
+        \up{Not a code change} --- the account is a build flag. This is a
+        \textbf{decision}, and it is not ours.
+      \end{alertblock}
+      \src{mobile/README.md \; $\cdot$ \; docs/handover.md \S7}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{2 --- Consent is not ethics review}
+        The consent screen exists and is versioned. But \textbf{a public campaign
+        is a new collection campaign}, and \texttt{handover.md} \S7 already makes
+        an ethics committee its precondition. The video collection went ahead
+        without review, and the repository says so.
+        \wn{Do not repeat that at a larger scale.}
+      \end{alertblock}
+      \vspace{.2em}
+      \begin{block}{3 --- Where does the GAMA server live}
+        Today: whichever laptop runs \texttt{gama-headless.sh}, which must be on
+        and reachable. Beyond a demo it needs hosting \emph{and} \textbf{TLS} ---
+        a release build accepts \texttt{wss://} only.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{These are the three things that stop an APK being handed out, and none of
+them is a bug. Say that explicitly: the software is finished on its side.
+
+Blocker 1 is the one to press the supervisor on, because only a supervisor can
+settle it. The account name is deliberately a build flag rather than a constant in
+the source, precisely so that moving it does not require a new release --- but
+somebody still has to name it, and until they do there is nowhere to send data.
+
+Blocker 3 catches people out: the map, the measurement and the outbox need no
+network at all; it is only the GAMA screen that needs a server. If the wifi is
+uncertain on the day, rehearse the demo without step 3.}
 
 % ============================================================================
 \section{Next: Clermont-Ferrand}
@@ -1412,6 +1478,47 @@ gets published either way.
 Be honest that S4 depends on things nobody has confirmed yet: supervision, framing,
 and whether the backend gets built. Do not present it as scheduled.}
 
+% ----------------------------------------------------------------
+\begin{frame}{The two things a reviewer will press on}
+  \begin{alertblock}{1 --- No absolute reference. Was half a day really out of reach?}
+    Three handsets calibrated against \emph{each other} and against nothing.
+    \texttt{docs/metrology.md} owns this squarely --- but an acoustics reviewer
+    will not ask whether we \emph{knew}; they will ask whether \textbf{one
+    side-by-side reading against a class 2 meter} was genuinely unobtainable.
+    \vspace{.3em}
+
+    It is the right question, and the honest answer is that a \textbf{half-day
+    rental} would settle it. \up{One reading turns ``calibrated in relative
+    terms'' into ``calibrated''}, and every level inherits it. The cheapest item
+    anywhere in this work.
+  \end{alertblock}
+  \vspace{.2em}
+  \begin{alertblock}{2 --- Three sites are three typologies, and that binds harder than the \rr{}}
+    Our own text says it: the number of \textbf{independent morphological
+    configurations} is close to \textbf{three}, whatever the number of points.
+    $n = 363$ does not buy $n = 363$ worth of generalisation.
+    \vspace{.3em}
+
+    The hard limit is the design, not the \rr{}. \textbf{A fourth and fifth
+    contrasting fabric would do more than any modelling change.}
+  \end{alertblock}
+\end{frame}
+\note{Both of these came from a reader outside the team, and both are better
+raised by us than by a reviewer.
+
+On the first: do not get defensive. We did not have an instrument and we said so
+throughout --- but ``we said so'' is a weaker position than ``we spent one
+afternoon and fixed it''. The rental is a real, small, specific action, and
+offering it is what turns a limitation into a plan. If asked why it was not done:
+the campaign was closed before this was raised, and it cannot be applied
+retrospectively to those 363 points --- which is exactly why it should be done
+before the next one.
+
+On the second: this is the deeper of the two and it does not go away with more
+data. Three sites is three draws from the space of urban fabrics. The leave-one-
+site-out column already measures the consequence, and that is the honest number
+to quote when someone asks how far this generalises.}
+
 % ============================================================================
 \section{Conclusion}
 % ============================================================================
@@ -1496,6 +1603,61 @@ docs/handover.md \S6 and \S7 and none of them is ours to settle.}
 \appendix
 % ============================================================================
 
+\begin{frame}{Backup --- every formula this talk rests on}
+  \scriptsize
+  \renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{@{}p{3.1cm}p{10.4cm}@{}}
+    \toprule
+    \textbf{What} & \textbf{Definition} \\
+    \midrule
+    The measured quantity &
+      $L_{A,25\mathrm{s}} = 10\log_{10}\!\left(\dfrac{1}{T}\displaystyle\int_{0}^{T}
+       \dfrac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right)$,\quad
+       $T\approx25$\,s,\; $p_0 = 20\,\mu$Pa \\
+    A-weighting, IEC 61672 &
+      $A(f) = 20\log_{10}\!\dfrac{12194^{2}f^{4}}
+        {(f^{2}+20.6^{2})\sqrt{(f^{2}+107.7^{2})(f^{2}+737.9^{2})}\,(f^{2}+12194^{2})}
+        + 2.00$ \\
+    Levels never average &
+      $L_{\Sigma} = 10\log_{10}\sum_{i} 10^{L_i/10}$
+      \quad\aside{decibels add in energy --- which is why everything below works on $E$} \\
+    \midrule
+    \textbf{The delivered model} &
+      $E = \dfrac{A_\mathrm{hw}}{\max(d_\mathrm{hw},D_0)}
+         + \dfrac{A_\mathrm{res}}{\max(d_\mathrm{res},D_0)} + B$,\quad
+        $L = 10\log_{10}E$,\quad $A_\mathrm{hw},A_\mathrm{res},B>0$ \\
+    Why $1/d$, not $1/d^{2}$ &
+      A street is a \textbf{line} of sources, not a point: $-3\dB$ per doubling
+      of distance, not $-6$ \\
+    The traffic scenario &
+      $L(k) = 10\log_{10}\!\big(k\,(E-E_\mathrm{res}) + E_\mathrm{res}\big)$
+      \quad\wn{not}\quad $L + 10\log_{10}k$ \\
+    \midrule
+    Reference protocol &
+      For each point $i$, train on $\{j : d(i,j) > r\}$ with $r = 300$\,m
+      $=$ \textbf{the feature aggregation radius} \\
+    The ceiling on $R^{2}$ &
+      $\Delta L \sim \mathcal{N}(0,2\sigma^{2}) \Rightarrow
+       \sigma = \tfrac{\sqrt{\pi}}{2}\,\mathbb{E}|\Delta L|$,\quad
+       $R^{2}_{\max} = 1 - \sigma^{2}/s^{2}$ \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+\note{This slide exists to be jumped to, not read. It is here because three
+different questions --- ``what exactly did you measure'', ``why a distance law''
+and ``how can 0.25 be near a ceiling'' --- are all answered by writing the
+arithmetic down.
+
+The two lines to point at if you only get one chance. First, decibels add in
+energy: every mistake this project made in the simulation came from forgetting
+that and operating on levels. Second, the buffer radius EQUALS the feature radius
+--- that identity is the whole methodological result, and the retracted 0.45 came
+from breaking it.
+
+The A-weighting expression is the IEC table the app's unit test pins against, not
+a curve fitted by us.}
+
+% ----------------------------------------------------------------
 \begin{frame}{Backup --- every model, with the interval that qualifies it}
   \fig[.55]{forest-bloo}{models/metrics.json --- 2\,000 resamples, bootstrapped by block}
   \vspace{-.4em}

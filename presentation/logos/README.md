@@ -2,17 +2,25 @@
 
 Institutional marks for the title slide and the frame footer.
 
-> **What is in here right now are PLACEHOLDERS, not the institutions' logos.**
-> They are neutral typographic slugs — the acronym in the deck's accent colour
-> over a rule, with the expansion under it — drawn by
-> [`placeholders.tex`](placeholders.tex) so the logo band on the title and
-> closing slides is composed and evenly weighted while the real files are being
-> obtained. They do not imitate any institution's actual mark and must not be
-> presented as one.
->
-> **Replace them.** Drop the real files in under the same names and the deck
-> picks them up with no edit to `main.tex`. `make -C .. logos-placeholder`
-> regenerates the placeholders if you still need them.
+The marks supplied by the team live in [`source/`](source/) as delivered, and
+[`prepare.py`](prepare.py) turns them into the `*.png` files the deck loads:
+
+```sh
+python3 presentation/logos/prepare.py
+make -C presentation logos          # what the deck will actually find
+```
+
+It trims the border, flattens onto white, pads an equal margin back, and applies
+a per-mark optical correction. **Trimming is the part that matters**: `main.tex`
+sizes logos by *height*, so a mark delivered with a generous margin renders
+smaller than its neighbours by exactly that margin's share of the box — the
+VinUniversity file arrives 500x500 with the wordmark in a 90 px band, and dropped
+in untouched it would come out about a fifth the size of the others.
+
+`placeholders.tex` still generates the neutral typographic slugs the deck used
+before the real marks arrived (`make -C presentation logos-placeholder`). They
+are **not** the institutions' logos and must never be presented as such; keep
+them for a slot that has no real file yet — `uca.pdf` is currently one.
 
 **Drop the files here under these exact names.** The deck compiles with or
 without them: `main.tex` wraps every logo in `\IfFileExists`, so a missing file
@@ -20,10 +28,10 @@ falls back to the institution's name set in type, and nothing breaks.
 
 | Expected file | Institution | Where it appears |
 |---|---|---|
-| `cosmos.pdf` | COSMOS Lab, VinUniversity | Title slide, closing slide |
-| `vinuni.pdf` | VinUniversity | Title slide |
-| `isima.pdf` | ISIMA, Clermont-Ferrand | Title slide |
-| `uca.pdf` | Université Clermont Auvergne | Future-work section only |
+| `cosmos.png` | COSMOS Lab, VinUniversity | Title slide, closing slide |
+| `vinuni.png` | VinUniversity | Title slide |
+| `isima.png` | ISIMA, Clermont-Ferrand (the mark carries UCA) | Title slide |
+| `uca.pdf` | Université Clermont Auvergne | Unused — still a placeholder |
 
 `.pdf` is preferred — it is vector, so it stays sharp when the deck is
 projected or printed. `.png` also works with no edit at all: `\logoslot` tries
