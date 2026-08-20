@@ -421,6 +421,102 @@ been filmed there.
 
 \clearpage
 % ============================================================================
+\section{The field application}\label{sec:app}
+
+Every limitation above reduces to one fact: the campaign did not control its own
+instrument. The level came from a closed third-party application whose weighting,
+integration window and microphone gain were not inspectable; the form came from a
+second application; and pairing the two meant recording the level of one stretch
+of street and the audio of another. An Android application
+(\texttt{mobile/}, Kotlin and Jetpack Compose, \texttt{minSdk}~\appMinSdk) was
+built to replace that pairing and to carry the study.
+
+\subsection{Collecting}
+
+Both survey forms are transcribed as native screens, of \appQnoise{} and
+\appQconstr{} questions, and one microphone session produces both the level and
+the clip: \appWindowS\,s A-weighted, SLOW, from \texttt{AudioRecord} after a
+discarded warm-up, with automatic gain control, noise suppression and echo
+cancellation switched off. The platform does not normally grant the microphone
+to two consumers at once, which is why measuring and recording were never
+separated into two steps. The GPS accuracy gate is the protocol's own,
+\appGateM\,m. Instances queue in an on-disk outbox and are submitted to
+KoboToolbox over OpenRosa when there is signal, so a survey round needs no
+network at all.
+
+\medskip\noindent
+\textbf{One integration detail worth recording,} because it is invisible from the
+device and cost a day. KoboToolbox discards the XLSForm's \texttt{id\_string} on
+deployment and substitutes the asset's own identifier. A submission naming the
+spreadsheet's identifier is answered \texttt{404} for a form the server has never
+heard of, which from the phone is indistinguishable from a wrong address. The
+application reads \texttt{/formList} and submits under whatever the server calls
+the form.
+
+\subsection{Showing, and the two routes to the simulation}
+
+The application carries the exported 40\,m grid, the \nMeas{} measurements, the
+delivered kernel and \texttt{metrics.json} itself; \texttt{syncStudyData} copies
+them out of the repository at build time rather than transcribing them, so
+re-running the pipeline and rebuilding moves the application with it. Predictions
+outside the sampled envelope are refused rather than answered, as
+\S\ref{sec:model} requires.
+
+GAMA is an Eclipse desktop platform and does not run on Android. The application
+reaches the simulation two ways, and they are not interchangeable:
+
+\begin{itemize}
+  \item \textbf{Tier~1, recomputed on the phone.} A traffic multiplier from
+        $\times\appMultLo$ to $\times\appMultHi$ applied over the grid it already
+        carries. No network, and it agrees with the model itself to within
+        $0.2\dB$ across that range.
+  \item \textbf{The model itself, over \texttt{gama-server}.} The screen drives a
+        headless GAMA on the network and draws the model's own display, which
+        buys everything the exported grid cannot hold --- the mitigation
+        scenarios, the construction sites, the fleet by hour. It needs a server
+        that is running and reachable; the grid needs nothing.
+\end{itemize}
+
+\medskip\noindent
+\textbf{The same correction, found a second time.} The first on-device
+decomposition subtracted the kernel's additive constant --- $10^{\Bbg/10}$, a
+subtraction of nothing --- from a cell energy of order $10^{6}$, so it scaled the
+total after all and returned exactly $10\log_{10}k$. At a fifth of the traffic it
+gave $-7.0\dB$ where the model gives $-3.7$. That is precisely the error recorded
+under the simulation above, rebuilt independently on a different platform. Taking
+the residual to be the zone's own ambience --- the fifth percentile of its levels
+--- is what makes the two agree, and a unit test now asserts that a multiplier of
+one moves nothing. The application carries \appTests{} JVM unit tests over
+\appKtFiles{} Kotlin source files (\appKtLines{} lines); the weighting curve is
+pinned to the IEC table, and the pure-Kotlin parts --- the form logic, the
+instance format, the weighting, the sample byte order --- are covered without an
+emulator.
+
+\subsection{What the application must not be claimed to do}
+
+\begin{itemize}
+  \item \textbf{Its level is a different quantity from the campaign's,} and it
+        goes in its own field with the device model, the OS version and the audio
+        source the platform actually granted. The two never share a column.
+  \item \textbf{It is not calibrated.} No reading from it has been compared to a
+        sound level meter; an emulator records silence. The microphone offset is
+        a plausible constant, not a measurement, and the application says so on
+        screen. Until that comparison is made the absolute figure means nothing
+        --- which, per \S\ref{sec:refs}, is equally true of the campaign's own
+        numbers.
+  \item \textbf{It makes no compliance claim.} The colour bands are the same
+        QCVN references used descriptively elsewhere in this report.
+  \item \textbf{It does not embed GAMA.} Drawing a model's display and driving it
+        over a socket is not running it on the device.
+\end{itemize}
+
+\noindent
+Build, installation, and the two routes for submitting to KoboToolbox --- named
+collectors, or the anonymous mode a publicly distributed APK requires --- are in
+\texttt{mobile/README.md}; the internal design and the \texttt{gama-server}
+protocol are in \texttt{mobile/ARCHITECTURE.md}.
+
+% ============================================================================
 \section{Limitations, stated plainly}
 
 \begin{itemize}
@@ -461,6 +557,12 @@ been filmed there.
         crossing, but speed remains unobservable without a ground homography and
         the field of view is not georeferenced, so distance is discarded. The
         detector was never validated against manual counts.
+
+  \item \textbf{The field application is unvalidated where it matters most.}
+        \S\ref{sec:app} describes a well-tested piece of software whose central
+        number --- the level itself --- has never been checked against a sound
+        source. It shares the campaign's calibration limitation and adds its own:
+        a second, uncharacterised microphone chain.
 \end{itemize}
 
 % ============================================================================
@@ -477,7 +579,17 @@ been filmed there.
 
   \item \textbf{Anchor the absolute scale.} A class 1--2 sound level meter, or a
         94\dB{} / 1\,kHz acoustic calibrator, turns the bias interval into a
-        measured correction. Everything downstream inherits it.
+        measured correction. Everything downstream inherits it. This is now also
+        the first task on the field application: calibrating it across levels and
+        handsets turns its microphone offset from a plausible constant into an
+        affine, measured correction, and it is the cheapest item on this list.
+
+  \item \textbf{One instrument, more than one city.} With collection, level and
+        submission in a single application, a second campaign can hold the
+        instrument fixed --- the same binary, the same window, the same gate.
+        The Uganda transfer failure is over-determined precisely because the
+        instrument, the protocol and the feature conventions all differed at
+        once; deploying the same application twice separates them.
 
   \item \textbf{Traffic.} Flow by class is measured; \emph{speed} is the missing
         half. Estimate it from track displacement under a ground homography,

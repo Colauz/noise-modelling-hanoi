@@ -48,6 +48,7 @@ Requires latexmk and a TeX Live with booktabs, geometry and hyperref.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -95,6 +96,89 @@ def read_bias_interval():
             float(u.gap_after_metric_correction_dB.max()))
 
 
+def mobile_facts():
+    r"""Read the field application's own constants out of its source.
+
+    The report describes the Android app, so it quotes figures about it: the
+    integration window, the traffic-multiplier range, the question counts, the
+    accuracy gate, how many unit tests there are. None of those live in
+    metrics.json, and typing them here would give each one a second home --
+    which is the failure the first audit found and the reason this script exists.
+
+    So they are read from the files that define them. If someone changes
+    WINDOW_SECONDS in SplMeter.kt, the report changes with it; if someone deletes
+    the constant, this raises rather than quietly reporting yesterday's value.
+
+    Anything the app reports that is a MEASURED result rather than a constant --
+    the GAMA agreement figures, for instance -- is not extracted here. Those
+    belong to mobile/README.md and the report points at it instead of restating
+    a number it cannot check.
+    """
+    root = os.path.join(cfg.ROOT, 'mobile')
+    src = os.path.join(root, 'app', 'src')
+    if not os.path.isdir(src):
+        return None
+
+    def read(*parts):
+        with open(os.path.join(src, *parts)) as f:
+            return f.read()
+
+    def grab(text, pattern, what):
+        m = re.search(pattern, text)
+        if not m:
+            sys.exit(f'10_build_report.py: could not read {what} from the mobile '
+                     f'source. The constant moved or was renamed; fix the pattern '
+                     f'rather than typing the number into the report.')
+        return m
+
+    kt = [os.path.join(d, f)
+          for d, _, fs in os.walk(src) for f in fs if f.endswith('.kt')]
+    main_kt = [f for f in kt if os.sep + 'main' + os.sep in f]
+    tests = sum(open(f).read().count('@Test') for f in kt if os.sep + 'test' + os.sep in f)
+    lines = sum(sum(1 for _ in open(f)) for f in kt)
+
+    meter = read('main', 'java', 'org', 'noisehanoi', 'mobile', 'measure', 'SplMeter.kt')
+    scen = read('main', 'java', 'org', 'noisehanoi', 'mobile', 'study', 'Scenario.kt')
+    gps = read('main', 'java', 'org', 'noisehanoi', 'mobile', 'location', 'GpsFixes.kt')
+    spec = read('main', 'java', 'org', 'noisehanoi', 'mobile', 'form', 'FormSpec.kt')
+    with open(os.path.join(root, 'app', 'build.gradle.kts')) as f:
+        gradle = f.read()
+
+    window = float(grab(meter, r'WINDOW_SECONDS\s*=\s*([\d.]+)', 'WINDOW_SECONDS').group(1))
+    mult = grab(scen, r'MULTIPLIER_RANGE\s*=\s*([\d.]+)f\.\.([\d.]+)f', 'MULTIPLIER_RANGE')
+    gate = float(grab(gps, r'REQUIRED_ACCURACY_M\s*=\s*([\d.]+)', 'REQUIRED_ACCURACY_M').group(1))
+    minsdk = grab(gradle, r'minSdk\s*=\s*(\d+)', 'minSdk').group(1)
+
+    # Each FormSpec's questions run from `questions = listOf(` to the closing
+    # `),` at the same indentation. Counting the constructor calls one level in
+    # is what the file's own shape gives us without parsing Kotlin.
+    def questions(name):
+        block = spec.split(f'val {name} = FormSpec(', 1)[1].split('questions = listOf(', 1)[1]
+        depth, out, count = 1, [], 0
+        for ch in block:
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+                if depth == 0:
+                    break
+            out.append(ch)
+        return len(re.findall(r'^\s{8}[A-Z]\w*Q\(', ''.join(out), re.M))
+
+    return {
+        'appKtFiles':   f'{len(main_kt)}',
+        'appKtLines':   f'{lines:,}'.replace(',', r'\,'),
+        'appTests':     f'{tests}',
+        'appWindowS':   f'{window:g}',
+        'appMultLo':    f'{float(mult.group(1)):g}',
+        'appMultHi':    f'{float(mult.group(2)):g}',
+        'appGateM':     f'{gate:g}',
+        'appMinSdk':    minsdk,
+        'appQnoise':    f'{questions("NOISE_FORM_V2")}',
+        'appQconstr':   f'{questions("CONSTRUCTION_FORM_V1")}',
+    }
+
+
 def load():
     if not os.path.exists(cfg.METRICS_JSON):
         sys.exit('models/metrics.json is missing. Run scripts/04_evaluate_models.py first.\n'
@@ -115,7 +199,7 @@ def roadside_share(g):
     return 100 * g.dist_to_road.astype(str).str.contains('0-2|0-10|2-10').mean()
 
 
-def write_numbers(df, metrics, bias_lo, bias_hi, out):
+def write_numbers(df, metrics, bias_lo, bias_hi, out, app=None):
     ref = metrics['meta']['headline_protocol']          # 'bloo'
     models = metrics[ref]['models']
     delivered = metrics['meta']['delivered_model']      # 'physical'
@@ -175,6 +259,9 @@ def write_numbers(df, metrics, bias_lo, bias_hi, out):
         'biasLo':      f'{bias_lo:+.1f}',
         'biasHi':      f'{bias_hi:+.1f}',
     }
+    # --- the field application, read from mobile/ (see mobile_facts) ---
+    if app:
+        m.update(app)
     with open(out, 'w') as f:
         f.write('% Generated by scripts/10_build_report.py -- do not edit.\n'
                 '% Every number the report quotes is defined here, and nowhere else.\n')
@@ -316,7 +403,10 @@ def main():
     os.makedirs(rd, exist_ok=True)
 
     print(f'Report inputs -> {rd}')
-    write_numbers(df, metrics, bias_lo, bias_hi, os.path.join(rd, 'numbers.tex'))
+    app = mobile_facts()
+    if app is None:
+        print('  note: mobile/ is absent, the application section will not resolve.')
+    write_numbers(df, metrics, bias_lo, bias_hi, os.path.join(rd, 'numbers.tex'), app)
     write_site_table(df, os.path.join(rd, 'tab_sites.tex'))
     write_model_table(metrics, os.path.join(rd, 'tab_models.tex'))
     write_exceedance_table(os.path.join(rd, 'tab_exceedances.tex'))
