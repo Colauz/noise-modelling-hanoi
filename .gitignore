@@ -67,3 +67,12 @@ presentation/*.fls
 presentation/*.fdb_latexmk
 presentation/*.synctex.gz
 presentation/main-notes.*
+
+# --- mobile/ (Android) ---
+mobile/**/build/
+mobile/.gradle/
+mobile/local.properties
+mobile/.idea/
+mobile/**/*.apk
+mobile/**/*.aab
+mobile/**/*.keystore

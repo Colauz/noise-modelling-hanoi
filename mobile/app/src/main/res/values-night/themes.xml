@@ -1,0 +1,6 @@
+<resources>
+    <!-- The window background is painted before Compose draws anything. Without a
+         night variant the app opens on a white flash on a dark-themed phone,
+         which in a field session at dusk is a face full of light. -->
+    <style name="Theme.NoiseHanoi" parent="android:Theme.Material.NoActionBar" />
+</resources>

@@ -119,6 +119,7 @@ For the simulation, open `simulation/gama/hanoi_noise.gaml` in
 | `results/` | Figures, maps, tables, the 8-page report and the dashboard |
 | `docs/` | Methodology, data sources, metrology, negative results, handover |
 | `tests/` | Aimed at the failures this project actually had |
+| `mobile/` | Android field-collection app: the two forms, submitted to Kobo over OpenRosa |
 
 ## Main results
 
