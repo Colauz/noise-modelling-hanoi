@@ -285,42 +285,64 @@ The twenty-year-old campaign is not rhetorical. It is the single anchor of our
 absolute-bias interval, and its age is exactly why that interval is wide.}
 
 % ----------------------------------------------------------------
-\begin{frame}{Research questions --- and what is out of scope}
-  \begin{block}{Four questions, fixed before the analysis}
-    \begin{enumerate}
-      \item Can urban morphology from OpenStreetMap predict measured noise at an
-            \textbf{unmeasured location}?
-      \item Does a model trained in one city \textbf{transfer} to another?
-      \item Does vehicle \textbf{flow extracted from video} explain measured levels?
-      \item What can a smartphone protocol claim with \textbf{no absolute reference}?
-    \end{enumerate}
-  \end{block}
-  \vfill
+% The research question is quoted verbatim from the project's own July deck,
+% archived at docs/archive/july-deck/ (slide 2). It is restated here unchanged
+% BECAUSE the answer turned out to be no on both halves: a question you keep
+% after it defeats you is worth more than one rewritten to fit the result.
+%
+% Nothing else from that deck is carried over. The same slide there also
+% asserted a 53 dB WHO ceiling and, elsewhere, "model validated" and a 39 %
+% QCVN exceedance rate. All three were withdrawn in the August audit and must
+% not reappear -- see the design rules at the top of this file, and the table in
+% docs/archive/july-deck/README.md that lists them one by one.
+\begin{frame}{The research question, and what is out of scope}
+  \begin{alertblock}{The question, as we posed it in July --- unchanged}
+    Can urban noise be attributed to \textbf{the form of the city}, and to
+    \textbf{the type of vehicle} passing through it? Models validated on
+    car-centric European cities are unproven on motorcycle-heavy soundscapes.
+  \end{alertblock}
+  \vspace{.2em}
   \begin{columns}[T]
-    \begin{column}{0.62\textwidth}
-      \textbf{Declared out of scope --- stated up front, not discovered later}
-      \begin{itemize}
-        \item Night-time noise: 10 measurements between 21:00 and 06:00, none
-              between 00:00 and 05:00
-        \item Compliance assessment against any standard
-        \item Any prediction outside the three measured sites
-      \end{itemize}
+    \begin{column}{0.57\textwidth}
+      \textbf{How it was operationalised}
+      \begin{enumerate}
+        \item Can OpenStreetMap morphology predict noise at an
+              \textbf{unmeasured location}?
+        \item Does a model \textbf{transfer} between cities?
+        \item Does vehicle \textbf{flow from video} explain the levels?
+        \item What can the protocol claim with \textbf{no absolute reference}?
+      \end{enumerate}
+      \vspace{.3em}
+      \textbf{Out of scope, declared up front} --- night-time (10 points after
+      21:00), compliance against any standard, any prediction beyond the three
+      sites.
     \end{column}
-    \begin{column}{0.38\textwidth}
-      \begin{exampleblock}{Result preview}
-        Q1 --- weakly, \rr{} $\approx 0.25$\\
-        Q2 --- \down{no}\\
-        Q3 --- \down{no}\\
-        Q4 --- contrasts, never levels
+    \begin{column}{0.43\textwidth}
+      \begin{exampleblock}{And the answer, on both halves}
+        \textbf{Form:} \down{no} --- morphology adds nothing the strict protocols
+        can see.\\[.3em]
+        \textbf{Vehicle type:} \down{no} --- and the chain that was meant to
+        measure it does not work.
+        \vspace{.3em}
+
+        What survives is \up{$\log(d_\mathrm{road})$}: distance to the road, and
+        little else.
       \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
-\note{Give the answers now. An academic audience listens better to \emph{how} once
-they already know \emph{what}, and it stops the talk reading as suspense.
+\note{Read the question off the slide exactly as it is written. It is the question
+from the July deck, word for word, and saying so is worth a sentence: we did not
+rewrite the question after the answer came back.
 
-Three of the four answers are negative. That is the contribution, and the sooner
-the room accepts that framing the better the questions at the end.}
+Both halves are answered no. Say that immediately --- an academic audience listens
+better to \emph{how} once it already knows \emph{what}, and it stops the talk
+reading as suspense.
+
+Do NOT carry anything else over from that July deck. It also claimed a 53 dB WHO
+ceiling, a validated model, and a 39 percent QCVN exceedance rate. All three were
+withdrawn in August. If someone in the room remembers them, that is the moment to
+say so plainly rather than to let it pass.}
 
 % ----------------------------------------------------------------
 \begin{frame}{Related work --- ten references, selected by what they are used for}
