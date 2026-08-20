@@ -43,7 +43,7 @@ class Outbox(private val root: File) {
         fun attachments(): List<File> {
             val referenced = runCatching { instanceFile.readText() }.getOrElse { return emptyList() }
             return dir.listFiles()
-                ?.filter { it.isFile && it.name != INSTANCE_FILE && it.name != STATE_FILE }
+                ?.filter { it.isFile && it.name !in setOf(INSTANCE_FILE, STATE_FILE, DRAFT_FILE) }
                 ?.filter { referenced.contains(">${it.name}<") }
                 ?.sortedBy { it.name }
                 ?: emptyList()
@@ -51,7 +51,7 @@ class Outbox(private val root: File) {
 
         /** Files in the directory that the instance does not reference. */
         fun strayFiles(): List<File> {
-            val kept = (attachments().map { it.name } + INSTANCE_FILE + STATE_FILE).toSet()
+            val kept = (attachments().map { it.name } + INSTANCE_FILE + STATE_FILE + DRAFT_FILE).toSet()
             return dir.listFiles()?.filter { it.isFile && it.name !in kept } ?: emptyList()
         }
     }
@@ -80,12 +80,16 @@ class Outbox(private val root: File) {
      * A directory is created when a form is opened, because the measurement has
      * to write its audio somewhere before there is anything to submit. Back out
      * of the form and it stays, holding a 200 kB clip that no instance will ever
-     * reference. Only a directory with no state file can be a draft, and only at
-     * startup is it certain that none of them is the form currently being
+     * reference. Only a directory with no state file can be abandoned, and only
+     * at startup is it certain that none of them is the form currently being
      * filled — so this is called from there and from nowhere else.
+     *
+     * A directory holding a draft is spared. That is the whole point of the
+     * draft: it is what a killed app left behind on purpose, and deleting it at
+     * the next launch would undo the only thing keeping a half-filled form alive.
      */
     fun discardDrafts(): Int = (root.listFiles() ?: emptyArray())
-        .filter { it.isDirectory && !File(it, STATE_FILE).isFile }
+        .filter { it.isDirectory && !File(it, STATE_FILE).isFile && !File(it, DRAFT_FILE).isFile }
         .count { it.deleteRecursively() }
 
     /**
@@ -102,6 +106,20 @@ class Outbox(private val root: File) {
         .sortedByDescending { it.createdAt }
 
     fun pending(): List<Entry> = entries().filter { it.state == State.PENDING }
+
+    /** How the outbox stands, for a screen that wants to say so. */
+    data class Counts(val pending: Int, val sent: Int, val failed: Int) {
+        val total: Int get() = pending + sent + failed
+    }
+
+    fun counts(): Counts {
+        val all = entries()
+        return Counts(
+            pending = all.count { it.state == State.PENDING },
+            sent = all.count { it.state == State.SENT },
+            failed = all.count { it.state == State.FAILED },
+        )
+    }
 
     fun markSent(entry: Entry) = writeState(entry.copy(state = State.SENT, lastError = null))
 
@@ -175,5 +193,8 @@ class Outbox(private val root: File) {
     companion object {
         const val INSTANCE_FILE = "submission.xml"
         const val STATE_FILE = "state.json"
+
+        /** Written by the form while it is being filled; see `FormViewModel`. */
+        const val DRAFT_FILE = "draft.json"
     }
 }

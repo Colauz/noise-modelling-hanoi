@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Cleartext traffic, for debug builds only.
+
+      `gama-server` speaks plain websocket and offers no TLS, so driving a
+      simulation on a machine across the room needs ws:// — which Android has
+      blocked by default since API 28, and rightly.
+
+      Scoped to debug because the relaxation belongs to a development and
+      demonstration feature, not to an APK handed to the public. A release build
+      keeps the platform default: the GAMA screen there will only reach a server
+      behind wss://, and everything else the app sends — submissions to
+      KoboToolbox — is https in either case.
+    -->
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28" />
+
+</manifest>

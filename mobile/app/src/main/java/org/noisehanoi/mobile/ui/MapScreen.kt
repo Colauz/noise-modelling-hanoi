@@ -95,6 +95,9 @@ fun MapScreen(onBack: () -> Unit) {
         var picked by remember { mutableStateOf<GridCell?>(null) }
 
         val cells = remember(site, study) { study.map.cellsOf(site) }
+        // The zone's own ambience at this hour, not a constant: it is what the
+        // traffic multiplier must leave alone.
+        val ambient = remember(site, hour, study) { study.map.ambientEnergyOf(site, hour) }
         val extent = remember(site, study) { study.map.extentOf(site) }
         val points = remember(site, study) { study.measurements.filter { it.site == site } }
 
@@ -119,22 +122,34 @@ fun MapScreen(onBack: () -> Unit) {
                 extent = extent,
                 hour = hour,
                 multiplier = multiplier.toDouble(),
-                background = study.kernel.bBackground,
+                background = ambient,
                 onPick = { picked = it },
             )
 
             Legend()
 
-            Text(
-                String.format(Locale.US, "Hour: %02d:00", hour),
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Slider(
-                value = hour.toFloat(),
-                onValueChange = { hour = it.toInt() },
-                valueRange = NoiseMap.FIRST_HOUR.toFloat()..NoiseMap.LAST_HOUR.toFloat(),
-                steps = NoiseMap.LAST_HOUR - NoiseMap.FIRST_HOUR - 1,
-            )
+            // No hour control, because there is nothing for it to do. The
+            // delivered model is a distance kernel with no hour term, so all
+            // seventeen hourly columns of the published grid are identical for
+            // every one of the 5 587 cells — checked. A slider here would promise
+            // a variation the study does not claim.
+            Card(
+                Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("This map does not vary by hour", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "The delivered model is a three-parameter distance kernel with no hour " +
+                            "term, so every hour of the published grid holds the same levels. " +
+                            "Traffic does vary by hour — from about 24 vehicles a minute at 21:00 " +
+                            "to 76 at 17:00, measured on 147 videos — but that variation was not " +
+                            "found to move the predicted level, which is one of the study's " +
+                            "negative results rather than a gap in this app.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
 
             Text(
                 String.format(Locale.US, "Traffic volume: x%.2f of measured", multiplier),
@@ -155,7 +170,7 @@ fun MapScreen(onBack: () -> Unit) {
 
             picked?.let { cell ->
                 val base = cell.levelAt(hour)
-                val scaled = Scenario.scaledLevelDb(base, multiplier.toDouble(), study.kernel.bBackground)
+                val scaled = Scenario.scaledLevelDb(base, multiplier.toDouble(), ambient)
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Selected cell", style = MaterialTheme.typography.titleSmall)
@@ -355,8 +370,9 @@ private fun ScopeNotice(multiplier: Float) {
             if (multiplier != 1f) {
                 Text(
                     "The traffic multiplier scales only the traffic share of the energy, never the " +
-                        "background. Scaling the total is what once made the model claim twice the " +
-                        "benefit for pedestrianisation that it should have.",
+                        "zone's residual ambience. Scaling the total is what once made the model " +
+                        "claim twice the benefit for pedestrianisation that it should have. Checked " +
+                        "against the GAMA model itself: the two agree within 0.2 dB.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

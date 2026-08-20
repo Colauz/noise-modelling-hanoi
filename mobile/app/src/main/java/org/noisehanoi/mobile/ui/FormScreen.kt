@@ -102,8 +102,9 @@ fun FormScreen(spec: FormSpec, onDone: () -> Unit, onBack: () -> Unit) {
                     when (question) {
                         is GeoPointQ -> GpsCard(question.label, gps, model)
                         is MediaQ -> when (question.kind) {
-                            MediaKind.AUDIO -> MeterCard(meter, value, model)
-                            MediaKind.IMAGE -> PhotoCard(question.label, value, model, question.name)
+                            MediaKind.AUDIO -> MeterCard(meter, value, problem, model)
+                            MediaKind.IMAGE ->
+                                PhotoCard(question.label, value, problem, model, question.name)
                         }
                         is SelectOneQ -> SelectOneField(
                             visibleChoices(question, model), value, problem,
@@ -290,7 +291,12 @@ private fun GpsCard(label: String, gps: FormViewModel.GpsState, model: FormViewM
 }
 
 @Composable
-private fun MeterCard(meter: FormViewModel.MeterState, attached: String?, model: FormViewModel) {
+private fun MeterCard(
+    meter: FormViewModel.MeterState,
+    attached: String?,
+    problem: String?,
+    model: FormViewModel,
+) {
     val permission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) model.startMeasurement() else model.microphoneRefused() }
@@ -305,7 +311,8 @@ private fun MeterCard(meter: FormViewModel.MeterState, attached: String?, model:
             Text(
                 if (keepsClip) {
                     "One microphone session: ${SplMeter.WINDOW_SECONDS.toInt()} s, A-weighted, " +
-                        "SLOW. The clip submitted is the stretch that was measured."
+                        "SLOW. The clip submitted is the stretch that was measured, and it never " +
+                        "blocks a submission."
                 } else {
                     "${SplMeter.WINDOW_SECONDS.toInt()} s, A-weighted, SLOW. The level is kept; " +
                         "the recording is not. Nothing of what the microphone heard leaves this " +
@@ -347,6 +354,17 @@ private fun MeterCard(meter: FormViewModel.MeterState, attached: String?, model:
             meter.error?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
+            // The card is the only place the clip can be produced, so it is the
+            // only place saying it is missing is any use. Naming the button rather
+            // than the field, because "Audio recording — Required" tells someone
+            // standing in traffic nothing about what to press.
+            problem?.let {
+                Text(
+                    "Required: press Measure below to record the clip.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             attached?.let {
                 Text("Clip attached: $it", style = MaterialTheme.typography.bodySmall)
             }
@@ -365,7 +383,13 @@ private fun MeterCard(meter: FormViewModel.MeterState, attached: String?, model:
 }
 
 @Composable
-private fun PhotoCard(label: String, attached: String?, model: FormViewModel, fieldName: String) {
+private fun PhotoCard(
+    label: String,
+    attached: String?,
+    problem: String?,
+    model: FormViewModel,
+    fieldName: String,
+) {
     val context = LocalContext.current
     var target by remember { mutableStateOf<File?>(null) }
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
@@ -384,6 +408,13 @@ private fun PhotoCard(label: String, attached: String?, model: FormViewModel, fi
     Card(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(label, style = MaterialTheme.typography.titleSmall)
+            problem?.let {
+                Text(
+                    "Required: take the photo below.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             attached?.let { Text("Attached: $it", style = MaterialTheme.typography.bodySmall) }
             OutlinedButton(onClick = { permission.launch(Manifest.permission.CAMERA) }) {
                 Text(if (attached == null) "Take photo" else "Replace photo")

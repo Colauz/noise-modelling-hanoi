@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,7 +66,9 @@ fun CalibrationScreen(onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var applied by remember { mutableStateOf<String?>(null) }
 
-    val startOffset = remember { settings.micOffsetDb.toDouble() }
+    // The offset the pairs below were measured with. Re-read after applying, so
+    // the screen never computes from a baseline that has since moved.
+    var startOffset by remember { mutableStateOf(settings.micOffsetDb.toDouble()) }
     val result = Calibration.combine(startOffset, attempts.toList())
 
     fun measureOnce() {
@@ -186,13 +189,22 @@ fun CalibrationScreen(onBack: () -> Unit) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Pairs recorded", style = MaterialTheme.typography.titleSmall)
                         attempts.forEachIndexed { i, a ->
-                            Text(
-                                String.format(
-                                    Locale.US, "%d. app %.1f, reference %.1f — difference %+.1f dB",
-                                    i + 1, a.measuredDb, a.referenceDb, a.difference,
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    String.format(
+                                        Locale.US, "%d. app %.1f, reference %.1f — %+.1f dB",
+                                        i + 1, a.measuredDb, a.referenceDb, a.difference,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                // One mistyped reference used to mean starting over.
+                                TextButton(onClick = { attempts.removeAt(i) }) { Text("Remove") }
+                            }
                         }
                     }
                 }
@@ -201,10 +213,30 @@ fun CalibrationScreen(onBack: () -> Unit) {
             result?.let { r ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val plausible = r.offsetDb.toFloat() in Settings.OFFSET_RANGE
                         Text(
                             String.format(Locale.US, "New offset: %.1f dB", r.offsetDb),
                             style = MaterialTheme.typography.titleMedium,
+                            color = if (plausible) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
                         )
+                        if (!plausible) {
+                            Text(
+                                String.format(
+                                    Locale.US,
+                                    "Outside %.0f–%.0f dB, which no handset needs. The two devices " +
+                                        "were almost certainly not measuring the same sound — a " +
+                                        "phone indoors and a reference outdoors, or one of them not " +
+                                        "running yet.",
+                                    Settings.OFFSET_RANGE.start, Settings.OFFSET_RANGE.endInclusive,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         Text(
                             if (r.attempts < 2) {
                                 "One pair. Traffic noise moves several decibels between one 25 s " +
@@ -232,8 +264,12 @@ fun CalibrationScreen(onBack: () -> Unit) {
                             },
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = {
+                            Button(enabled = plausible, onClick = {
                                 settings.micOffsetDb = r.offsetDb.toFloat()
+                                // The pairs described the old baseline; keeping them
+                                // would compound one correction onto another.
+                                attempts.clear()
+                                startOffset = settings.micOffsetDb.toDouble()
                                 applied = if (r.offsetDb.toFloat() in Settings.OFFSET_RANGE) {
                                     String.format(Locale.US, "Applied: %.1f dB", r.offsetDb)
                                 } else {

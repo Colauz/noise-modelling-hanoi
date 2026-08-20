@@ -13,18 +13,30 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.noisehanoi.mobile.form.FormSpec
+import kotlinx.coroutines.delay
 import org.noisehanoi.mobile.odk.InstanceXml
+import org.noisehanoi.mobile.outbox.Outbox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    pendingCount: Int,
+    outbox: Outbox,
+    /** Set once when arriving from a submission, so the first message is immediate. */
+    justSubmitted: Boolean = false,
+    onSubmissionAcknowledged: () -> Unit = {},
     onOpenForm: (FormSpec) -> Unit,
     onOpenOutbox: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -32,10 +44,47 @@ fun HomeScreen(
     onOpenResults: () -> Unit,
     /** What the server calls each form, once Settings has read the list. */
     deployedOf: (FormSpec) -> InstanceXml.Deployment? = { null },
+    onOpenGama: () -> Unit = {},
     mayCollect: Boolean = true,
     onReviewConsent: () -> Unit = {},
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("Noise Hanoi") }) }) { padding ->
+    val snackbar = remember { SnackbarHostState() }
+    var counts by remember { mutableStateOf(outbox.counts()) }
+
+    // Submission is deliberately not on the path of finishing a form -- the
+    // instance is written to disk and uploaded later -- so "it worked" cannot be
+    // answered at the moment of pressing send. It is answered here instead, by
+    // watching the outbox until nothing is in flight.
+    LaunchedEffect(justSubmitted) {
+        if (justSubmitted) {
+            snackbar.showSnackbar("Saved to the outbox. Sending\u2026")
+            onSubmissionAcknowledged()
+        }
+    }
+    LaunchedEffect(Unit) {
+        var previous = counts
+        while (true) {
+            val now = outbox.counts()
+            if (now != previous) {
+                counts = now
+                if (now.sent > previous.sent) {
+                    snackbar.showSnackbar("Sent to KoboToolbox \u2014 accepted by the server.")
+                } else if (now.failed > previous.failed) {
+                    snackbar.showSnackbar("The server refused a submission. See the outbox.")
+                }
+                previous = now
+            }
+            // Briskly while something is in flight, idly otherwise: the only thing
+            // that can change the outbox with nothing pending is the user, and
+            // they are looking at this screen anyway.
+            delay(if (now.pending > 0) 1_000 else 5_000)
+        }
+    }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Noise Hanoi") }) },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -118,8 +167,29 @@ fun HomeScreen(
                 }
             }
 
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("GAMA simulation", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "The model itself, driven from here — mitigation scenarios, construction, " +
+                            "the fleet by hour. Needs a gama-server on the network; the map above " +
+                            "needs nothing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Button(onClick = onOpenGama) { Text("Open the simulation") }
+                }
+            }
+
             OutlinedButton(onClick = onOpenOutbox, modifier = Modifier.fillMaxWidth()) {
-                Text(if (pendingCount > 0) "Outbox — $pendingCount waiting" else "Outbox")
+                Text(
+                    when {
+                        counts.total == 0 -> "Outbox"
+                        counts.pending > 0 -> "Outbox — ${counts.pending} sending…"
+                        counts.failed > 0 -> "Outbox — ${counts.failed} refused, ${counts.sent} sent"
+                        else -> "Outbox — ${counts.sent} sent"
+                    }
+                )
             }
             OutlinedButton(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
                 Text("Server and microphone settings")

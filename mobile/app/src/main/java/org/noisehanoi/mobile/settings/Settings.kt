@@ -144,6 +144,21 @@ class Settings(context: Context) {
 
     val hasConsented: Boolean get() = acceptedConsentVersion >= CONSENT_VERSION
 
+    /**
+     * Where a `gama-server` is listening, and where its copy of the model lives.
+     *
+     * Both are properties of the server, not of the phone: the model path is read
+     * on the machine running GAMA. `10.0.2.2` is the host as seen from an Android
+     * emulator; a real phone needs the machine's address on the network it shares.
+     */
+    var gamaServerUrl: String
+        get() = prefs.getString(KEY_GAMA_URL, defaultGamaUrl()) ?: defaultGamaUrl()
+        set(value) = prefs.edit { putString(KEY_GAMA_URL, value.trim()) }
+
+    var gamaModelPath: String
+        get() = prefs.getString(KEY_GAMA_MODEL, DEFAULT_GAMA_MODEL) ?: DEFAULT_GAMA_MODEL
+        set(value) = prefs.edit { putString(KEY_GAMA_MODEL, value.trim()) }
+
     fun openRosaConfig() = OpenRosaClient.Config(
         serverUrl = serverUrl,
         username = username.ifBlank { null },
@@ -190,6 +205,24 @@ class Settings(context: Context) {
         private const val KEY_CONTRIBUTOR = "contributor_id"
         private const val KEY_DEPLOYED = "deployed_forms"
         private const val KEY_CONSENT = "accepted_consent_version"
+        private const val KEY_GAMA_URL = "gama_server_url"
+        private const val KEY_GAMA_MODEL = "gama_model_path"
+
+        /**
+         * `10.0.2.2` is the host machine *as an emulator sees it*, and nothing at
+         * all on a real handset — where it fails with a connection error that
+         * says nothing about why. So it is offered only where it means something;
+         * a phone starts blank and is told what to fill in, because only the user
+         * knows the address of the machine running the server.
+         */
+        fun defaultGamaUrl(): String =
+            if (isEmulator()) "ws://10.0.2.2:6868" else ""
+
+        private fun isEmulator(): Boolean =
+            android.os.Build.FINGERPRINT.startsWith("generic") ||
+                android.os.Build.FINGERPRINT.contains("emulator", ignoreCase = true) ||
+                android.os.Build.PRODUCT.startsWith("sdk_")
+        const val DEFAULT_GAMA_MODEL = "simulation/gama/hanoi_noise.gaml"
 
         /** Raise this whenever the consent text's *facts* change, not its wording. */
         const val CONSENT_VERSION = 1

@@ -44,26 +44,57 @@ data class PhysicalKernel(
  * offline, and — unlike a screen recording — it answers at whatever value of the
  * multiplier the user chooses.
  *
- * The correction that matters is which energy gets multiplied. Multiplying the
- * total, background included, is what made an earlier version of the model claim
- * 7.0 dB of benefit from pedestrianisation; decomposing first gives 3.5 dB. The
- * benefit had been overstated by a factor of two, and the difference is exactly
- * this function.
+ * The correction that matters is which energy gets multiplied, and what counts
+ * as residual. Multiplying the total is what made an earlier version of the model
+ * claim 7.0 dB of benefit from pedestrianisation where the honest figure is 3.5;
+ * the benefit had been overstated by a factor of two.
+ *
+ * The first version of this class reproduced that error while claiming not to. It
+ * subtracted the kernel's additive constant `B_background`, 1.1e-10, from a cell
+ * energy on the order of 1e6 — a subtraction of nothing — and so scaled the total
+ * after all. Driving the real model exposed it: at a fifth of the traffic GAMA
+ * gives -3.7 dB and this gave -7.0, the very figure the model had been corrected
+ * away from.
+ *
+ * The residual is the zone's ambience, a low percentile of its own levels, not a
+ * constant of the kernel. With that, the two agree to within 0.2 dB from x0.2 to
+ * x3 — checked against `hanoi_noise.gaml` running under gama-server.
  */
 object Scenario {
 
     /**
+     * Low percentile of a zone's levels, taken as its non-road residual ambience.
+     *
+     * `AMBIENT_PCT` in `hanoi_noise.gaml`, and the index arithmetic below is that
+     * model's, reproduced rather than approximated: the quietest cells of a zone
+     * are those where traffic contributes least, so their level stands in for the
+     * ventilation, activity and distant noise that a traffic scenario must not
+     * move. Checked against the running model — for Ocean Park at 17:00 both give
+     * 56.08 dB.
+     */
+    const val AMBIENT_PERCENTILE = 0.05
+
+    /** Residual energy of a zone, from the levels of its cells at one hour. */
+    fun ambientEnergy(levelsDb: List<Double>): Double {
+        if (levelsDb.isEmpty()) return 0.0
+        val sorted = levelsDb.sorted()
+        val index = (sorted.size * AMBIENT_PERCENTILE).toInt().coerceIn(0, sorted.size - 1)
+        return 10.0.pow(sorted[index] / 10.0)
+    }
+
+    /**
      * @param baseLevelDb the mapped level at a cell, from the published grid.
      * @param trafficMultiplier k, the scenario's traffic volume against measured.
-     * @param backgroundEnergy B of the kernel — the share that is not traffic and
-     *   must not be scaled.
+     * @param ambientEnergy the zone's residual energy, from [ambientEnergy]. What
+     *   is *not* traffic, and is therefore not scaled.
      */
-    fun scaledLevelDb(baseLevelDb: Double, trafficMultiplier: Double, backgroundEnergy: Double): Double {
+    fun scaledLevelDb(baseLevelDb: Double, trafficMultiplier: Double, ambientEnergy: Double): Double {
         val energy = 10.0.pow(baseLevelDb / 10.0)
-        // Numerically the background is minute against the traffic term; coerce
-        // rather than trust a subtraction that could go negative on a rounded level.
-        val traffic = (energy - backgroundEnergy).coerceAtLeast(0.0)
-        return 10.0 * log10(traffic * trafficMultiplier + backgroundEnergy)
+        // Never more residual than the cell itself holds; a cell quieter than the
+        // zone's ambience is all ambience.
+        val residual = minOf(ambientEnergy, energy)
+        val traffic = energy - residual
+        return 10.0 * log10(residual + trafficMultiplier * traffic)
     }
 
     /** The range the GAMA experiment exposes: a fifth of measured traffic to triple. */

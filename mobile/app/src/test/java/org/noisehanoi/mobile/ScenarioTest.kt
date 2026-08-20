@@ -6,6 +6,7 @@ import org.junit.Test
 import org.noisehanoi.mobile.study.PhysicalKernel
 import org.noisehanoi.mobile.study.Scenario
 import kotlin.math.log10
+import kotlin.math.pow
 
 class ScenarioTest {
 
@@ -25,39 +26,54 @@ class ScenarioTest {
      */
     @Test
     fun `at a multiplier of one the map is unchanged`() {
+        val ambient = 10.0.pow(56.0 / 10.0)
         for (level in listOf(53.4, 60.0, 66.7, 72.3)) {
-            assertEquals(level, Scenario.scaledLevelDb(level, 1.0, kernel.bBackground), 1e-9)
+            assertEquals(level, Scenario.scaledLevelDb(level, 1.0, ambient), 1e-9)
         }
     }
 
     /**
-     * Aggregate flow noise follows 10·log10 of the flow, so doubling traffic adds
-     * about 3 dB. "About", because the background does not scale — which is the
-     * whole reason this function decomposes before it multiplies.
+     * The damping is the whole point, and its absence is the bug this replaced.
+     *
+     * An earlier version subtracted the kernel's additive constant, 1.1e-10,
+     * from a cell energy near 1e6 — a subtraction of nothing — and so scaled the
+     * total. It therefore returned exactly 10·log10(k), and a test asserting
+     * precisely that certified it. Against the real model, at a fifth of the
+     * traffic, it was 3.3 dB out.
      */
     @Test
-    fun `doubling the traffic adds three decibels`() {
-        val doubled = Scenario.scaledLevelDb(65.0, 2.0, kernel.bBackground)
-        assertEquals(65.0 + 10 * log10(2.0), doubled, 0.01)
+    fun `a cell above the ambience moves by less than ten log ten of k`() {
+        val ambient = 10.0.pow(56.0 / 10.0)
+        for (k in listOf(0.2, 0.5, 2.0, 3.0)) {
+            val moved = Scenario.scaledLevelDb(65.0, k, ambient) - 65.0
+            val naive = 10 * log10(k)
+            assertTrue(
+                "k=$k moved $moved, naive $naive",
+                kotlin.math.abs(moved) < kotlin.math.abs(naive),
+            )
+            assertEquals("k=$k has the right sign", kotlin.math.sign(naive), kotlin.math.sign(moved), 0.0)
+        }
     }
 
+    /** A cell at or below the ambience is all ambience, and cannot move at all. */
     @Test
-    fun `halving the traffic takes three decibels off`() {
-        val halved = Scenario.scaledLevelDb(65.0, 0.5, kernel.bBackground)
-        assertEquals(65.0 - 10 * log10(2.0), halved, 0.01)
+    fun `the residual ambience does not move`() {
+        val ambient = 10.0.pow(56.0 / 10.0)
+        assertEquals(56.0, Scenario.scaledLevelDb(56.0, 0.2, ambient), 1e-9)
+        assertEquals(50.0, Scenario.scaledLevelDb(50.0, 3.0, ambient), 1e-9)
     }
 
     /**
-     * The background is a floor. Turning the traffic down to a fifth cannot take a
-     * cell below the level the kernel attributes to everything that is not
-     * traffic, and a scenario that claimed otherwise would be promising silence
-     * that removing cars cannot deliver.
+     * The percentile and its index arithmetic are `hanoi_noise.gaml`'s, not an
+     * approximation of them: for Ocean Park at 17:00 the model reports an ambience
+     * of 56.08 dB and this must give the same cell.
      */
     @Test
-    fun `the background is not scaled away`() {
-        val floor = 10 * log10(kernel.bBackground)
-        val quietest = Scenario.scaledLevelDb(60.0, Scenario.MULTIPLIER_RANGE.start.toDouble(), kernel.bBackground)
-        assertTrue("floor $floor, got $quietest", quietest > floor)
+    fun `the ambience is the fifth percentile of the levels`() {
+        val levels = (0 until 100).map { 50.0 + it * 0.1 }   // 50.0 .. 59.9
+        val energy = Scenario.ambientEnergy(levels)
+        assertEquals(50.5, 10 * log10(energy), 1e-9)         // index int(100 * 0.05) = 5
+        assertEquals(0.0, Scenario.ambientEnergy(emptyList()), 0.0)
     }
 
     /**

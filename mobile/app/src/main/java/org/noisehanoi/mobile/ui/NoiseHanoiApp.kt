@@ -28,7 +28,7 @@ fun NoiseHanoiApp() {
             it.sweep()
         }
     }
-    var pending by remember { mutableStateOf(outbox.pending().size) }
+    var justSubmitted by remember { mutableStateOf(false) }
     var activeForm by remember { mutableStateOf<FormSpec?>(null) }
     val settings = remember { Settings(context) }
 
@@ -60,13 +60,10 @@ fun NoiseHanoiApp() {
             )
         }
         composable("home") {
-            // Counted in an effect, not in the composition. Assigning to state while
-            // composing is what Compose calls a backwards write: the value read to
-            // build the frame changes while that frame is being built, which is an
-            // invalidation loop waiting for a slow enough device.
-            LaunchedEffect(Unit) { pending = outbox.pending().size }
             HomeScreen(
-                pendingCount = pending,
+                outbox = outbox,
+                justSubmitted = justSubmitted,
+                onSubmissionAcknowledged = { justSubmitted = false },
                 onOpenForm = { form ->
                     activeForm = form
                     navController.navigate("form")
@@ -75,6 +72,7 @@ fun NoiseHanoiApp() {
                 onOpenSettings = { navController.navigate("settings") },
                 onOpenMap = { navController.navigate("map") },
                 onOpenResults = { navController.navigate("results") },
+                onOpenGama = { navController.navigate("gama") },
                 deployedOf = { settings.deployedForm(it.title) },
                 mayCollect = consented,
                 onReviewConsent = { navController.navigate("consent") },
@@ -87,12 +85,16 @@ fun NoiseHanoiApp() {
             } else {
                 FormScreen(
                     spec = form,
-                    onDone = { navController.popBackStack("home", inclusive = false) },
+                    onDone = {
+                        justSubmitted = true
+                        navController.popBackStack("home", inclusive = false)
+                    },
                     onBack = { navController.popBackStack() },
                 )
             }
         }
         composable("map") { MapScreen(onBack = { navController.popBackStack() }) }
+        composable("gama") { GamaScreen(onBack = { navController.popBackStack() }) }
         composable("results") { ResultsScreen(onBack = { navController.popBackStack() }) }
         composable("outbox") { OutboxScreen(onBack = { navController.popBackStack() }) }
         composable("settings") {
