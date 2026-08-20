@@ -1,7 +1,15 @@
 # The July deck
 
-`Hanoi_Urban_Noise_Modelling.pptx` — the project update presented in July 2026,
-before the August audit. Eleven slides, each a full-page image.
+`Hanoi_Urban_Noise_Modelling.pptx` — the project update presented at the **end of
+July 2026** (the file was assembled on 31 July), before the August audit. Eleven
+slides, each a full-page image.
+
+**Two dates, and they are not the same one.** The deck is July's. The *research
+question* on its slide 2 is **June's** — the project was framed in June, and the
+literature review situating it was written then too
+([`../../project-timeline.md`](../../project-timeline.md)). The end-of-internship
+deck attributes the question to June for that reason, and quotes it from here
+because this is where it is written down.
 
 It is kept here for the same reason everything else in `docs/archive/` is kept:
 **retracted work is archived with its reason, never silently deleted.** It is also
@@ -9,8 +17,8 @@ the source of one thing still in use — see below.
 
 ## What is still current: the research question
 
-Slide 2 states it, and the end-of-internship deck
-([`presentation/main.tex`](../../../presentation/main.tex)) quotes it **verbatim**:
+Posed in June, written down on slide 2, and quoted **verbatim** by the
+end-of-internship deck ([`presentation/main.tex`](../../../presentation/main.tex)):
 
 > **Research question:** can urban noise be attributed to the form of the city and
 > to the type of vehicle passing through it? Models validated on car-centric
