@@ -21,6 +21,8 @@ What it does:
         (a NaN means "not measured"; a filler value would pollute the analyses)
   - cleaning (same rules as Sunbird notebook 02)
   - per-collector calibration (CALIBRATION_OFFSET, currently all 0.0)
+  - de-duplication on the contributor where the app supplied one, on the
+    collector otherwise (see `dedup_key`)
   - Open-Meteo weather enrichment (degrades gracefully if the API is unreachable)
   - writes data/processed/measurements.csv
 
@@ -98,6 +100,9 @@ def standardize(raw):
         'class':      col(raw, 'noise category', 'noise_class'),
         'site':       col(raw, 'study site', 'site'),
         'collector':  col(raw, 'who is collecting', 'collector'),
+        # Present only on submissions from the mobile app (form v3). Absent from
+        # the campaign's own export, where it becomes an all-NaN column.
+        'contributor_id': col(raw, 'contributor_id', 'contributor'),
         'dist_to_road': col(raw, 'distance to nearest road', 'dist_to_road'),
         'note':       col(raw, 'note'),
         'phone_orientation': col(raw, 'phone held', 'phone_orientation'),
@@ -137,9 +142,33 @@ def fix_site_by_gps(df):
     return df
 
 
+def dedup_key(df):
+    """Who a measurement came from, for de-duplication and calibration.
+
+    `collector` alone was the right key while the collectors were three named
+    people. Public submissions from the mobile app all carry the single value
+    `public`, so it stops separating them: two contributors who happened to
+    submit on the same timestamp would collapse into one row. Where the app
+    supplies `contributor_id` -- a random per-install identifier, never a device
+    id or a name -- that is used instead. The campaign's own 363 points predate
+    it and fall back to `collector`, unchanged.
+    """
+    collector = df['collector']
+    if 'contributor_id' not in df.columns:
+        return collector
+    # Only a genuine string counts. `str(v)` would turn a missing value into the
+    # identifier 'nan', which every campaign row would then share -- the bug this
+    # function exists to prevent, reintroduced one line further down.
+    text = df['contributor_id'].astype('object').map(
+        lambda v: v.strip() if isinstance(v, str) else None)
+    return text.where(text.notna() & (text != ''), collector)
+
+
 def clean(df):
     df = df.dropna(subset=['noise_dB', 'latitude', 'longitude'])
-    df = df.drop_duplicates(subset=['collector', 'timestamp'])
+    df = (df.assign(_dedup=dedup_key(df))
+            .drop_duplicates(subset=['_dedup', 'timestamp'])
+            .drop(columns='_dedup'))
     df = df[df['accuracy'].isna() | (df['accuracy'] < 50)]
     df = df[(df['noise_dB'] >= 20) & (df['noise_dB'] <= 120)].copy()
     df['noise_dB'] = df['noise_dB'] + df['collector'].map(CALIBRATION_OFFSET).fillna(0)
