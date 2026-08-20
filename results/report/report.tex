@@ -230,7 +230,7 @@ alone.
 % ============================================================================
 \section{Data analysis}
 
-\subsection{Temporal patterns}
+\subsection{Temporal patterns}\label{sec:temporal}
 
 \begin{figure}[h]
   \centering
@@ -462,6 +462,16 @@ re-running the pipeline and rebuilding moves the application with it. Prediction
 outside the sampled envelope are refused rather than answered, as
 \S\ref{sec:model} requires.
 
+\medskip\noindent
+\textbf{The grid does not vary by hour, and the application says so.} The export
+carries seventeen hourly columns, and for all 5\,587 cells they are identical to
+the last decimal --- the delivered kernel is a distance law with no hour term, so
+there is nothing for an hour to change. An earlier version of the map screen
+offered an hour slider; it was removed rather than left to promise a variation
+the study does not claim. The hourly cycle in \S\ref{sec:temporal} is a property
+of the \emph{measurements}, and the model does not reproduce it.
+
+\medskip\noindent
 GAMA is an Eclipse desktop platform and does not run on Android. The application
 reaches the simulation two ways, and they are not interchangeable:
 
