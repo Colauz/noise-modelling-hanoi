@@ -189,10 +189,9 @@ fun GamaScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("What this is", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "The model runs on another machine, started with " +
-                            "gama-headless.sh -socket 6868. Needs a network and a running server.",
+                        "The model runs on another machine: gama-headless.sh -socket 6868. " +
+                            "Needs a network.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -257,7 +256,7 @@ fun GamaScreen(onBack: () -> Unit) {
             Text(String.format(Locale.US, "Hour of day: %02d:00", hour.toInt()),
                 style = MaterialTheme.typography.titleSmall)
             Text(
-                "Changes the traffic and the construction, not the predicted field.",
+                "Changes traffic and construction, not the predicted field.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -344,13 +343,6 @@ fun GamaScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                Text(
-                    "Drawn from the running model, layer for layer as hanoi_noise.gaml declares " +
-                        "them: the 40 m grid, buildings, roads, construction sites as diamonds, " +
-                        "vehicles by type, and the measured points on top.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
             }
 
             if (readings.isNotEmpty()) {

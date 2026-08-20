@@ -159,7 +159,7 @@ fun MapScreen(onBack: () -> Unit) {
             }
             if (zoom > 1f) {
                 Text(
-                    String.format(Locale.US, "x%.1f — drag the map to move it", zoom),
+                    String.format(Locale.US, "x%.1f", zoom),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -177,11 +177,8 @@ fun MapScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("No hour control", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "The delivered model has no hour term, so every hour of the grid holds " +
-                            "the same levels. Traffic does vary by hour; the predicted level " +
-                            "does not.",
+                        "No hour control: the delivered model has no hour term.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -394,8 +391,7 @@ private fun HereCard(study: StudyData) {
                 )
             }) { Text("Read the map at my position") }
             Text(
-                "Outside the three measured areas there is no answer. The kernel was fitted " +
-                    "here; it is not a model of Hanoi.",
+                "No answer outside the three measured areas.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -410,17 +406,14 @@ private fun ScopeNotice(multiplier: Float) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("How to read this", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Cells are predicted over a 40 m grid; dots are the 363 measurements. The bands " +
-                    "are QCVN 26:2010, shown descriptively — not a compliance assessment, and the " +
-                    "levels are relative, not absolute.",
+                "Cells predicted over a 40 m grid, dots the 363 measurements. Bands are " +
+                    "QCVN 26:2010, descriptive only — levels are relative, not absolute.",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (multiplier != 1f) {
                 Text(
-                    "The multiplier scales the traffic share of the energy, never the zone's " +
-                        "residual ambience. Matches the GAMA model within 0.2 dB.",
+                    "Scales the traffic share of the energy, not the zone's residual ambience.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

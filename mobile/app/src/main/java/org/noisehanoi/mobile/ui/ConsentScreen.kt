@@ -60,8 +60,8 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                "This app collects urban noise measurements for a research project on Hanoi. " +
-                    "Reading the map and the results sends nothing. Only submitting a form does.",
+                "Urban noise measurements, for a research project on Hanoi. Only submitting a " +
+                    "form sends anything.",
                 style = MaterialTheme.typography.bodyMedium,
             )
 
@@ -73,25 +73,23 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
             )
             Section(
                 "The random number, and why it is there",
-                "Not a device identifier, not an account, not a name. It exists so the project " +
-                    "can tell one contributor's measurements from another's. You can see it in " +
-                    "Settings.",
+                "Not a device identifier, not an account, not a name. It lets the project tell " +
+                    "contributors apart. Visible in Settings.",
             )
             Section(
                 "Your position is personal data, even without your name",
-                "A position with a time says where somebody was at a moment. Measuring repeatedly " +
-                    "from the same place — your home — says where you live. Measure where you " +
-                    "would not mind being recorded as having stood.",
+                "A position with a time says where somebody was. Measuring repeatedly from the " +
+                    "same place says where you live.",
             )
             Section(
                 "Sound recording",
-                "In public contributor mode no recording is made at all. A short clip is " +
-                    "submitted only when the app is set up for the campaign team.",
+                "In public contributor mode no recording is made. A clip is submitted only for " +
+                    "the campaign team.",
             )
             Section(
                 "Where it goes, and who holds it",
-                "Submissions are sent to a KoboToolbox project. Whoever owns that account holds " +
-                    "the data and answers for it. This build sends to:",
+                "Whoever owns the receiving account holds the data and answers for it. This " +
+                    "build sends to:",
             )
             Text(
                 destination,
@@ -100,15 +98,13 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
             )
             Section(
                 "Changing your mind",
-                "Stop at any time by not submitting. To have sent measurements removed, contact " +
-                    "whoever runs the project with the random number from Settings — the only " +
-                    "thing that points at your submissions.",
+                "Stop by not submitting. To have sent measurements removed, contact the project " +
+                    "with the number from Settings.",
             )
             Section(
                 "What the numbers are worth",
-                "A phone microphone is not a sound level meter. Unless this phone has been " +
-                    "calibrated against a reference, its decibels are comparable to each other and " +
-                    "to nothing else, and are not a compliance measurement.",
+                "A phone microphone is not a sound level meter. Uncalibrated, its decibels are " +
+                    "comparable to each other and to nothing else. Not a compliance measurement.",
             )
 
             Button(onClick = onAgree, modifier = Modifier.fillMaxWidth()) {
@@ -118,8 +114,7 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
                 Text("Not now — just show me the study")
             }
             Text(
-                "Declining leaves the map and the results available. Nothing is sent either way " +
-                    "until you submit a form.",
+                "Declining leaves the map and the results available.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(bottom = 24.dp),
