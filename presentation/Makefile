@@ -3,6 +3,7 @@
 #   make                     -> main.pdf
 #   make notes               -> main-notes.pdf, presenter notes beside each slide
 #   make script              -> script.pdf, the bilingual speaker script
+#   make check               -> verify script.pdf names the slides main.tex has
 #   make view                -> build, then open the PDF
 #   make logos               -> report which institutional marks are present
 #   make logos-placeholder   -> regenerate the typographic placeholder marks
@@ -32,6 +33,7 @@
 # which produces the same slides.
 
 ENGINE  ?= pdflatex
+PYTHON  ?= python3
 LATEXMK := latexmk -interaction=nonstopmode -halt-on-error
 
 ifeq ($(ENGINE),lualatex)
@@ -40,7 +42,7 @@ else
   ENGINEFLAG := -pdf
 endif
 
-.PHONY: all notes script view clean distclean logos logos-placeholder
+.PHONY: all notes script check view clean distclean logos logos-placeholder
 all: main.pdf script.pdf
 
 main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
@@ -55,11 +57,18 @@ notes:
 	rm -f main-notes.tex
 
 # The speaker script: what to say on each slide, English beside French. It is
-# prose and quotes no number the deck does not also carry, so it builds on its
-# own and does not depend on the figures.
+# prose and quotes no number the deck does not also carry, so it needs none of
+# the figures -- but it names every slide by number and title, and those must be
+# the deck's. check_script.py enforces that, and the build refuses rather than
+# handing a presenter a script that disagrees with the screen.
 script: script.pdf
-script.pdf: script.tex
+script.pdf: script.tex main.tex
+	$(PYTHON) check_script.py
 	$(LATEXMK) $(ENGINEFLAG) script.tex
+
+# Same check on its own, and `check_script.py --fix` to take the deck's titles.
+check:
+	@$(PYTHON) check_script.py
 
 view: main.pdf
 	@xdg-open main.pdf 2>/dev/null || open main.pdf 2>/dev/null || \

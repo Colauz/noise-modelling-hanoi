@@ -91,6 +91,21 @@ English (`"we measured 68 dB"`, `"it exceeds the limit"`, `"the app runs GAMA"`)
 It is prose. Every number in it is also on a slide, and the slide gets it from
 `metrics.json` — if the two disagree, the slide is right.
 
+**Its slide numbers and titles are not its own to invent.**
+[`check_script.py`](check_script.py) walks `main.tex` in document order, works out
+what lands on which slide, and compares. `make script` runs it and **refuses to
+build on drift** — a script that names slide 9 differently from slide 9 is worse
+than no script, because the presenter stops trusting it mid-talk.
+
+```bash
+make check                        # report drift
+python3 check_script.py --fix     # take the deck's titles
+```
+
+This caught fifteen paraphrased titles the first time it ran, including *"Metrology
+— the spine of the talk"* against the deck's *"Metrology — the constraint everything
+else is built around"*.
+
 ## The application screens
 
 [`appscreens.tex`](appscreens.tex) draws five phones — Home, Measure, Map, GAMA,

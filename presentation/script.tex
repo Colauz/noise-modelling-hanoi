@@ -88,6 +88,17 @@
 }{%
   \end{tabular}\par}
 
+% The deck's own shorthands. Frame titles are copied into this file VERBATIM by
+% check_script.py, so anything main.tex can put in a title has to resolve here
+% too -- \dB in "a $-5.1\dB$ discontinuity" is what first broke the build.
+% Keep this list in step with the shorthands section of main.tex.
+\newcommand{\dB}{\,\mathrm{dB}}
+\newcommand{\rr}{$R^2$}
+\newcommand{\LA}{$L_{A,25\mathrm{s}}$}
+\newcommand{\up}[1]{\textcolor{good}{\textbf{#1}}}
+\newcommand{\down}[1]{\textcolor{bad}{\textbf{#1}}}
+\newcommand{\wn}[1]{\textcolor{warn}{\textbf{#1}}}
+
 % A line that must be said exactly, or must never be said.
 \newcommand{\must}[1]{{\color{good}\textbf{#1}}}
 \newcommand{\never}[1]{{\color{bad}\textbf{#1}}}
@@ -273,7 +284,7 @@ If anyone in the room repeats one, say so plainly rather than letting it pass. -
 aussi un plafond OMS de 53~dB, un modèle «~validé~» et 39~\% de dépassement QCVN.
 \must{Les trois ont été retirés en août~; la question, non.}\selectlanguage{english}}
 
-\slide{6}{Related work}{2:45}
+\slide{6}{Related work --- ten references, selected by what they are used for}{2:45}
 \begin{say}
 The bibliography is organised by what each reference is \emph{for}, not by date.
 
@@ -312,7 +323,7 @@ Trois collecteurs, trois téléphones, vingt-cinq secondes par point, un extrait
 audio, une porte GPS à dix mètres. Les deux jeux de données sont publiés en CC-BY.
 \end{say}
 
-\slide{9}{Metrology --- the spine of the talk}{4:15}
+\slide{9}{Metrology --- the constraint everything else is built around}{4:15}
 \begin{say}
 This slide is the spine of everything that follows.
 
@@ -372,7 +383,7 @@ drapeau. Rien en aval ne peut en substituer un autre discrètement.
 a model on the published map that lost every strict split, and nobody would have
 noticed.}
 
-\slide{12}{The evaluation protocol}{6:15}
+\slide{12}{The evaluation protocol --- and why it is the whole story}{6:15}
 \begin{say}
 If you take one methodological slide away, take this one.
 
@@ -430,7 +441,7 @@ mise dans la liste et laissée perdre. C'est tout l'enjeu de la section suivante
 % ============================================================================
 \act{Act II --- the results, and the audit of our own work}{slides 14--26 \; $\cdot$ \; 8--16 min}
 
-\slide{15}{The ranking inverts}{8:15}
+\slide{15}{The ranking inverts --- and that is the result}{8:15}
 \begin{say}
 Give the room fifteen seconds on this before you speak. It lands much harder
 found than told.
@@ -501,7 +512,7 @@ décibels.} Un facteur trois en énergie acoustique. Assez pour un contraste. Tr
 loin d'être assez pour une évaluation.
 \end{say}
 
-\slide{17}{``R-squared 0.25 --- isn't that very low?''}{10:45}
+\slide{17}{``$R^2 = 0.25$ --- isn't that very low?''}{10:45}
 \begin{say}
 This question always comes. It is much stronger answered before it is asked.
 
@@ -543,7 +554,7 @@ pas une borne.
 \cue{The deeper reason is the quantity itself: a 25-second sample in motorcycle
 traffic, where a single horn reaches plus seventeen decibels.}
 
-\slide{18}{The map, and the caveat}{12:00}
+\slide{18}{The map --- and the caveat that goes with it}{12:00}
 \begin{say}
 The predicted grid over the three measured areas. Forty-metre cells.
 
@@ -646,7 +657,7 @@ vais pas laisser ça passer pour un résultat physique propre, parce que notre
 propre audit dit le contraire.
 \end{say}
 
-\slide{22}{We found one of our own results was wrong}{15:00}
+\slide{22}{We found one of our own published results was wrong}{15:00}
 \begin{say}
 In August we withdrew our own headline number.
 
@@ -702,7 +713,7 @@ doublons, météo cohérente, tests au vert.
 constats. Aucun n'était connu quand la section résultats a été écrite.
 \end{say}
 
-\slide{24}{Finding 1 --- a five-decibel discontinuity}{16:45}
+\slide{24}{Finding 1 --- a $-5.1\dB$ discontinuity on 27 June}{16:45}
 \begin{say}
 On the twenty-seventh of June the level distribution steps down by five decibels,
 and it is not an artefact of when we sampled --- it survives controlling for site,
@@ -740,7 +751,7 @@ cause --- nous ne savons pas. La version du formulaire a changé ce jour-là. En
 plus serait inventer.
 \end{say}
 
-\slide{25}{Findings 2 and 3}{17:45}
+\slide{25}{Findings 2 and 3 --- the video chain, and the intervals}{17:45}
 \begin{say}
 The video chain is measuring something, but not what we thought. The detector
 reports fifty-seven percent cars and thirty-six percent motorcycles. In Hanoi.
@@ -908,7 +919,7 @@ la prédiction, exactement et par construction.
 quotas, modération, déduplication.
 \end{say}
 
-\slide{32}{Architecture, and the one design rule}{22:45}
+\slide{32}{Architecture --- and the one design rule that matters}{22:45}
 \begin{say}
 One rule matters. \must{The application does not carry a copy of the study.} The
 build copies the map, the measurements and the metrics file out of the repository
@@ -935,7 +946,7 @@ trois documents à la fois, soit trois occasions de diverger. Et ils avaient
 divergé.
 \end{say}
 
-\slide{33}{Three engineering results}{23:30}
+\slide{33}{Three engineering results worth reporting}{23:30}
 \begin{say}
 Three things that each cost a day and are invisible in a results table.
 
@@ -974,7 +985,7 @@ connu. \care{Rien de tout ça n'est visible depuis le téléphone} --- ce qui es
 l'argument pour tester contre le vrai serveur plutôt que de raisonner dessus.
 \end{say}
 
-\slide{34}{What the app measures, and what it refuses to claim}{24:15}
+\slide{34}{What the app measures --- and what it refuses to claim}{24:15}
 \begin{say}
 The app's level is a \emph{different quantity} from the campaign's. This handset's
 microphone, not a trimmed reading from one of three cross-calibrated phones. It
@@ -1006,7 +1017,7 @@ rien dire --- ce qui, et je veux être équitable, \must{vaut tout autant pour l
 chiffres de la campagne.}
 \end{say}
 
-\slide{35}{Driving GAMA from the phone}{25:00}
+\slide{35}{Driving GAMA from the phone --- how it is wired}{25:00}
 \begin{say}
 This is new since the last version of this talk, so let me say how it is wired.
 
@@ -1055,7 +1066,7 @@ mitigation, soixante virgule cinquante-trois en piétonnisation. Les mêmes chif
 que le modèle donne piloté directement.
 \end{say}
 
-\slide{36}{Before this app goes to strangers}{26:00}
+\slide{36}{Before this app goes to strangers --- three blockers}{26:00}
 \begin{say}
 Three things stop this being handed out, and \must{none of them is a bug.} The
 software is finished on its side.
@@ -1150,7 +1161,7 @@ that. \never{Do not imply Clermont solves it.} ---
 chère, et reste non réservée. Dites-le. \never{Ne laissez pas entendre que Clermont
 règle la question.}\selectlanguage{english}}
 
-\slide{39}{The comparative deployment}{28:00}
+\slide{39}{The comparative deployment --- and why it is the decisive test}{28:00}
 \begin{say}
 This is the strongest slide in the section and it is worth the time.
 
