@@ -313,6 +313,50 @@ Four things had to be learned by driving it rather than by reading about it:
   previous one would be a gigabyte of simulations nobody is watching, so the
   screen stops the one it replaces.
 
+### 5.2.1 Running the server
+
+The app is a client. Something has to be listening, and it is not the phone.
+
+```sh
+# on the machine that holds the repository and a GAMA installation
+/Applications/Gama.app/Contents/headless/gama-headless.sh -socket 6868 -ping_interval -1
+```
+
+Roughly forty seconds to start; it is ready when the log says `Server started at
+port 6868`. GAMA ≥ 2025.6 is required — `-socket` is the server mode.
+
+`-ping_interval -1` turns off the server's keep-alive pings. GAMA does not answer
+them while it compiles a model, and a client that enforces a ping timeout drops
+the connection mid-load, which looks exactly like a server that has crashed. The
+app's own client disables read and ping timeouts for the same reason.
+
+What the app needs to be told, in its GAMA screen:
+
+| Field | Value | Notes |
+|---|---|---|
+| Server | `ws://192.168.1.66:6868` | The machine's address on the network the phone is on. `10.0.2.2` is the host as an emulator sees it and means nothing on a handset — so it is offered only on an emulator, and a real device starts blank |
+| Model path | `/…/simulation/gama/hanoi_noise.gaml` | Absolute, and **on the server**. GAMA opens it; the phone never sees the file |
+
+Both must be reachable from the phone: the same wifi, and a router that does not
+isolate its clients from one another. A phone's own hotspot will not see the
+machine.
+
+Cleartext is the other constraint. `gama-server` offers no TLS, so the address is
+`ws://`, which Android has blocked by default since API 28 — rightly. It is
+permitted in **debug builds only**, through `app/src/debug/AndroidManifest.xml`. A
+release build keeps the platform default and will only reach a server behind
+`wss://`. That is deliberate: driving a simulation server across the room is a
+development and demonstration feature, not something a publicly distributed APK
+should relax its network policy for.
+
+Two costs worth knowing before a demonstration. A GAMA server with the model
+loaded sits at about 1.4 GB resident, and each abandoned experiment adds roughly
+15 MB — 2544 cells, 1075 buildings and 766 roads apiece. The app stops the
+experiment it replaces, so sliders do not accumulate them, but a long session
+still grows: the JVM does not return memory to the operating system eagerly.
+Restarting the server between sessions costs forty seconds and avoids the
+question entirely.
+
 ### 5.3 The picture is the model's own
 
 `ui/GamaCanvas.kt` redraws the model's "Noise map" display. The layers, their
