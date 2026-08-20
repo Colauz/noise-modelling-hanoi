@@ -1,0 +1,680 @@
+% ============================================================================
+%  presentation/formulas.tex --- every equation in the deck, explained, EN | FR
+%
+%  COMPANION TO script.tex. That one tells you what to SAY; this one tells you
+%  what you are saying when you point at an equation. Same two-column shape:
+%  English on the left because the talk is in English, French on the right
+%  because nobody should defend an equation they only half own.
+%
+%  EVERY NUMBER IN HERE WAS RECOMPUTED, not copied off a slide. Where a
+%  recomputation disagreed with the deck it is flagged in the margin rather than
+%  quietly reconciled -- there is one such case, the disc-overlap figure in
+%  formula 9.
+%
+%  Build:  make -C presentation formulas    ->  formulas.pdf
+% ============================================================================
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifLuaTeX
+  \usepackage{fontspec}
+  \IfFontExistsTF{Lato}{\setsansfont{Lato}}{}
+\else
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\fi
+\usepackage[english,french]{babel}
+\usepackage[a4paper,margin=15mm,top=17mm,bottom=17mm]{geometry}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ink}   {HTML}{1A1A1A}
+\definecolor{accent}{HTML}{1F5C8B}
+\definecolor{good}  {HTML}{2E7D32}
+\definecolor{bad}   {HTML}{C62828}
+\definecolor{warn}  {HTML}{EF6C00}
+\definecolor{muted} {HTML}{6E6E6E}
+\definecolor{rule}  {HTML}{D8D8D4}
+\definecolor{wash}  {HTML}{F4F6F8}
+
+\renewcommand{\familydefault}{\sfdefault}
+\color{ink}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\footnotesize\color{muted}\thepage}
+\fancyhead[L]{\footnotesize\color{muted}Noise Modelling Hanoi --- the equations}
+\fancyhead[R]{\footnotesize\color{muted}EN \; $\cdot$ \; FR}
+
+% ---------------------------------------------------------------- structure
+% \formula{n}{name}{where it appears}
+\newcommand{\formula}[3]{%
+  \par\vspace{5mm}\noindent
+  \colorbox{accent}{\parbox{\dimexpr\textwidth-2\fboxsep}{%
+    \color{white}\vspace{.6mm}
+    \textbf{#1}\hspace{3mm}#2\hfill\small #3\vspace{.6mm}}}
+  \par\vspace{2mm}}
+
+\newcommand{\act}[2]{%
+  \par\vspace{7mm}\noindent
+  {\color{accent}\rule{\textwidth}{.9pt}}\par\vspace{1.5mm}
+  {\large\bfseries\color{accent}#1}\hfill{\color{muted}#2}
+  \par\vspace{.5mm}{\color{rule}\rule{\textwidth}{.4pt}}\par}
+
+% The equation itself, on a wash ground so the eye finds it.
+\newcommand{\eq}[1]{%
+  \par\vspace{1mm}\noindent
+  \colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{%
+    \vspace{2mm}\begin{center}$\displaystyle #1$\end{center}\vspace{1mm}}}
+  \par\vspace{2mm}}
+
+% Symbol glossary. Two per row keeps it compact and still readable.
+\newenvironment{where}{%
+  \par\vspace{.5mm}{\footnotesize\color{muted}\textsc{where}}\par\vspace{.8mm}
+  \begin{tabular}{@{}p{20mm}p{62mm}@{\hspace{6mm}}p{20mm}p{62mm}@{}}
+}{%
+  \end{tabular}\par\vspace{2mm}}
+
+\newcolumntype{S}{>{\setlength{\parskip}{1.1mm}}p{84mm}}
+\newenvironment{say}{%
+  \begin{tabular}{@{}S@{\hspace{5mm}}|@{\hspace{5mm}}S@{}}
+}{%
+  \end{tabular}\par}
+
+% The deck's shorthands, so an equation can be pasted here from main.tex and
+% still compile. Same list as script.tex keeps.
+\newcommand{\dB}{\ensuremath{\,\mathrm{dB}}}  % \ensuremath: text here, math in the deck
+\newcommand{\rr}{$R^2$}
+\newcommand{\LA}{$L_{A,25\mathrm{s}}$}
+
+\newcommand{\must}[1]{{\color{good}\textbf{#1}}}
+\newcommand{\never}[1]{{\color{bad}\textbf{#1}}}
+\newcommand{\care}[1]{{\color{warn}\textbf{#1}}}
+
+\newcommand{\flag}[2]{%
+  \par\vspace{1.5mm}\noindent
+  \colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1mm}
+    \footnotesize\textbf{#1}\par\vspace{.7mm}#2\vspace{1mm}}}\par}
+
+\begin{document}
+\selectlanguage{english}
+
+\begin{center}
+  {\LARGE\bfseries\color{accent} The equations, explained}\\[1.5mm]
+  {\large Every formula in the deck: what it says, why that form, and what it
+   does not say}\\[3mm]
+  {\color{muted}Companion to \texttt{script.pdf} \; $\cdot$ \; eleven formulas \;
+   $\cdot$ \; English and French}
+\end{center}
+
+\vspace{4mm}
+\noindent
+\colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1.5mm}
+\textbf{Why this exists.} \texttt{script.pdf} tells you what to \emph{say}. This
+tells you what you are saying when you point at an equation --- and, more useful
+under questioning, \textbf{what each one refuses to claim}. An acoustics audience
+will not test whether you can recite a formula. They will test whether you know
+which of its terms you actually fitted.
+
+\medskip
+\selectlanguage{french}
+\textbf{À quoi ça sert.} \texttt{script.pdf} dit ce qu'il faut \emph{dire}. Ce
+document dit ce que vous dites quand vous pointez une équation --- et, plus utile
+en questions, \textbf{ce que chacune refuse d'affirmer}. Un public d'acousticiens
+ne testera pas votre récitation. Il testera si vous savez lesquels de ses termes
+vous avez réellement ajustés.
+\selectlanguage{english}
+\vspace{1.5mm}}}
+
+\vspace{3mm}
+\noindent
+{\footnotesize\color{muted}Every number here was recomputed from the repository
+rather than copied off a slide. One recomputation disagreed with the deck; it is
+flagged in formula 9 rather than quietly reconciled.}
+
+\clearpage
+% ============================================================================
+\act{Part I --- the quantity}{what a number in this study actually is}
+
+\formula{1}{Sound pressure level}{the unit behind every figure in the talk}
+\eq{L_p \;=\; 10\log_{10}\!\frac{p^{2}}{p_0^{2}}
+    \;=\; 20\log_{10}\!\frac{p}{p_0},
+    \qquad p_0 = 20\,\mu\mathrm{Pa}}
+\begin{where}
+  $p$ & sound pressure, in pascals &
+  $p_0$ & the reference: the quietest pressure a healthy young ear detects at
+          1\,kHz \\
+\end{where}
+\begin{say}
+A decibel is not a unit of anything. It is \must{a ratio, on a log scale},
+against a fixed reference. That is the whole definition.
+
+Two consequences run through the rest of this document. Ten decibels is a factor
+of ten \emph{in energy}. And because it is a ratio against a reference,
+\must{a level is only meaningful if you know your reference} --- which, with an
+uncalibrated microphone, we do not.
+
+That is what ``relative, not absolute'' means. The \emph{shape} of our numbers is
+sound. Their \emph{origin} on the scale is unknown to within a few decibels.
+&
+Un décibel n'est l'unité de rien. C'est \must{un rapport, en échelle
+logarithmique}, contre une référence fixe. Toute la définition est là.
+
+Deux conséquences traversent ce document. Dix décibels, c'est un facteur dix
+\emph{en énergie}. Et comme c'est un rapport à une référence, \must{un niveau n'a
+de sens que si l'on connaît sa référence} --- ce qui, avec un microphone non
+étalonné, n'est pas notre cas.
+
+C'est ça, «~relatif et non absolu~». La \emph{forme} de nos chiffres est bonne.
+Leur \emph{origine} sur l'échelle nous est inconnue à quelques décibels près.
+\end{say}
+
+\formula{2}{The measured quantity, $L_{A,25\mathrm{s}}$}{slide 9 --- Metrology}
+\eq{L_{A,25\mathrm{s}} \;=\; 10\log_{10}\!\left(\frac{1}{T}\int_{0}^{T}
+    \frac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right),
+    \qquad T \approx 25\,\mathrm{s}}
+\begin{where}
+  $p_A(t)$ & the pressure \emph{after} A-weighting (formula 3) &
+  $T$ & the integration window: about 25 seconds \\
+\end{where}
+\begin{say}
+An \emph{energy average over a window}, not an average of levels. The integral is
+of $p^{2}$; the logarithm is taken once, at the end. Formula 4 says why that
+order cannot be swapped.
+
+\must{The window is the whole argument of slide 9.} Change $T$ and you have a
+different quantity with a different name:
+
+\quad $T = 25$\,s \; --- \; ours.\newline
+\quad $T = 8$\,h \; --- \; $L_\mathrm{Aeq,8h}$, an occupational exposure.\newline
+\quad $T = $ a year, with $+5$\,dB on the evening and $+10$\,dB at night \; ---
+\; $L_\mathrm{den}$, what the WHO guidelines and the EU directive regulate.
+
+\never{Comparing a 25 s sample to $L_\mathrm{den}$ is not a rounding error.} It is
+comparing a photograph to a year of weather. That is why the WHO 53/45 values
+were withdrawn from this work entirely.
+&
+Une \emph{moyenne énergétique sur une fenêtre}, pas une moyenne de niveaux.
+L'intégrale porte sur $p^{2}$~; le logarithme est pris une seule fois, à la fin.
+La formule 4 dit pourquoi cet ordre n'est pas interchangeable.
+
+\must{La fenêtre est tout l'argument de la diapo 9.} Changez $T$ et vous avez une
+autre grandeur, avec un autre nom~:
+
+\quad $T = 25$\,s \; --- \; la nôtre.\newline
+\quad $T = 8$\,h \; --- \; $L_\mathrm{Aeq,8h}$, une exposition professionnelle.\newline
+\quad $T = $ un an, avec $+5$\,dB le soir et $+10$\,dB la nuit \; --- \;
+$L_\mathrm{den}$, ce que réglementent l'OMS et la directive européenne.
+
+\never{Comparer un échantillon de 25 s à $L_\mathrm{den}$ n'est pas une erreur
+d'arrondi.} C'est comparer une photographie à une année de météo. D'où le retrait
+complet des valeurs OMS 53/45 de ce travail.
+\end{say}
+
+\formula{3}{A-weighting, IEC 61672-1}{slide 45 --- backup}
+\eq{R_A(f) = \frac{12194^{2}f^{4}}
+      {(f^{2}+20.6^{2})\,\sqrt{(f^{2}+107.7^{2})(f^{2}+737.9^{2})}\,(f^{2}+12194^{2})},
+    \qquad A(f) = 20\log_{10}R_A(f) + 2.00}
+\begin{where}
+  $f$ & frequency, in hertz &
+  $+2.00$ & the offset that makes $A(1000\,\mathrm{Hz}) = 0$ exactly \\
+\end{where}
+\begin{say}
+A fixed filter, standing in for the ear's unequal sensitivity across frequency.
+Four poles and the normalising offset --- nothing is fitted, nothing is ours.
+
+What it does: $-26$\,dB at 63\,Hz, $-16$\,dB at 125\,Hz, $0$ at 1\,kHz, $+1$\,dB
+at 4\,kHz. \must{It discounts low frequencies heavily.}
+
+That matters here more than it usually does. A motorcycle engine has far more
+low-frequency content than a car, so A-weighting \care{discards a real part of
+what makes a Hanoi street feel loud}. It is the right standard, it is what every
+reference we compare against uses --- and it is a known bias of the quantity, not
+of our protocol.
+
+The app's implementation is pinned to the IEC table by a unit test, so the curve
+is checked rather than assumed.
+&
+Un filtre fixe, qui tient lieu de la sensibilité inégale de l'oreille selon la
+fréquence. Quatre pôles et l'offset de normalisation --- rien n'est ajusté, rien
+n'est de nous.
+
+Ce qu'il fait~: $-26$\,dB à 63\,Hz, $-16$\,dB à 125\,Hz, $0$ à 1\,kHz, $+1$\,dB à
+4\,kHz. \must{Il déprécie fortement les basses fréquences.}
+
+Ça compte ici plus qu'ailleurs. Un moteur de deux-roues a bien plus de contenu
+basse fréquence qu'une voiture, donc la pondération A \care{écarte une part réelle
+de ce qui rend une rue de Hanoï bruyante}. C'est la bonne norme, c'est celle de
+toutes nos références --- et c'est un biais connu de la grandeur, pas de notre
+protocole.
+
+L'implémentation de l'application est verrouillée sur la table IEC par un test
+unitaire~: la courbe est vérifiée, pas supposée.
+\end{say}
+
+\formula{4}{Decibels add in energy}{slide 45 --- backup}
+\eq{L_{\Sigma} \;=\; 10\log_{10}\sum_{i} 10^{L_i/10},
+    \qquad
+    \bar L \;=\; 10\log_{10}\!\left(\frac{1}{n}\sum_{i} 10^{L_i/10}\right)}
+\begin{say}
+To combine levels you must leave the log scale, add, and come back.
+\never{The arithmetic mean of decibels is not the mean level.}
+
+It is not a small effect. Two sources of 70\,dB together give 73\,dB, not 70 and
+not 140. And 60\,dB alongside 70\,dB gives 70.4 --- \must{the quiet one is
+essentially invisible}, which is why a single horn dominates a 25 s window.
+
+\must{Every arithmetic mistake this project made in the simulation came from
+forgetting this line.} Formula 6 is one of them, made twice.
+&
+Pour combiner des niveaux il faut quitter l'échelle log, additionner, et revenir.
+\never{La moyenne arithmétique de décibels n'est pas le niveau moyen.}
+
+L'effet n'est pas petit. Deux sources de 70\,dB donnent ensemble 73\,dB, ni 70 ni
+140. Et 60\,dB à côté de 70\,dB donne 70,4 --- \must{la source calme est
+quasiment invisible}, ce qui explique qu'un seul klaxon domine une fenêtre de
+25~s.
+
+\must{Toutes les erreurs d'arithmétique de ce projet dans la simulation viennent
+de l'oubli de cette ligne.} La formule 6 en est une, commise deux fois.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{Part II --- the model}{the three constants that beat everything else}
+
+\formula{5}{The delivered kernel}{slide 16 --- The delivered model}
+\eq{E \;=\; \frac{A_\mathrm{hw}}{\max(d_\mathrm{hw},D_0)}
+        \;+\; \frac{A_\mathrm{res}}{\max(d_\mathrm{res},D_0)}
+        \;+\; B,
+    \qquad L \;=\; 10\log_{10}E}
+\begin{where}
+  $d_\mathrm{hw}$ & distance to the nearest highway-class road, in metres &
+  $d_\mathrm{res}$ & distance to the nearest residential-class road \\
+  $A_\mathrm{hw}$ & fitted, $4.774\times10^{7}$ &
+  $A_\mathrm{res}$ & fitted, $3.800\times10^{7}$ \\
+  $B$ & fitted background, $1.1\times10^{-10}$ &
+  $D_0$ & 5\,m, a near-field cutoff, not fitted \\
+\end{where}
+\begin{say}
+Two roads, three constants, and \must{no morphological variable at all}. Read it
+in energy, not in decibels: each road contributes energy that falls off with
+distance, they add (formula 4), and the logarithm is taken once at the end.
+
+$\max(d,D_0)$ is not physics, it is arithmetic hygiene: at $d\to0$ the term
+diverges. Five metres is roughly the width of a traffic lane --- closer than that,
+``distance to the road'' has stopped meaning anything.
+
+All three constants are constrained positive, so each stays interpretable as an
+emitted energy.
+
+\must{And say the honest part.} $B$ fits to $1.1\times10^{-10}$, which is
+$-99.6$\,dB --- a boundary solution. \care{The background is not identifiable from
+363 points over three sites.} A three-parameter model is, in practice, two.
+&
+Deux routes, trois constantes, et \must{aucune variable morphologique}. À lire en
+énergie, pas en décibels~: chaque route apporte une énergie qui décroît avec la
+distance, elles s'additionnent (formule 4), et le logarithme est pris une fois à
+la fin.
+
+$\max(d,D_0)$ n'est pas de la physique, c'est de l'hygiène arithmétique~: en
+$d\to0$ le terme diverge. Cinq mètres, c'est à peu près la largeur d'une voie ---
+plus près que ça, «~distance à la route~» ne veut plus rien dire.
+
+Les trois constantes sont contraintes positives, donc chacune reste
+interprétable comme une énergie émise.
+
+\must{Et dites la partie honnête.} $B$ converge vers $1,1\times10^{-10}$, soit
+$-99,6$\,dB --- une solution de bord. \care{Le fond n'est pas identifiable à partir
+de 363 points sur trois sites.} Un modèle à trois paramètres en a, en pratique,
+deux.
+\end{say}
+
+\formula{6}{Why $1/d$ and not $1/d^{2}$}{slide 16, and slide 45}
+\eq{\text{point source: } E \propto \frac{1}{d^{2}} \;\Rightarrow\; -6.02\dB
+    \text{ per doubling}
+    \qquad
+    \text{line source: } E \propto \frac{1}{d} \;\Rightarrow\; -3.01\dB
+    \text{ per doubling}}
+\begin{say}
+A point source spreads its energy over a sphere, whose area goes as $d^{2}$. A
+long line of sources spreads it over a cylinder, whose area goes as $d$.
+
+\must{A street is a line, not a point.} A continuous stream of vehicles on a road
+is much closer to an infinite line source than to one loudspeaker, so the energy
+falls off as $1/d$ and the level drops about three decibels each time you double
+your distance --- not six.
+
+This is the one piece of real acoustics in the delivered model, and it is why a
+two-parameter distance law does as well as it does. \must{It is not a curve we
+fitted; it is the geometry we chose before fitting anything.}
+
+If someone asks why not $1/d^{2}$: because you would be modelling a street as a
+single vehicle.
+&
+Une source ponctuelle répartit son énergie sur une sphère, dont l'aire va en
+$d^{2}$. Une longue ligne de sources la répartit sur un cylindre, dont l'aire va
+en $d$.
+
+\must{Une rue est une ligne, pas un point.} Un flux continu de véhicules est bien
+plus proche d'une source linéique infinie que d'un haut-parleur, donc l'énergie
+décroît en $1/d$ et le niveau perd environ trois décibels à chaque doublement de
+distance --- pas six.
+
+C'est le seul morceau de vraie acoustique du modèle livré, et c'est pourquoi une
+loi de distance à deux paramètres s'en sort aussi bien. \must{Ce n'est pas une
+courbe ajustée~; c'est la géométrie choisie avant tout ajustement.}
+
+Si on demande pourquoi pas $1/d^{2}$~: parce que ce serait modéliser une rue comme
+un seul véhicule.
+\end{say}
+
+\formula{7}{The traffic scenario --- and the mistake made twice}{slide 33}
+\eq{\underbrace{L(k) = 10\log_{10}\!\big(k\,(E-E_\mathrm{res}) + E_\mathrm{res}\big)}_{\text{\color{good}correct}}
+    \qquad\qquad
+    \underbrace{L(k) = 10\log_{10}(kE) = L + 10\log_{10}k}_{\text{\color{bad}wrong}}}
+\begin{where}
+  $k$ & the traffic multiplier, $0.2$ to $3$ &
+  $E$ & the cell's total energy at the measured traffic \\
+  $E_\mathrm{res}$ & the zone's own residual ambience --- the 5th percentile of
+    its levels &
+  & \\
+\end{where}
+\begin{say}
+Traffic is not all the noise there is. Split the cell's energy into a traffic
+share and a residual ambience, \must{scale only the traffic share}, then take the
+log.
+
+The wrong version scales the total, so it scales the ambience too --- as if
+removing cars also removed the air conditioners. It collapses to a constant
+offset, $10\log_{10}k$, independent of place: at $k = 0.2$, exactly
+$\mathbf{-6.99}$\,dB everywhere.
+
+The correct version depends on how much of the energy was traffic. With the
+residual at about \care{28\,\%} of total energy, $k=0.2$ gives $\mathbf{-3.7}$\,dB
+--- \must{half the claimed benefit.}
+
+\must{This error was made twice.} Found and corrected in Python in July; rebuilt
+in Kotlin in August by people who knew about it. What caught it the second time
+was a unit test asserting the invariant $L(1) = L$ --- which the wrong version
+also satisfies, so the test that matters is the one at $k \neq 1$ against the
+model itself. The two now agree to within $0.2$\,dB across the whole range.
+&
+Le trafic n'est pas tout le bruit. Séparez l'énergie de la cellule en une part
+trafic et une ambiance résiduelle, \must{ne multipliez que la part trafic}, puis
+prenez le log.
+
+La version fausse multiplie le total, donc aussi l'ambiance --- comme si retirer
+les voitures retirait les climatiseurs. Elle se réduit à un décalage constant,
+$10\log_{10}k$, indépendant du lieu~: à $k = 0,2$, exactement
+$\mathbf{-6,99}$\,dB partout.
+
+La version correcte dépend de la part d'énergie qui était du trafic. Avec un
+résiduel à environ \care{28~\%} de l'énergie totale, $k=0,2$ donne
+$\mathbf{-3,7}$\,dB --- \must{la moitié du bénéfice annoncé.}
+
+\must{Cette erreur a été commise deux fois.} Trouvée et corrigée en Python en
+juillet~; reconstruite en Kotlin en août par des gens qui la connaissaient. Ce qui
+l'a rattrapée la seconde fois, c'est un test sur l'invariant $L(1) = L$ --- que la
+version fausse satisfait aussi, donc le test qui compte est celui à $k \neq 1$
+contre le modèle lui-même. Les deux s'accordent maintenant à $0,2$\,dB près sur
+toute la plage.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{Part III --- how it is evaluated}{the part the whole talk turns on}
+
+\formula{8}{$R^2$, MAE, RMSE}{slides 15, 16, 46}
+\eq{R^{2} = 1 - \frac{\sum_i (y_i-\hat y_i)^{2}}{\sum_i (y_i-\bar y)^{2}},
+    \qquad
+    \mathrm{MAE} = \frac{1}{n}\sum_i |y_i-\hat y_i|,
+    \qquad
+    \mathrm{RMSE} = \sqrt{\frac{1}{n}\sum_i (y_i-\hat y_i)^{2}}}
+\begin{say}
+$R^{2}$ compares your errors to the errors of the dumbest possible model:
+\must{always predicting the mean}. One is perfect, zero is no better than the
+mean.
+
+And \must{it can go negative} --- which is why the deck has values like $-0.42$.
+That is not a bug and not a bounded quantity. Because these are computed
+\emph{out of fold}, a model can be actively worse than the mean on data it has
+never seen. Every negative number in the model table means exactly that.
+
+MAE is the one to quote in the room, because it is in decibels and people can
+picture it. \must{5\,dB} --- a factor of three in energy.
+&
+$R^{2}$ compare vos erreurs à celles du modèle le plus bête possible~:
+\must{prédire toujours la moyenne}. Un, c'est parfait~; zéro, ce n'est pas mieux
+que la moyenne.
+
+Et \must{il peut être négatif} --- d'où les valeurs comme $-0,42$ dans le deck. Ce
+n'est ni un bug ni une grandeur bornée. Comme le calcul est fait \emph{hors pli},
+un modèle peut être franchement pire que la moyenne sur des données jamais vues.
+Chaque nombre négatif du tableau veut dire exactement ça.
+
+La MAE est celle à citer en salle, parce qu'elle est en décibels et qu'on se la
+représente. \must{5\,dB} --- un facteur trois en énergie.
+\end{say}
+
+\formula{9}{Buffered leave-one-out --- and why 300 m}{slide 12 --- the methodological core}
+\eq{\text{for each point } i:\quad \text{train on } \{\,j : d(i,j) > r\,\},
+    \qquad r = 300\,\mathrm{m} = \text{the feature aggregation radius}}
+\begin{say}
+The morphology features are computed over a disc of radius 300\,m around each
+point. So two nearby points are partly built from \emph{the same buildings and
+the same roads}. Put one in training and the other in test and the model is being
+scored on near-copies of what it was taught.
+
+\must{The buffer must equal the feature radius.} Not a rule of thumb --- an
+identity. Anything smaller leaks by exactly the amount of disc the two points
+share.
+
+Two discs of radius $r$ whose centres are $s$ apart overlap by
+
+\quad $\dfrac{A_\cap}{A} = \dfrac{2}{\pi}\left(\arccos\dfrac{s}{2r}
+      - \dfrac{s}{2r}\sqrt{1-\left(\dfrac{s}{2r}\right)^{2}}\,\right)$
+
+\must{This is the identity the retracted $R^2 = 0.45$ broke.} It grouped on 110\,m
+cells while the features spanned 300\,m.
+&
+Les variables de morphologie sont calculées sur un disque de rayon 300\,m autour
+de chaque point. Deux points proches sont donc construits en partie sur
+\emph{les mêmes bâtiments et les mêmes routes}. Mettez l'un en entraînement et
+l'autre en test~: le modèle est noté sur des quasi-copies de ce qu'on lui a
+appris.
+
+\must{Le tampon doit égaler le rayon des variables.} Pas une règle empirique ---
+une identité. Tout ce qui est plus petit fuit d'exactement la part de disque que
+les deux points partagent.
+
+Deux disques de rayon $r$ dont les centres sont distants de $s$ se recouvrent de
+
+\quad $\dfrac{A_\cap}{A} = \dfrac{2}{\pi}\left(\arccos\dfrac{s}{2r}
+      - \dfrac{s}{2r}\sqrt{1-\left(\dfrac{s}{2r}\right)^{2}}\,\right)$
+
+\must{C'est l'identité que le $R^2 = 0{,}45$ retiré a enfreinte.} Il regroupait sur
+des cellules de 110\,m alors que les variables portaient sur 300\,m.
+\end{say}
+\flag{The overlap figures, recomputed --- and one correction to the deck}{%
+With $r = 300$\,m: two points \textbf{40\,m} apart share \textbf{91.5\,\%} of the
+disc, \textbf{70\,m} share \textbf{85.2\,\%}, \textbf{110\,m} share
+\textbf{76.8\,\%}, \textbf{150\,m} share \textbf{68.5\,\%}.
+
+\care{Slide 12 says two points 110\,m apart ``share more than 85\,\%''. The lens
+formula gives 76.8\,\%; 85\,\% is reached at 71\,m.} The claim overstates the
+overlap and should be corrected --- \must{the argument does not need it}, because
+the real leak is worse than the average case: grouping on 110\,m cells puts points
+\emph{either side of a cell boundary} in different folds, and those can be
+centimetres apart, sharing essentially \textbf{100\,\%} of their disc. ---
+\selectlanguage{french}\care{La diapo 12 dit «~plus de 85~\%~» à 110\,m~; la
+formule donne 76,8~\%.} L'argument n'en a pas besoin~: la vraie fuite est pire que
+le cas moyen, car deux points de part et d'autre d'une frontière de cellule
+peuvent être à quelques centimètres et partager ~100~\%.\selectlanguage{english}}
+
+\formula{10}{Bootstrapped by block, not by point}{slide 46 --- the intervals}
+\eq{\text{resample the } 17 \text{ blocks with replacement},\;
+    B = 2000\;\Rightarrow\;
+    \text{CI} = \big[\,q_{2.5},\, q_{97.5}\,\big] \text{ of the recomputed statistic}}
+\begin{say}
+The interval is built by resampling \must{blocks}, not points.
+
+Why it matters: points inside a block are spatially correlated, so they are not
+independent draws. Resample points and the bootstrap thinks it has 363
+independent observations when it has closer to 17. \care{The interval comes out
+far too narrow, and the ranking looks far more certain than it is.}
+
+This is what makes the honest version of slide 46 possible: the intervals overlap
+almost entirely, and \must{``the physical kernel beats log-distance'' is a coin
+flip} at this sample size. A by-point bootstrap would have hidden that.
+&
+L'intervalle est construit en rééchantillonnant des \must{blocs}, pas des points.
+
+Pourquoi ça compte~: les points d'un même bloc sont spatialement corrélés, donc ce
+ne sont pas des tirages indépendants. Rééchantillonnez des points et le bootstrap
+croit disposer de 363 observations indépendantes alors qu'il en a plutôt 17.
+\care{L'intervalle sort beaucoup trop étroit, et le classement paraît bien plus
+certain qu'il ne l'est.}
+
+C'est ce qui rend possible la version honnête de la diapo 46~: les intervalles se
+recouvrent presque entièrement, et \must{«~le noyau physique bat la
+log-distance~» est un tirage à pile ou face} à cette taille d'échantillon. Un
+bootstrap par point l'aurait masqué.
+\end{say}
+
+\formula{11}{The ceiling on $R^{2}$}{slide 17 --- ``isn't 0.25 very low?''}
+\eq{\Delta L \sim \mathcal{N}(0,\,2\sigma^{2})
+    \;\Longrightarrow\;
+    \sigma = \frac{\sqrt{\pi}}{2}\,\mathbb{E}|\Delta L| \approx 0.886\,\mathbb{E}|\Delta L|,
+    \qquad
+    R^{2}_{\max} = 1 - \frac{\sigma^{2}}{s^{2}}}
+\begin{where}
+  $\Delta L$ & the difference between two readings a few metres apart, at the
+               same hour &
+  $\sigma$ & the irreducible spread of a single reading \\
+  $s^{2}$ & the total variance of the 363 measurements, $51.1\dB^{2}$ &
+  & \\
+\end{where}
+\begin{say}
+Two points a few metres apart at the same hour must be given \emph{the same}
+prediction by any spatial model. So \must{whatever they disagree by is variance no
+spatial model can ever explain}, and it caps $R^{2}$ from above.
+
+The derivation is one line. If each reading is the true value plus independent
+noise of sd $\sigma$, their difference has variance $2\sigma^{2}$; the mean
+absolute value of a $\mathcal{N}(0,\tau^{2})$ is $\tau\sqrt{2/\pi}$; substitute
+and rearrange.
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrrrr@{}}
+  \toprule
+  pairs & $n$ & $\mathbb{E}|\Delta L|$ & $\sigma$ & $R^{2}_{\max}$ \\
+  \midrule
+  $<20$\,m & 29 & 4.23\dB & 3.75\dB & 0.72 \\
+  $<40$\,m & 87 & 5.44\dB & 4.82\dB & \must{0.55} \\
+  $<60$\,m & 229 & 6.09\dB & 5.40\dB & 0.43 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+At the 40\,m scale the map works at, the ceiling is about \must{0.54}. The
+delivered model reaches \must{0.246} --- \must{half of what is attainable, not a
+tenth.}
+
+\care{Say the caveat on the same breath.} Pairs at the same hour may be on
+different days, so $\sigma$ carries day-to-day variation too and
+\care{overestimates} pure measurement noise --- which makes the ceiling an
+\emph{under}estimate. And 29 pairs is few. It is an order of magnitude, not a
+bound.
+&
+Deux points à quelques mètres, à la même heure, doivent recevoir \emph{la même}
+prédiction de tout modèle spatial. Donc \must{leur désaccord est une variance
+qu'aucun modèle spatial ne pourra expliquer}, et il plafonne le $R^{2}$.
+
+La dérivation tient en une ligne. Si chaque lecture est la vraie valeur plus un
+bruit indépendant d'écart-type $\sigma$, leur différence a pour variance
+$2\sigma^{2}$~; la valeur absolue moyenne d'une $\mathcal{N}(0,\tau^{2})$ vaut
+$\tau\sqrt{2/\pi}$~; on substitue et on réarrange.
+
+\medskip
+Le tableau ci-contre donne les trois bandes de séparation. À l'échelle de 40\,m où
+travaille la carte, le plafond est d'environ \must{0,54}. Le modèle livré atteint
+\must{0,246} --- \must{la moitié de l'atteignable, pas le dixième.}
+
+\care{Dites la réserve dans la même respiration.} Des paires à la même heure
+peuvent être sur des jours différents, donc $\sigma$ porte aussi la variation jour
+à jour et \care{surestime} le bruit de mesure pur --- ce qui fait du plafond une
+\emph{sous}-estimation. Et 29 paires, c'est peu. C'est un ordre de grandeur, pas
+une borne.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{If you only remember four lines}{}
+
+\vspace{2mm}
+\noindent
+\begin{tabular}{@{}p{58mm}p{112mm}@{}}
+  \toprule
+  \must{Decibels add in energy.} &
+    Leave the log scale, add, come back. Formula 4. Every arithmetic mistake this
+    project made came from skipping it. \\
+  \addlinespace
+  \must{The buffer equals the feature radius.} &
+    Formula 9. Not a heuristic --- an identity. Breaking it is what produced the
+    retracted $R^{2} = 0.45$. \\
+  \addlinespace
+  \must{A street is a line, not a point.} &
+    Formula 6. $-3$\,dB per doubling, not $-6$. The only real acoustics in the
+    delivered model, and it was chosen before anything was fitted. \\
+  \addlinespace
+  \must{$R^{2}$ has a ceiling here, and it is about 0.54.} &
+    Formula 11. Two points metres apart disagree by 4--5\,dB. The delivered 0.246
+    is half of what is reachable. \\
+  \bottomrule
+\end{tabular}
+
+\vspace{8mm}
+\noindent
+\colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1.5mm}
+\textbf{Three things not to say about these equations}
+
+\medskip
+\begin{tabular}{@{}p{56mm}p{104mm}@{}}
+  \never{``Our model is physically validated.''} &
+    Formula 5 has one genuine physical choice --- the $1/d$ geometry. The three
+    constants are fitted, and one of them ($B$) is not identifiable at all. Say
+    \must{``a physically motivated form, with fitted constants''}. \\
+  \addlinespace
+  \never{``We measured $L_\mathrm{Aeq}$.''} &
+    Formula 2. We measured $L_{A,25\mathrm{s}}$. If the window is not stated, the
+    quantity is not stated. \\
+  \addlinespace
+  \never{``The ceiling proves 0.25 is good.''} &
+    Formula 11 is an order of magnitude from 29 pairs, and it overestimates
+    $\sigma$. It makes 0.25 \must{unsurprising}, not \must{good}. \\
+\end{tabular}
+\vspace{1.5mm}}}
+
+\vspace{6mm}
+\noindent
+{\footnotesize\color{muted}Sources. Formulas 2--4: \texttt{docs/metrology.md} and
+IEC 61672-1. Formula 5: \texttt{models/hybrid\_physical.json}, fitted by
+\texttt{scripts/04\_evaluate\_models.py}. Formula 7:
+\texttt{mobile/.../study/Scenario.kt}, invariant asserted in
+\texttt{ScenarioTest.kt}. Formulas 8--10:
+\texttt{scripts/04\_evaluate\_models.py} and \texttt{docs/methodology.md}.
+Formula 11: computed in \texttt{scripts/12\_presentation\_figures.py} from
+\texttt{data/processed/measurements.csv}.}
+
+\end{document}

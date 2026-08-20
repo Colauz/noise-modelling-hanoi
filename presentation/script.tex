@@ -92,7 +92,7 @@
 % check_script.py, so anything main.tex can put in a title has to resolve here
 % too -- \dB in "a $-5.1\dB$ discontinuity" is what first broke the build.
 % Keep this list in step with the shorthands section of main.tex.
-\newcommand{\dB}{\,\mathrm{dB}}
+\newcommand{\dB}{\ensuremath{\,\mathrm{dB}}}  % \ensuremath: text here, math in the deck
 \newcommand{\rr}{$R^2$}
 \newcommand{\LA}{$L_{A,25\mathrm{s}}$}
 \newcommand{\up}[1]{\textcolor{good}{\textbf{#1}}}
