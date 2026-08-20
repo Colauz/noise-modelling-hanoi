@@ -11,6 +11,7 @@ map over the three measured areas, the 363 points, the simulation's traffic
 scenario, and the results with the negative ones stated as plainly as the
 positive one.
 
+**How it works inside, and why:** [`ARCHITECTURE.md`](ARCHITECTURE.md).
 Scope, feasibility and the phases after this one: [`PLAN.md`](PLAN.md).
 
 ## What is built
@@ -38,19 +39,51 @@ Scope, feasibility and the phases after this one: [`PLAN.md`](PLAN.md).
 | Simulation | Tier 1 of the GAMA model recomputed on the phone: a traffic multiplier from x0.2 to x3 |
 | Prediction | The delivered three-parameter kernel, in `study/Scenario.kt` — and a refusal outside the mapped areas |
 | Results | The campaign, the three negative results, and every metric read from `metrics.json` |
+| GAMA | The model itself, driven over `gama-server` — mitigation scenarios the grid cannot hold |
 
 The study's data is not transcribed into the app. `syncStudyData` in
 `app/build.gradle.kts` copies `hanoi_noise_map.csv`, `measurements.csv`,
 `metrics.json`, `hybrid_physical.json` and the figures out of the repository at
 build time. Re-run the pipeline, rebuild the APK, and the app moves with it.
 
-GAMA itself does not run on Android — it is an Eclipse desktop platform — but
-tier 1 is not an agent simulation: it is a traffic multiplier over a grid the app
-already carries. The multiplier scales the traffic share of the energy and never
-the background, which is the correction that took the claimed benefit of
-pedestrianisation from 7.0 dB down to 3.5. A unit test asserts the invariant the
-GAML file states in its own header: at a multiplier of 1, the simulated map
-equals the published one.
+GAMA itself does not run on Android — it is an Eclipse desktop platform. The app
+reaches it two ways, and they are not interchangeable.
+
+**The map recomputes tier 1 locally**, over the grid it carries: a traffic
+multiplier applied to the traffic share of the energy and never to the zone's
+residual ambience. No network, instant, and checked against the model itself —
+the two agree within 0.2 dB from x0.2 to x3.
+
+That check was worth making. The first version of this decomposition subtracted
+the kernel's additive constant, 1.1e-10, from a cell energy near 1e6 — a
+subtraction of nothing — so it scaled the total after all and returned exactly
+10·log10(k). At a fifth of the traffic it gave -7.0 dB where the model gives
+-3.7: precisely the error the study had already found and corrected, rebuilt here
+and certified by a unit test asserting it. The residual is the zone's own
+ambience, the fifth percentile of its levels, and reading it that way is what
+makes the two agree.
+
+**The GAMA screen drives the real model**, on a machine running
+`gama-headless.sh -socket 6868`. That needs a network and a server that is on,
+which the map does not; what it buys is everything the grid cannot hold — the
+mitigation scenarios, the construction sites, the fleet by hour. Two things had
+to be learned by driving it rather than by reading about it: the experiment must
+have no display (`hanoi_noise_sim` is `type: gui` with an OpenGL one, and loading
+it takes the main thread on macOS and kills the socket — the model's own
+display-free `check` loads in two seconds), and `step` needs `sync` or the cycle
+never advances and every indicator reads zero.
+
+The screen draws the model's own "Noise map" display rather than reporting
+numbers: the layers, their stacking order, and every colour and size are read
+from the `aspect` blocks of `hanoi_noise.gaml` and reproduced — the 40 m grid in
+its eight bands, buildings, roads, construction sites as diamonds, vehicles
+sized and coloured by type, and the measured points on top. The static layers are
+pulled once when a scenario loads; the grid's levels and the vehicles are
+re-pulled after every step. Ocean Park comes across as about 430 kB, fast enough
+to redraw as it runs.
+
+Verified end to end from the app: mean level 62.97 dB with no mitigation, 60.53
+under pedestrianisation — the same figures the model gives when driven directly.
 
 ## Build and install
 

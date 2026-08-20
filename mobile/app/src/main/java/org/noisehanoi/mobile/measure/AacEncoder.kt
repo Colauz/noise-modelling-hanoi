@@ -93,12 +93,17 @@ object AacEncoder {
             }
 
         } finally {
-            // Both hold native resources. An exception thrown out of the loop must
-            // not leak an encoder for the rest of the process's life.
+            // Every one of these is wrapped, release included. They hold native
+            // resources and must all be attempted, but they are also the part most
+            // likely to complain: a handset that throws from `release()` after
+            // writing a perfectly good file would otherwise have that exception
+            // replace the success, and the caller would discard a finished clip.
+            // Observed on a Galaxy S24+ — the file was complete on disk and the
+            // encode reported as failed.
             runCatching { codec.stop() }
-            codec.release()
+            runCatching { codec.release() }
             if (muxing) runCatching { muxer.stop() }
-            muxer.release()
+            runCatching { muxer.release() }
         }
 
         if (!muxing || output.length() == 0L) {

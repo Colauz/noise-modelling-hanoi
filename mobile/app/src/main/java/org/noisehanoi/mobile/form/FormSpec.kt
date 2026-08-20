@@ -86,12 +86,19 @@ data class FormSpec(
     /**
      * The same form, with the audio clip optional.
      *
-     * The clip is what lets a doubtful measurement be revisited, and on the
-     * team's own points that is worth its weight. Across a public campaign it is
-     * 209 kB a submission — about 10 GB for fifty thousand of them — of
-     * recordings nobody will ever play back, and every one of them may have
-     * caught a passing conversation. Optional for the public, required for the
-     * team, is the trade that keeps what is useful and drops what is not.
+     * The clip is never allowed to block a submission, in either mode. It was
+     * required of the team at first, on the reasoning that it lets a doubtful
+     * measurement be revisited — which is true, and still not worth what it
+     * costs when it fails. The app measures the level itself; the clip is
+     * corroboration. Making it mandatory meant that any hiccup in the encoder,
+     * on any handset, stranded someone in a street with a form they could not
+     * send and no way to understand why. That happened on the first real phone
+     * this ran on.
+     *
+     * What the two modes still decide is whether a clip is *made*: across a
+     * public campaign it would be 209 kB a submission — some 10 GB for fifty
+     * thousand — of recordings nobody will play back, each of which may have
+     * caught a passing conversation.
      */
     fun withOptionalAudio(): FormSpec = copy(
         questions = questions.map {

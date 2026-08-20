@@ -139,9 +139,11 @@ would have re-derived a number we ship. The kernel itself is in
 `study/Scenario.kt` and under test, for the day a prediction is wanted somewhere
 the grid does not cover — which, per the envelope rule, is nowhere yet.
 
-**Phase 5 — simulate. Built.** Tier 1 interactively: the traffic multiplier over
-the grid, applied to the traffic share of the energy alone, with the `k = 1`
-invariant asserted in a test.
+**Phase 5 — simulate. Built, both ways.** Tier 1 recomputed locally over the
+grid, and the real model driven over `gama-server` from a screen of its own. The
+first is offline and covers the traffic volume; the second needs a server and
+covers the scenarios the grid cannot hold. Driving the real model is also what
+exposed the local scenario as wrong — see `README.md`.
 
 **Phase 6 — backend.** Whatever Phase 1 submits to at scale: quota, moderation,
 deduplication, and the path back into `scripts/01_prepare_field_data.py` so a

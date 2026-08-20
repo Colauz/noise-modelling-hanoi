@@ -51,6 +51,16 @@ class NoiseMap(val cells: List<GridCell>) {
 
     fun cellsOf(site: String): List<GridCell> = bySite[site].orEmpty()
 
+    /**
+     * Residual energy of a site at one hour, for the traffic scenario.
+     *
+     * Computed from the cells themselves, the way `hanoi_noise.gaml` does it, so
+     * that the app's scenario and the model's agree instead of merely resembling
+     * each other.
+     */
+    fun ambientEnergyOf(site: String, hour: Int): Double =
+        Scenario.ambientEnergy(cellsOf(site).map { it.levelAt(hour) })
+
     fun extentOf(site: String): SiteExtent {
         val cs = cellsOf(site)
         return SiteExtent(

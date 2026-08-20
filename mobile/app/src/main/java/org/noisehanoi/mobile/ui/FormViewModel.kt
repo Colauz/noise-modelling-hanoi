@@ -82,6 +82,68 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
     private val outbox by lazy { Outbox(File(getApplication<Application>().filesDir, SubmitWorker.OUTBOX_DIR)) }
 
     /**
+     * The answers so far, on disk beside the instance they will become.
+     *
+     * Android kills backgrounded apps as a matter of routine — a phone call, a
+     * notification, memory pressure — and everything typed into a form lived only
+     * in this ViewModel. A field worker who answered a call halfway through lost
+     * the lot, while the recorded clip stayed on disk as an orphan.
+     *
+     * A flat JSON map rewritten on every change. Not a database, not a state
+     * machine: the file is small, the write is a few hundred bytes, and a draft
+     * that survives is worth more than a clever way of storing it.
+     */
+    private fun draftFile() = File(instanceDir, Outbox.DRAFT_FILE)
+
+    private fun saveDraft() {
+        val answers = _answers.value ?: return
+        runCatching {
+            val json = org.json.JSONObject()
+            answers.values.forEach { (k, v) -> json.put(k, v) }
+            val attachments = org.json.JSONObject()
+            answers.attachments.forEach { (field, a) ->
+                attachments.put(field, org.json.JSONObject()
+                    .put("fileName", a.fileName)
+                    .put("absolutePath", a.absolutePath))
+            }
+            draftFile().writeText(
+                org.json.JSONObject().put("values", json).put("attachments", attachments).toString()
+            )
+        }
+    }
+
+    private fun restoreDraft(spec: FormSpec, dir: File): Answers? {
+        val file = File(dir, Outbox.DRAFT_FILE)
+        if (!file.isFile) return null
+        return runCatching {
+            val root = org.json.JSONObject(file.readText())
+            var answers = Answers(spec)
+            val values = root.optJSONObject("values")
+            values?.keys()?.forEach { key -> answers = answers.with(key, values.optString(key)) }
+            val attachments = root.optJSONObject("attachments")
+            attachments?.keys()?.forEach { field ->
+                val a = attachments.getJSONObject(field)
+                val path = a.getString("absolutePath")
+                // Only if the file is still there; a clip deleted under us must not
+                // become an attachment the outbox cannot find.
+                if (File(path).isFile) {
+                    answers = answers.withAttachment(
+                        Attachment(field, a.getString("fileName"), path)
+                    )
+                }
+            }
+            answers
+        }.getOrNull()
+    }
+
+    /** The most recent unsaved draft, if the app died with one open. */
+    private fun latestDraftDir(): File? =
+        File(getApplication<Application>().filesDir, SubmitWorker.OUTBOX_DIR)
+            .listFiles()
+            ?.filter { it.isDirectory && File(it, Outbox.DRAFT_FILE).isFile && !File(it, Outbox.STATE_FILE).isFile }
+            ?.maxByOrNull { File(it, Outbox.DRAFT_FILE).lastModified() }
+
+    /**
      * Whether the permission is granted right now.
      *
      * The screens only start these from a permission callback, but that is an
@@ -94,9 +156,23 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
         ContextCompat.checkSelfPermission(getApplication(), permission) == PackageManager.PERMISSION_GRANTED
 
     fun start(requested: FormSpec) {
-        val formSpec = if (settings.publicMode) requested.withOptionalAudio() else requested
+        // Never blocking, in either mode. See `withOptionalAudio`.
+        val formSpec = requested.withOptionalAudio()
         if (_answers.value != null && ::spec.isInitialized && spec.id == formSpec.id) return
         spec = formSpec
+
+        // Pick up where a killed app left off, if it left anything.
+        val resumed = latestDraftDir()?.let { dir -> restoreDraft(formSpec, dir)?.let { dir to it } }
+        if (resumed != null) {
+            instanceDir = resumed.first
+            instanceId = "uuid:" + resumed.first.name.removePrefix("uuid_")
+            startedAt = File(resumed.first, Outbox.DRAFT_FILE).lastModified()
+            _answers.value = resumed.second
+            _meter.value = MeterState()
+            _submitted.value = null
+            return
+        }
+
         instanceId = InstanceXml.newInstanceId()
         instanceDir = outbox.newDir(instanceId)
         startedAt = System.currentTimeMillis()
@@ -110,6 +186,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
 
     fun set(name: String, value: String?) {
         _answers.value = _answers.value?.with(name, value)
+        saveDraft()
     }
 
     // --- GPS ----------------------------------------------------------------
@@ -146,6 +223,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
         val point = _gps.value.point ?: return
         val field = spec.questions.filterIsInstance<GeoPointQ>().firstOrNull()?.name ?: return
         _answers.value = _answers.value?.withGeoPoint(field, point)
+        saveDraft()
         stopGps()
     }
 
@@ -158,6 +236,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
             "site",
             if (distance <= Sites.SITE_RADIUS_M) site.choiceName else "other_site",
         )
+        saveDraft()
     }
 
     /** Nearest campaign site to the current fix, and its distance, for the UI. */
@@ -230,6 +309,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
                         updated = updated.with("noise_db", String.format(Locale.US, "%.1f", reading.leqDb))
                     }
                     _answers.value = updated
+                    saveDraft()
                 }
                 audioSource = reading.audioSource
                 _meter.value = MeterState(
@@ -285,6 +365,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
             ?.takeIf { it.fileName != file.name }
             ?.let { File(it.absolutePath).delete() }
         _answers.value = answers.withAttachment(Attachment(fieldName, file.name, file.absolutePath))
+        saveDraft()
     }
 
     fun photoTarget(fieldName: String): File = File(instanceDir, "${fieldName}_${System.currentTimeMillis()}.jpg")
@@ -318,6 +399,7 @@ class FormViewModel(application: Application) : AndroidViewModel(application) {
             // to the XLSForm's own id — which a Kobo server will answer 404.
             deployment = settings.deployedForm(spec.title),
         )
+        draftFile().delete()   // it is an instance now, not a draft
         outbox.save(instanceId, spec.id, spec.title, xml)
         SubmitWorker.enqueue(getApplication())
         _submitted.value = instanceId
