@@ -24,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -55,10 +56,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
+import org.noisehanoi.mobile.form.GeoPoint
 import org.noisehanoi.mobile.location.GpsFixes
 import org.noisehanoi.mobile.study.GridCell
 import org.noisehanoi.mobile.study.NoiseMap
@@ -125,6 +129,8 @@ fun MapScreen(onBack: () -> Unit) {
                     )
                 }
             }
+
+            HereCard(study)
 
             NoiseCanvas(
                 cells = cells,
@@ -230,8 +236,6 @@ fun MapScreen(onBack: () -> Unit) {
                 }
             }
 
-            HereCard(study)
-
             ScopeNotice(multiplier)
         }
     }
@@ -332,45 +336,78 @@ private fun Legend() {
     }
 }
 
-/** "What is predicted where I am standing", with the refusal that goes with it. */
+/**
+ * The predicted level where the phone is standing.
+ *
+ * Two things it does not do, and both are the point. It does not take the first
+ * fix the platform offers: that can be a network fix tens of metres wide, and on a
+ * 40 m grid a 50 m fix chooses the cell at random. It listens for a while, keeps
+ * the best, and says how good it was. And it does not answer outside the three
+ * measured areas.
+ *
+ * No hour is reported either, because the delivered model has no hour term and
+ * saying "at 17:00" would imply one.
+ */
 @Composable
 private fun HereCard(study: StudyData) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var text by remember { mutableStateOf<String?>(null) }
+    var reading by remember { mutableStateOf<String?>(null) }
+    var searching by remember { mutableStateOf(false) }
+    var best by remember { mutableStateOf<GeoPoint?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
 
     fun readHere() {
         job?.cancel()
-        text = "Waiting for a fix…"
+        searching = true
+        best = null
+        reading = null
         job = scope.launch {
-            val fix = withTimeoutOrNull(30_000) {
+            // `first` ends the flow the moment a fix is good enough, and the
+            // timeout ends it otherwise; `best` holds the best seen either way.
+            // Throwing to break out of the collect would cancel this coroutine
+            // whole, and the answer below would never be written.
+            withTimeoutOrNull(SEARCH_MS) {
                 GpsFixes.stream(context)
-                    .catch { text = it.message ?: "Location unavailable" }
-                    // A fix of now, not the last one the platform happens to hold.
-                    .first { it.accuracyM > 0 && it.ageMillis() <= GpsFixes.STALE_AFTER_MS }
+                    .catch { reading = it.message ?: "Location unavailable" }
+                    .filter { it.accuracyM > 0 && it.ageMillis() <= GpsFixes.STALE_AFTER_MS }
+                    .onEach { fix ->
+                        val current = best
+                        if (current == null || fix.accuracyM < current.accuracyM) best = fix
+                    }
+                    .first { it.accuracyM <= GOOD_ENOUGH_M }
             }
-            if (fix == null) {
-                if (text == "Waiting for a fix…") text = "No fix within 30 s."
-                return@launch
-            }
-            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-            val mapped = hour.coerceIn(NoiseMap.FIRST_HOUR, NoiseMap.LAST_HOUR)
-            val nearest = study.map.nearestCell(fix.latitude, fix.longitude)
-            text = if (nearest == null) {
-                String.format(
-                    Locale.US,
-                    "You are outside the three measured areas. Nothing in this study licenses a " +
-                        "prediction here, so the app does not make one. (fix %.5f, %.5f)",
-                    fix.latitude, fix.longitude,
-                )
-            } else {
-                val (cell, distance) = nearest
-                String.format(
-                    Locale.US,
-                    "%s: %.1f dB predicted at %02d:00, %.0f m from the nearest grid cell.",
-                    cell.site, cell.levelAt(mapped), mapped, distance,
-                )
+            searching = false
+            val fix = best
+            reading = when {
+                fix == null -> "No fix in ${SEARCH_MS / 1000} s. Try outdoors."
+                else -> {
+                    val nearest = study.map.nearestCell(fix.latitude, fix.longitude)
+                    if (nearest == null) {
+                        String.format(
+                            Locale.US,
+                            "Outside the three measured areas — no prediction. (%.5f, %.5f, ±%.0f m)",
+                            fix.latitude, fix.longitude, fix.accuracyM,
+                        )
+                    } else {
+                        val (cell, distance) = nearest
+                        val caveat = if (fix.accuracyM > NoiseMap.CELL_SIZE_M) {
+                            String.format(
+                                Locale.US,
+                                "  The fix is ±%.0f m against 40 m cells, so which cell this is " +
+                                    "is partly chance.",
+                                fix.accuracyM,
+                            )
+                        } else {
+                            ""
+                        }
+                        String.format(
+                            Locale.US,
+                            "%.1f dB predicted — %s, %.0f m from the cell centre, fix ±%.0f m.%s",
+                            cell.levelAt(NoiseMap.FIRST_HOUR), cell.site, distance, fix.accuracyM, caveat,
+                        )
+                    }
+                }
             }
         }
     }
@@ -378,26 +415,41 @@ private fun HereCard(study: StudyData) {
     val permission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
-        if (granted.values.any { it }) readHere() else text = "Location permission refused."
+        if (granted.values.any { it }) readHere() else reading = "Location permission refused."
     }
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Where I am standing", style = MaterialTheme.typography.titleSmall)
-            text?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-            OutlinedButton(onClick = {
-                permission.launch(
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            Text("Predicted level where I am", style = MaterialTheme.typography.titleSmall)
+            if (searching) {
+                Text(
+                    best?.let { String.format(Locale.US, "Searching… best so far ±%.0f m", it.accuracyM) }
+                        ?: "Searching…",
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-            }) { Text("Read the map at my position") }
-            Text(
-                "No answer outside the three measured areas.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+            reading?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            OutlinedButton(
+                enabled = !searching,
+                onClick = {
+                    permission.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        )
+                    )
+                },
+            ) { Text(if (reading == null) "Read my position" else "Read again") }
         }
     }
 }
+
+/** How long to listen for a better fix before answering with the best seen. */
+private const val SEARCH_MS = 25_000L
+
+/** Accurate enough to choose a 40 m cell without ambiguity; stop looking. */
+private const val GOOD_ENOUGH_M = 15.0
 
 @Composable
 private fun ScopeNotice(multiplier: Float) {
