@@ -1,0 +1,1368 @@
+% ============================================================================
+%  presentation/script.tex --- the speaker script, slide by slide, EN | FR
+%
+%  WHY BOTH LANGUAGES. The talk is given in English; the team thinks in French.
+%  The left column is what you SAY, written to be spoken aloud rather than read
+%  silently: short sentences, no subordinate clauses, no words you would have to
+%  practise. The right column is the same thing in French, so that nobody is
+%  reciting a sentence they do not fully own.
+%
+%  The French is NOT a translation exercise. Where the English is deliberately
+%  blunt -- "it leaked", "we were wrong" -- the French is blunt too. If the two
+%  columns ever disagree in force, the English is the one to fix.
+%
+%  THIS FILE IS PROSE, NOT A SOURCE OF NUMBERS. Every figure quoted here also
+%  appears on a slide, and the slide gets it from models/metrics.json. If a
+%  number here disagrees with a slide, the slide is right and this is stale.
+%
+%  Build:  make -C presentation script     ->  script.pdf
+% ============================================================================
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifLuaTeX
+  \usepackage{fontspec}
+  \IfFontExistsTF{Lato}{\setsansfont{Lato}}{}
+\else
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\fi
+\usepackage[english,french]{babel}
+\usepackage[a4paper,margin=15mm,top=17mm,bottom=17mm]{geometry}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{ink}   {HTML}{1A1A1A}
+\definecolor{accent}{HTML}{1F5C8B}
+\definecolor{good}  {HTML}{2E7D32}
+\definecolor{bad}   {HTML}{C62828}
+\definecolor{warn}  {HTML}{EF6C00}
+\definecolor{muted} {HTML}{6E6E6E}
+\definecolor{rule}  {HTML}{D8D8D4}
+\definecolor{wash}  {HTML}{F4F6F8}
+
+\renewcommand{\familydefault}{\sfdefault}
+\color{ink}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\footnotesize\color{muted}\thepage}
+\fancyhead[L]{\footnotesize\color{muted}Noise Modelling Hanoi --- speaker script}
+\fancyhead[R]{\footnotesize\color{muted}EN spoken \; $\cdot$ \; FR pour comprendre}
+
+% --------------------------------------------------------------- structure
+% \slide{number}{short title}{minute mark}
+\newcommand{\slide}[3]{%
+  \par\vspace{5mm}\noindent
+  \colorbox{accent}{\parbox{\dimexpr\textwidth-2\fboxsep}{%
+    \color{white}\vspace{.6mm}
+    \textbf{#1}\hspace{3mm}#2\hfill\small #3\vspace{.6mm}}}
+  \par\vspace{1.5mm}}
+
+% \section-level marker for an act of the talk
+\newcommand{\act}[2]{%
+  \par\vspace{7mm}\noindent
+  {\color{accent}\rule{\textwidth}{.9pt}}\par\vspace{1.5mm}
+  {\large\bfseries\color{accent}#1}\hfill{\color{muted}#2}
+  \par\vspace{.5mm}{\color{rule}\rule{\textwidth}{.4pt}}\par}
+
+% The two columns. \say is the whole unit: English left, French right.
+%
+% Fixed widths, not tabularx: tabularx scans its body for a literal
+% \end{tabularx}, so wrapping it in a \newenvironment hides the terminator and
+% the whole document ends up inside one unfinished cell. 84 + 5 + rule + 5 + 84
+% is \textwidth on A4 with 15 mm margins.
+\newcolumntype{S}{>{\setlength{\parskip}{1.1mm}}p{84mm}}
+\newenvironment{say}{%
+  \begin{tabular}{@{}S@{\hspace{5mm}}|@{\hspace{5mm}}S@{}}
+}{%
+  \end{tabular}\par}
+
+% A line that must be said exactly, or must never be said.
+\newcommand{\must}[1]{{\color{good}\textbf{#1}}}
+\newcommand{\never}[1]{{\color{bad}\textbf{#1}}}
+\newcommand{\care}[1]{{\color{warn}\textbf{#1}}}
+\newcommand{\cue}[1]{\par\vspace{1mm}{\footnotesize\color{muted}\textit{#1}}\par}
+
+% A boxed aside spanning the width: for questions to expect.
+\newcommand{\aside}[2]{%
+  \par\vspace{1.5mm}\noindent
+  \colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1mm}
+    \footnotesize\textbf{#1}\par\vspace{.7mm}#2\vspace{1mm}}}\par}
+
+\begin{document}
+\selectlanguage{english}
+
+% ============================================================================
+\begin{center}
+  {\LARGE\bfseries\color{accent} Speaker script}\\[1.5mm]
+  {\large What a low-cost smartphone protocol can and cannot establish about
+   urban noise}\\[3mm]
+  {\color{muted}48 slides \; $\cdot$ \; 44 spoken, 4 backup \; $\cdot$ \;
+   target 28 minutes \; $\cdot$ \; Laurian Jamin \& Lucas Zborowski}
+\end{center}
+
+\vspace{4mm}
+\noindent
+\colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1.5mm}
+\textbf{How to use this.} The \textbf{left column is what you say}, written to be
+spoken: short sentences, ordinary words, nothing you would have to practise. The
+\textbf{right column is the same thing in French}, so that nobody recites a
+sentence they do not own. Read the French first, speak the English.
+
+\medskip
+\selectlanguage{french}
+\textbf{Comment s'en servir.} La \textbf{colonne de gauche est ce que vous dites},
+écrite pour être prononcée~: phrases courtes, mots ordinaires, rien qui demande de
+s'entraîner. La \textbf{colonne de droite dit la même chose en français}, pour que
+personne ne récite une phrase qu'il ne possède pas. Lisez le français d'abord,
+dites l'anglais.
+\selectlanguage{english}
+\vspace{1.5mm}}}
+
+\vspace{4mm}
+\noindent
+\begin{tabularx}{\textwidth}{@{}p{42mm}X@{}}
+  \toprule
+  \multicolumn{2}{@{}l}{\textbf{Four rules that hold for the whole talk}} \\
+  \midrule
+  \must{Lead with the negatives} &
+    Three of the four results are negative, and that is the contribution. Do not
+    save them for the end. \\
+  \must{Never say ``measured in dB''} &
+    Say \emph{relative}, or \emph{contrast}. Nothing here is calibrated against a
+    standard, and one careless sentence undoes twenty minutes of care. \\
+  \must{No compliance claim} &
+    The QCVN colours are a reading aid. If you say ``exceeds the limit'', you have
+    made a regulatory claim this work cannot support. \\
+  \must{If you do not know, say so} &
+    ``We did not test that'' is a complete answer and it is the strongest one
+    available to this project. \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{3mm}
+\noindent
+{\footnotesize\color{muted}Timings are cumulative minute marks, not durations.
+If you are behind at slide 30, cut slides 32 and 33 --- they are engineering
+detail and nothing later depends on them.}
+
+\clearpage
+
+% ============================================================================
+\act{Act I --- what we set out to do, and what constrains it}{slides 1--13 \; $\cdot$ \; 0--10 min}
+
+\slide{1}{Title}{0:00}
+\begin{say}
+Good morning. Our subject is what a smartphone protocol can, and cannot,
+establish about urban noise.
+
+I want to be clear about one thing before anything else. \must{This is not a
+noise map of Hanoi.} We cannot produce one. It is a study of what this method
+actually supports.
+
+Three months, 363 measurements, three ordinary phones. And three negative results
+that hold up better than the positive one.
+&
+Bonjour. Notre sujet, c'est ce qu'un protocole smartphone peut établir --- et ne
+peut pas établir --- sur le bruit urbain.
+
+Une chose à poser d'emblée. \must{Ce n'est pas une carte de bruit de Hanoï.} Nous
+sommes incapables d'en produire une. C'est une étude de ce que cette méthode
+supporte réellement.
+
+Trois mois, 363 mesures, trois téléphones ordinaires. Et trois résultats négatifs
+qui tiennent mieux que le positif.
+\end{say}
+\cue{Do not apologise for the negatives here or anywhere. They are the result.}
+
+\slide{2}{Outline}{0:45}
+\begin{say}
+Three parts. What we measured and what it supports. Then what our own audit found
+inside it. Then where it goes --- an Android application, and a second city.
+
+The audit is the part you may not expect. It is us auditing ourselves, not a
+reviewer auditing us.
+&
+Trois parties. Ce que nous avons mesuré et ce que ça supporte. Puis ce que notre
+propre audit y a trouvé. Puis la suite --- une application Android, et une
+deuxième ville.
+
+L'audit est la partie inattendue. C'est nous qui nous auditons, pas un relecteur
+qui nous audite.
+\end{say}
+
+\slide{4}{The gap this project sits in}{1:15}
+\begin{say}
+Hanoi is dense, growing fast, and its traffic is motorcycles rather than cars.
+
+Vietnam has no national noise-mapping programme. And there is exactly one
+instrumented campaign ever published for Hanoi. It measured in 2005 to 2007.
+
+Class 1 sound level meters and commercial propagation software are out of reach
+for most local research budgets. So the question is: how far does a protocol
+built from three consumer phones and open data actually get you?
+&
+Hanoï est dense, en croissance rapide, et son trafic est fait de deux-roues, pas
+de voitures.
+
+Le Vietnam n'a pas de programme national de cartographie du bruit. Et il existe
+exactement une campagne instrumentée publiée pour Hanoï. Elle mesurait en
+2005--2007.
+
+Les sonomètres de classe 1 et les logiciels de propagation commerciaux sont hors
+de portée de la plupart des budgets locaux. D'où la question~: jusqu'où va
+vraiment un protocole fait de trois téléphones grand public et de données
+ouvertes~?
+\end{say}
+\cue{The 2005--2007 campaign is not rhetoric: it is the only anchor we have for
+absolute levels, and its age is why our bias interval is so wide.}
+
+\slide{5}{Research questions, and what is out of scope}{2:00}
+\begin{say}
+Four questions, fixed before we ran anything. Can open-data morphology predict
+noise at an unmeasured place? Does a model transfer between cities? Does traffic
+flow from video explain the levels? And what can you claim with no absolute
+reference?
+
+I will give you the answers now. Weakly. No. No. And contrasts, never levels.
+
+\must{Three of the four are negative.} An academic audience listens better to
+\emph{how} once it already knows \emph{what}.
+&
+Quatre questions, fixées avant toute analyse. La morphologie issue de données
+ouvertes prédit-elle le bruit en un point non mesuré~? Un modèle se transfère-t-il
+d'une ville à l'autre~? Le flux de véhicules extrait de la vidéo explique-t-il les
+niveaux~? Et que peut-on affirmer sans référence absolue~?
+
+Je donne les réponses tout de suite. Faiblement. Non. Non. Et des contrastes,
+jamais des niveaux.
+
+\must{Trois réponses sur quatre sont négatives.} Un public académique écoute mieux
+le \emph{comment} quand il connaît déjà le \emph{quoi}.
+\end{say}
+
+\slide{6}{Related work}{2:45}
+\begin{say}
+The bibliography is organised by what each reference is \emph{for}, not by date.
+
+One paper deserves a sentence. Roberts and colleagues, 2017. Spatial
+cross-validation must exclude the area your features are built from. That is the
+paper that made us withdraw our own headline number. It comes back in part two.
+&
+La bibliographie est organisée par la \emph{fonction} de chaque référence, pas par
+date.
+
+Un article mérite une phrase. Roberts et collègues, 2017. La validation croisée
+spatiale doit exclure la zone d'où viennent vos variables. C'est l'article qui
+nous a fait retirer notre propre chiffre principal. Il revient en partie deux.
+\end{say}
+
+\slide{8}{The campaign}{3:20}
+\begin{say}
+363 points across three deliberately contrasted areas. A new peri-urban
+development, the dense historic quarter, and a transport corridor.
+
+Left: the level distribution per site. Right: the hourly profile. \must{Those two
+contrasts are what this protocol supports.} Not the absolute height of either
+curve --- the shape.
+
+Three collectors, three phones, twenty-five seconds per point, an audio clip, a
+ten-metre GPS gate. Both datasets are published under CC-BY.
+&
+363 points sur trois zones délibérément contrastées. Un développement
+péri-urbain neuf, le quartier historique dense, et un corridor de transport.
+
+À gauche~: la distribution des niveaux par site. À droite~: le profil horaire.
+\must{Ces deux contrastes sont ce que le protocole supporte.} Pas la hauteur
+absolue des courbes --- leur forme.
+
+Trois collecteurs, trois téléphones, vingt-cinq secondes par point, un extrait
+audio, une porte GPS à dix mètres. Les deux jeux de données sont publiés en CC-BY.
+\end{say}
+
+\slide{9}{Metrology --- the spine of the talk}{4:15}
+\begin{say}
+This slide is the spine of everything that follows.
+
+The three phones were calibrated against \emph{each other}. Never against a
+reference instrument. \must{A bias common to all three is invisible in our data
+by construction.} It cannot be detected from the inside.
+
+So: no absolute level as a fact, and no compliance claim. But contrasts between
+places and between hours survive, because a common bias cancels in a difference.
+
+And the quantity is written there. A twenty-five second integral. It is not
+$L_\mathrm{den}$, which is a year. Comparing them is not a rounding error, it is a
+category error.
+&
+Cette diapo est la colonne vertébrale de tout ce qui suit.
+
+Les trois téléphones ont été calibrés \emph{les uns sur les autres}. Jamais contre
+un instrument de référence. \must{Un biais commun aux trois est invisible dans nos
+données par construction.} Indétectable de l'intérieur.
+
+Donc~: aucun niveau absolu comme un fait, et aucune revendication de conformité.
+Mais les contrastes entre lieux et entre heures survivent, parce qu'un biais
+commun s'annule dans une différence.
+
+Et la grandeur est écrite là. Une intégrale sur vingt-cinq secondes. Ce n'est pas
+$L_\mathrm{den}$, qui est une année. Les comparer n'est pas une erreur d'arrondi,
+c'est une erreur de catégorie.
+\end{say}
+\aside{Expect this question --- and it is a fair one}{%
+\emph{``Was a single side-by-side reading against a class 2 meter really out of
+reach?''} \; Answer it, do not deflect: \must{no, and it is the cheapest thing we
+could have done.} A half-day rental would settle the absolute scale. It was not
+done, and it is still not booked. Slide 41 says so on the record. ---
+\selectlanguage{french}\emph{«~Une seule mesure côte à côte avec un sonomètre de
+classe~2 était-elle vraiment hors de portée~?~»} Répondez, n'esquivez pas~:
+\must{non, et c'est la chose la moins chère que nous aurions pu faire.}
+\selectlanguage{english}}
+
+\slide{11}{The chain, end to end}{5:30}
+\begin{say}
+Left to right, once. Three sources: the survey, OpenStreetMap, the traffic
+videos. Then cleaning, features, counting. Then evaluation. Then the outputs.
+
+The line to remember is the last one. \must{The delivered model is chosen by
+code, not by us.} Script 04 writes which model won; script 07 reads that flag.
+Nothing downstream can quietly substitute a different one.
+&
+De gauche à droite, une fois. Trois sources~: l'enquête, OpenStreetMap, les
+vidéos de trafic. Puis nettoyage, variables, comptage. Puis évaluation. Puis les
+sorties.
+
+La ligne à retenir est la dernière. \must{Le modèle livré est choisi par le code,
+pas par nous.} Le script 04 écrit quel modèle a gagné~; le script 07 lit ce
+drapeau. Rien en aval ne peut en substituer un autre discrètement.
+\end{say}
+\cue{This came straight out of the audit. Before it, a permissive split could put
+a model on the published map that lost every strict split, and nobody would have
+noticed.}
+
+\slide{12}{The evaluation protocol}{6:15}
+\begin{say}
+If you take one methodological slide away, take this one.
+
+Every model is scored under three splits, on identical folds. A permissive one.
+The reference one --- buffered leave-one-out at three hundred metres. And the
+strictest, leave-one-site-out.
+
+Why three hundred metres? \must{Because the features aggregate over a disc of
+radius three hundred metres.} Two points a hundred metres apart share more than
+eighty-five percent of that disc. Group them together and the model is being
+tested on near-twins of its own training data. That score is not out-of-sample.
+
+\must{The buffer must equal the feature radius.} That is the rule. It is also the
+rule we broke, in July.
+&
+Si vous ne retenez qu'une diapo de méthode, retenez celle-ci.
+
+Chaque modèle est évalué sous trois découpages, sur des plis identiques. Un
+permissif. Le découpage de référence --- leave-one-out tamponné à trois cents
+mètres. Et le plus strict, leave-one-site-out.
+
+Pourquoi trois cents mètres~? \must{Parce que les variables agrègent sur un disque
+de rayon trois cents mètres.} Deux points distants de cent mètres partagent plus
+de quatre-vingt-cinq pour cent de ce disque. Regroupez-les et le modèle est testé
+sur des quasi-jumeaux de son entraînement. Ce score n'est pas hors-échantillon.
+
+\must{Le tampon doit égaler le rayon des variables.} C'est la règle. C'est aussi
+la règle que nous avons enfreinte, en juillet.
+\end{say}
+
+\slide{13}{Eight models, three baselines, one ablation}{7:30}
+\begin{say}
+Nothing is compared against nothing. The baselines are the point.
+
+Two things worth saying out loud. First, mean-per-site-per-hour is a hard
+baseline, and we said so before running it --- a lookup table is genuinely
+informative in a city with this traffic rhythm.
+
+Second, the hybrid --- physics plus machine learning --- is \must{the architecture
+we ourselves had recommended} in an earlier draft. We put it in the list and let
+it lose. That is the whole point of the next section.
+&
+Rien n'est comparé à rien. Les baselines sont l'essentiel.
+
+Deux choses à dire à voix haute. D'abord, la moyenne par site et par heure est une
+baseline exigeante, et nous l'avons dit avant de la lancer --- une table de
+correspondance est réellement informative dans une ville à ce rythme de trafic.
+
+Ensuite, l'hybride --- physique plus apprentissage --- c'est \must{l'architecture
+que nous avions nous-mêmes recommandée} dans une version antérieure. Nous l'avons
+mise dans la liste et laissée perdre. C'est tout l'enjeu de la section suivante.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{Act II --- the results, and the audit of our own work}{slides 14--26 \; $\cdot$ \; 8--16 min}
+
+\slide{15}{The ranking inverts}{8:15}
+\begin{say}
+Give the room fifteen seconds on this before you speak. It lands much harder
+found than told.
+
+\care{Read across, not down.} On the permissive split, the elaborate hybrid wins
+--- it is the top line on the left. On the two strict splits it collapses. The
+green line, three parameters, barely moves.
+
+\must{The ranking reverses between a permissive split and one that tests
+generalisation.} That is the result. Not which model won --- the fact that the
+answer depends on the split.
+
+And we reported that the architecture we had recommended loses. It is tested and
+rejected at this sample size, not deferred to future work.
+&
+Laissez la salle quinze secondes avant de parler. Ça marque bien plus quand on le
+trouve que quand on l'entend.
+
+\care{Lisez en travers, pas de haut en bas.} Sur le découpage permissif,
+l'hybride sophistiqué gagne --- c'est la ligne du haut à gauche. Sur les deux
+découpages stricts, il s'effondre. La ligne verte, trois paramètres, bouge à
+peine.
+
+\must{Le classement s'inverse entre un découpage permissif et un découpage qui
+teste la généralisation.} C'est ça, le résultat. Pas quel modèle gagne --- le fait
+que la réponse dépende du découpage.
+
+Et nous avons publié que l'architecture que nous recommandions perd. Testée et
+rejetée à cette taille d'échantillon, pas repoussée aux travaux futurs.
+\end{say}
+\aside{If asked why the hybrid wins the permissive split}{%
+Six-hundred-metre blocks still leave near-neighbours in training when the features
+span three hundred metres. A flexible learner picks up local structure it cannot
+generalise. That is exactly the effect Roberts 2017 describes. ---
+\selectlanguage{french}Des blocs de 600~m laissent encore des voisins proches dans
+l'entraînement quand les variables portent sur 300~m.\selectlanguage{english}}
+
+\slide{16}{The delivered model}{9:30}
+\begin{say}
+What won is a line-source attenuation law. Two distances, three constants, and
+\must{no morphological data at all.}
+
+Note the form. Energy falls as one over $d$, not one over $d$ squared. A street is
+a \emph{line} of sources, not a point --- so minus three decibels per doubling of
+distance, not minus six.
+
+One honesty note. The background term fits to minus ninety-nine decibels. That is
+a boundary solution. \must{The background is not identifiable from this data}, so
+what we call a three-parameter model is really two.
+
+And say the error out loud. \care{A typical prediction is wrong by five
+decibels.} That is a factor of three in acoustic energy. Enough for a contrast.
+Nowhere near enough for an assessment.
+&
+Ce qui gagne est une loi d'atténuation de source linéique. Deux distances, trois
+constantes, et \must{aucune donnée morphologique.}
+
+Notez la forme. L'énergie décroît en un sur $d$, pas un sur $d$ carré. Une rue est
+une \emph{ligne} de sources, pas un point --- donc moins trois décibels par
+doublement de distance, pas moins six.
+
+Une note d'honnêteté. Le terme de fond converge vers moins quatre-vingt-dix-neuf
+décibels. C'est une solution de bord. \must{Le fond n'est pas identifiable avec
+ces données}, donc notre modèle à trois paramètres en a réellement deux.
+
+Et dites l'erreur à voix haute. \care{Une prédiction typique se trompe de cinq
+décibels.} Un facteur trois en énergie acoustique. Assez pour un contraste. Très
+loin d'être assez pour une évaluation.
+\end{say}
+
+\slide{17}{``R-squared 0.25 --- isn't that very low?''}{10:45}
+\begin{say}
+This question always comes. It is much stronger answered before it is asked.
+
+Two measurements a few metres apart, at the same hour, must be predicted
+identically by any spatial model. So whatever they disagree by is variance
+\must{no spatial model can ever explain.}
+
+Twenty-nine such pairs under twenty metres. They differ by four point two
+decibels on average. Work that through and, at the forty-metre scale the map
+works at, \must{the ceiling is around 0.54.}
+
+The delivered model reaches 0.246. \must{About half of what is attainable, not a
+tenth of it.}
+
+The caveat is on the slide and I will say it: pairs at the same hour may be on
+different days, so this includes day-to-day variation and overestimates
+measurement noise. And twenty-nine pairs is few. It is an order of magnitude, not
+a bound.
+&
+Cette question vient toujours. Elle est bien plus forte répondue avant d'être
+posée.
+
+Deux mesures à quelques mètres l'une de l'autre, à la même heure, doivent être
+prédites identiquement par tout modèle spatial. Donc leur désaccord est une
+variance \must{qu'aucun modèle spatial ne pourra jamais expliquer.}
+
+Vingt-neuf paires de ce type sous vingt mètres. Elles diffèrent de quatre virgule
+deux décibels en moyenne. En déroulant le calcul, à l'échelle de quarante mètres
+où travaille la carte, \must{le plafond est autour de 0,54.}
+
+Le modèle livré atteint 0,246. \must{Environ la moitié de l'atteignable, pas le
+dixième.}
+
+La réserve est sur la diapo et je la dis~: des paires à la même heure peuvent être
+sur des jours différents, donc ceci inclut la variation jour à jour et surestime
+le bruit de mesure. Et vingt-neuf paires, c'est peu. C'est un ordre de grandeur,
+pas une borne.
+\end{say}
+\cue{The deeper reason is the quantity itself: a 25-second sample in motorcycle
+traffic, where a single horn reaches plus seventeen decibels.}
+
+\slide{18}{The map, and the caveat}{12:00}
+\begin{say}
+The predicted grid over the three measured areas. Forty-metre cells.
+
+Two caveats, and I want to be first to say both.
+
+\care{The grid step is not the accuracy.} Forty-metre cells drawn from a model
+whose typical error is five decibels promise a precision they do not have. Those
+are routinely confused --- including by us, in July.
+
+And \care{there is no hour}. The export carries seventeen hourly columns and all
+seventeen are identical, for every cell. The kernel has no hour term. The
+application removed its hour slider for exactly that reason. \must{Nothing varies
+that the model does not model.}
+
+The colours are QCVN reference bands, used descriptively. \never{They are not a
+compliance statement.}
+&
+La grille prédite sur les trois zones mesurées. Cellules de quarante mètres.
+
+Deux réserves, et je veux être le premier à les dire.
+
+\care{Le pas de la grille n'est pas la précision.} Des cellules de quarante mètres
+issues d'un modèle dont l'erreur typique est de cinq décibels promettent une
+précision qu'elles n'ont pas. On les confond couramment --- nous compris, en
+juillet.
+
+Et \care{il n'y a pas d'heure}. L'export porte dix-sept colonnes horaires et les
+dix-sept sont identiques, pour chaque cellule. Le noyau n'a pas de terme horaire.
+L'application a retiré son curseur d'heure pour exactement cette raison.
+\must{Rien ne varie que le modèle ne modélise pas.}
+
+Les couleurs sont les bandes QCVN, en lecture descriptive. \never{Ce n'est pas une
+déclaration de conformité.}
+\end{say}
+
+\slide{19}{What the learned model was leaning on}{13:00}
+\begin{say}
+Two thirds of the learned model's split gain goes to morphology. Built area, road
+density, distance to the two road classes.
+
+And it buys nothing. Morphology alone scores 0.041 under the reference protocol.
+
+\must{Where a model spends its capacity and where it earns its score are different
+questions.} Only the second one is a result. Feature importance is the most
+over-read plot in applied machine learning, and this is why.
+&
+Deux tiers du gain de séparation du modèle appris vont à la morphologie. Surface
+bâtie, densité de voirie, distance aux deux classes de routes.
+
+Et ça n'achète rien. La morphologie seule obtient 0,041 sous le protocole de
+référence.
+
+\must{Où un modèle dépense sa capacité et où il gagne son score sont deux
+questions différentes.} Seule la seconde est un résultat. L'importance des
+variables est le graphique le plus sur-interprété du machine learning appliqué, et
+voilà pourquoi.
+\end{say}
+
+\slide{20}{The three negative results}{13:45}
+\begin{say}
+These three are the contribution. Say it in those words.
+
+One. At 363 points over three sites, three physical parameters beat every learned
+model we built. Capacity does not pay.
+
+Two, and this is the one with the most reuse value. Cross-city transfer fails ---
+and in three distinct ways. It is not a calibration offset: remove the
+twenty-six-decibel mean difference and R-squared is still negative. Version one
+transfers \must{anti-information} --- its correlation with Hanoi is
+\emph{negative}, it ranks quiet and loud the wrong way round. Version two, with
+convention-invariant features, leaves nothing: correlation plus zero point zero
+eight. \must{Not wrong. Empty.}
+
+Against which, log distance to road alone, fitted locally, reaches 0.240.
+\must{One local distance term carries more than a sixty-one-thousand-point model
+from another city carries at all.}
+
+Three. Vehicle flow from video does not explain the levels. And I am not going to
+let that stand as a clean physical finding, because our own audit says it is not.
+&
+Ces trois-là sont la contribution. Dites-le avec ces mots.
+
+Un. À 363 points sur trois sites, trois paramètres physiques battent tous les
+modèles appris. La capacité ne paie pas.
+
+Deux, et c'est celui qui a le plus de valeur de réutilisation. Le transfert entre
+villes échoue --- et de trois façons distinctes. Ce n'est pas un décalage de
+calibration~: retirez les vingt-six décibels d'écart moyen et le R² reste négatif.
+La version un transfère de \must{l'anti-information} --- sa corrélation avec Hanoï
+est \emph{négative}, elle classe le calme et le bruyant à l'envers. La version
+deux, à variables invariantes de convention, ne laisse rien~: corrélation plus
+zéro virgule zéro huit. \must{Pas fausse. Vide.}
+
+Face à quoi, le log de la distance à la route seul, ajusté localement, atteint
+0,240. \must{Un seul terme de distance local porte plus qu'un modèle de
+soixante-et-un mille points d'une autre ville n'en porte du tout.}
+
+Trois. Le flux de véhicules issu de la vidéo n'explique pas les niveaux. Et je ne
+vais pas laisser ça passer pour un résultat physique propre, parce que notre
+propre audit dit le contraire.
+\end{say}
+
+\slide{22}{We found one of our own results was wrong}{15:00}
+\begin{say}
+In August we withdrew our own headline number.
+
+A model scored R-squared equals 0.45 under what we then described as honest
+spatial cross-validation. A simulation was built on it. A project update
+presented it.
+
+The grouping was on hundred-and-ten-metre cells while the features aggregate over
+three hundred. \must{It leaked.}
+
+What replaced it is 0.246 --- roughly half. The retracted deck and map are in the
+archive \must{with their reason attached}, not deleted. Nine corrections were
+applied the same day. And the project pivoted, from producing a noise map to
+studying what this protocol supports.
+&
+En août nous avons retiré notre propre chiffre principal.
+
+Un modèle obtenait un R² de 0,45 sous ce que nous décrivions alors comme une
+validation croisée spatiale honnête. Une simulation avait été construite dessus.
+Une présentation d'avancement l'avait montré.
+
+Le regroupement se faisait sur des cellules de cent dix mètres alors que les
+variables agrègent sur trois cents. \must{Il y avait fuite.}
+
+Ce qui l'a remplacé, c'est 0,246 --- à peu près la moitié. La présentation et la
+carte retirées sont dans l'archive \must{avec leur raison}, pas supprimées. Neuf
+corrections appliquées le jour même. Et le projet a pivoté, de produire une carte
+de bruit vers étudier ce que ce protocole supporte.
+\end{say}
+\cue{Lead the whole talk with this slide if the supervisor is in the room. It is
+the strongest evidence that the other numbers can be trusted.}
+
+\slide{23}{A second audit, on the data itself}{16:00}
+\begin{say}
+The first audit checked the method. This one checks the measurements.
+
+The top half matters as much as the bottom. Raw rows against published rows:
+three hundred and sixty-three to three hundred and sixty-three, nothing dropped.
+Every figure in the README matches the metrics file exactly. No duplicates, weather
+consistent, tests passing.
+
+\must{That is what makes the bottom half credible rather than alarming.} Three
+findings. None of them was known when the results section was written.
+&
+Le premier audit vérifiait la méthode. Celui-ci vérifie les mesures.
+
+La moitié haute compte autant que la basse. Lignes brutes contre lignes
+publiées~: trois cent soixante-trois à trois cent soixante-trois, rien de perdu.
+Chaque chiffre du README correspond exactement au fichier de métriques. Pas de
+doublons, météo cohérente, tests au vert.
+
+\must{C'est ça qui rend la moitié basse crédible plutôt qu'alarmante.} Trois
+constats. Aucun n'était connu quand la section résultats a été écrite.
+\end{say}
+
+\slide{24}{Finding 1 --- a five-decibel discontinuity}{16:45}
+\begin{say}
+On the twenty-seventh of June the level distribution steps down by five decibels,
+and it is not an artefact of when we sampled --- it survives controlling for site,
+hour and noise class.
+
+Be precise about what this does and does not establish. \never{It does not show
+the R-squared is inflated.} It shows there is a large, undocumented, spatially
+structured discontinuity that the model has no term for, and that nobody has
+tested.
+
+Spatially structured is the worrying part. A classifier predicts before-or-after
+from latitude and longitude alone, at an AUC of 0.83. So if the shift is
+instrumental, \care{a model can learn it as morphology.}
+
+Status: open. The test is specified and has not been run. If you ask me which
+cause --- we do not know. The form version changed that day. Saying more than that
+would be inventing.
+&
+Le vingt-sept juin, la distribution des niveaux descend d'une marche de cinq
+décibels, et ce n'est pas un artefact d'échantillonnage --- ça survit au contrôle
+par site, heure et classe de bruit.
+
+Soyez précis sur ce que ça établit et ce que ça n'établit pas. \never{Ça ne montre
+pas que le R² est gonflé.} Ça montre qu'il existe une discontinuité large, non
+documentée, spatialement structurée, que le modèle n'a aucun terme pour
+représenter, et que personne n'a testée.
+
+Spatialement structurée, c'est la partie inquiétante. Un classifieur prédit
+avant-ou-après à partir de la seule latitude-longitude, avec une AUC de 0,83. Donc
+si la marche est instrumentale, \care{un modèle peut l'apprendre comme de la
+morphologie.}
+
+Statut~: ouvert. Le test est spécifié et n'a pas été lancé. Si vous me demandez la
+cause --- nous ne savons pas. La version du formulaire a changé ce jour-là. En dire
+plus serait inventer.
+\end{say}
+
+\slide{25}{Findings 2 and 3}{17:45}
+\begin{say}
+The video chain is measuring something, but not what we thought. The detector
+reports fifty-seven percent cars and thirty-six percent motorcycles. In Hanoi.
+Reality is roughly the inverse.
+
+And the video-to-measurement gaps reach a hundred and sixty-one seconds, for a
+twenty-five-second sample.
+
+So negative result three is far more likely an \care{instrument failure} than a
+finding about acoustics. It should be reported as ``the chain could not be made to
+work''. \must{That is a stronger and more useful statement than the one we started
+with.}
+
+Finding three is a presentation problem, not a science one. The headline ranking
+is not statistically separated --- the confidence intervals overlap almost
+entirely. They were always in the metrics file. They were just not carried into
+the summary table.
+&
+La chaîne vidéo mesure quelque chose, mais pas ce que nous pensions. Le détecteur
+annonce cinquante-sept pour cent de voitures et trente-six pour cent de
+deux-roues. À Hanoï. La réalité est à peu près l'inverse.
+
+Et les écarts entre vidéo et mesure atteignent cent soixante-et-une secondes, pour
+un échantillon de vingt-cinq secondes.
+
+Donc le résultat négatif trois est bien plus vraisemblablement un \care{échec
+instrumental} qu'un constat sur l'acoustique. Il doit être rapporté comme «~la
+chaîne n'a pas pu être faite fonctionner~». \must{C'est un énoncé plus fort et plus
+utile que celui de départ.}
+
+Le constat trois est un problème de présentation, pas de science. Le classement
+principal n'est pas séparé statistiquement --- les intervalles se recouvrent
+presque entièrement. Ils étaient depuis toujours dans le fichier de métriques.
+Simplement pas reportés dans le tableau de synthèse.
+\end{say}
+
+\slide{26}{What the audit leaves standing}{18:30}
+\begin{say}
+The protocol holds. The ranking inversion holds. Negative results one and two
+hold. Provenance is lossless and checkable.
+
+What needs work before submission: diagnose the June discontinuity, reframe result
+three as an instrument failure, and carry the intervals everywhere.
+
+And here is the hinge of the talk. \must{Everything the audit could not repair
+comes back to one thing: we did not control the instrument.} Not the microphone,
+not the app that read it, not the form that recorded it, not the clock that
+timestamped the videos.
+
+That is the argument for the next section.
+&
+Le protocole tient. L'inversion du classement tient. Les résultats négatifs un et
+deux tiennent. La provenance est sans perte et vérifiable.
+
+Ce qui reste à faire avant soumission~: diagnostiquer la discontinuité de juin,
+requalifier le résultat trois en échec instrumental, et propager les intervalles
+partout.
+
+Et voici la charnière de l'exposé. \must{Tout ce que l'audit n'a pas pu réparer
+revient à une seule chose~: nous ne contrôlions pas l'instrument.} Ni le
+microphone, ni l'application qui le lisait, ni le formulaire qui enregistrait, ni
+l'horloge qui horodatait les vidéos.
+
+C'est l'argument de la section suivante.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{Act III --- from a pipeline to an instrument}{slides 27--36 \; $\cdot$ \; 19--25 min}
+
+\slide{28}{Three months, in one picture}{19:00}
+\begin{say}
+Do not read every box. Point at the two raised labels --- those are the two
+retractions --- and then at the last one.
+
+The pattern is the story. \must{Every phase ended by rejecting its own preferred
+answer.} The transfer we set out to do. Then the R-squared we had presented. Then
+the architecture we had recommended ourselves.
+
+And each rejection pointed at the same root cause. So the last three weeks were
+spent building an instrument.
+&
+Ne lisez pas chaque case. Pointez les deux étiquettes surélevées --- ce sont les
+deux retraits --- puis la dernière.
+
+Le motif est l'histoire. \must{Chaque phase s'est terminée en rejetant sa propre
+réponse préférée.} Le transfert que nous voulions faire. Puis le R² que nous avions
+présenté. Puis l'architecture que nous avions nous-mêmes recommandée.
+
+Et chaque rejet pointait la même cause racine. Donc les trois dernières semaines
+ont servi à construire un instrument.
+\end{say}
+
+\slide{29}{Why build an application at all}{20:00}
+\begin{say}
+Four things the campaign could not do.
+
+Control the instrument --- the app we used is closed, we could not see its
+weighting or its window. Measure and record in one session --- two apps meant the
+level of one stretch of street and the audio of another. Scale beyond three
+people. And record what the device even was.
+
+Point two surprises people, and it is a real platform constraint: Android does not
+normally grant the microphone to two consumers at once. One session now does both.
+&
+Quatre choses que la campagne ne pouvait pas faire.
+
+Contrôler l'instrument --- l'application utilisée est fermée, on ne voyait ni sa
+pondération ni sa fenêtre. Mesurer et enregistrer dans une seule session --- deux
+applications, donc le niveau d'un bout de rue et l'audio d'un autre. Passer
+l'échelle au-delà de trois personnes. Et enregistrer ce qu'était l'appareil.
+
+Le point deux surprend, et c'est une vraie contrainte de plateforme~: Android
+n'accorde normalement pas le microphone à deux consommateurs à la fois. Une seule
+session fait maintenant les deux.
+\end{say}
+
+\slide{30}{The application}{21:00}
+\begin{say}
+One sentence each, left to right. Collect --- both forms, offline. Measure ---
+twenty-five seconds, A-weighted. Map --- the predicted level where you are
+standing. Results --- read from the metrics file, negative results included.
+
+\must{And say this plainly: these are drawings, made from the source code. Not
+device screenshots.} The application has never been run in front of a sound
+source. That is the honest limitation four slides from now, and presenting a
+mock-up as a screenshot would contradict everything this talk argues.
+&
+Une phrase par écran, de gauche à droite. Collecter --- les deux formulaires, hors
+ligne. Mesurer --- vingt-cinq secondes, pondéré A. Carte --- le niveau prédit là où
+vous êtes. Résultats --- lus depuis le fichier de métriques, résultats négatifs
+compris.
+
+\must{Et dites-le franchement~: ce sont des dessins, faits depuis le code source.
+Pas des captures d'écran.} L'application n'a jamais tourné devant une source
+sonore. C'est la limite honnête de la diapo dans quatre, et présenter une maquette
+comme une capture contredirait tout ce que cet exposé défend.
+\end{say}
+
+\slide{31}{What was built --- phase by phase}{22:00}
+\begin{say}
+Summarise if you are with a supervisor; go slowly if you are with the people who
+will inherit it. \care{This is the slide they should photograph.}
+
+Phases one and two were deliberately not separated, for the microphone reason.
+
+Phase four got simpler on contact with reality: the published grid is already the
+kernel's output at forty metres, so reading the nearest cell \emph{is} the
+prediction, exactly and by construction.
+
+\must{Phase six is not built, and I am not going to hide it.} Backend, quota,
+moderation, deduplication.
+&
+Résumez si vous êtes face à un encadrant~; ralentissez face à ceux qui vont en
+hériter. \care{C'est la diapo qu'ils devraient photographier.}
+
+Les phases un et deux n'ont délibérément pas été séparées, pour la raison du
+microphone.
+
+La phase quatre s'est simplifiée au contact du réel~: la grille publiée est déjà la
+sortie du noyau à quarante mètres, donc lire la cellule la plus proche \emph{est}
+la prédiction, exactement et par construction.
+
+\must{La phase six n'est pas construite, et je ne vais pas le cacher.} Backend,
+quotas, modération, déduplication.
+\end{say}
+
+\slide{32}{Architecture, and the one design rule}{22:45}
+\begin{say}
+One rule matters. \must{The application does not carry a copy of the study.} The
+build copies the map, the measurements and the metrics file out of the repository
+at build time. Re-run the pipeline, rebuild, and the app moves with it. No number
+is transcribed.
+
+Same principle, third time. The report reads the metrics file. The dashboard reads
+it. Now the app reads it. \must{Every published number has exactly one home.}
+
+That rule came out of the first audit --- until August the same R-squared appeared
+in three documents at once, which is three chances to diverge. And they had.
+&
+Une règle compte. \must{L'application ne porte pas une copie de l'étude.} La
+compilation copie la carte, les mesures et le fichier de métriques depuis le dépôt
+au moment du build. Relancez le pipeline, recompilez, et l'application suit. Aucun
+chiffre n'est recopié.
+
+Même principe, troisième fois. Le rapport lit le fichier de métriques. Le tableau
+de bord le lit. Maintenant l'application le lit. \must{Chaque chiffre publié a
+exactement un domicile.}
+
+Cette règle vient du premier audit --- jusqu'en août le même R² apparaissait dans
+trois documents à la fois, soit trois occasions de diverger. Et ils avaient
+divergé.
+\end{say}
+
+\slide{33}{Three engineering results}{23:30}
+\begin{say}
+Three things that each cost a day and are invisible in a results table.
+
+GAMA does not run on a phone, so the app reaches it two ways --- I will come back
+to that on the next slide.
+
+The middle one is worth dwelling on. \must{The same mistake was made twice.}
+Scaling total energy by a traffic multiplier double-counts the background. We
+found it and corrected it in Python in July. Then rebuilt it in Kotlin in August,
+knowing about it. It gave minus seven decibels where the model gives minus three
+point seven. \must{Knowing a mistake is not the same as being immune to it.} What
+caught it the second time was a test asserting an invariant.
+
+And the third: KoboToolbox renames your form on deployment. The first real
+submission failed with a 404 for a form the server had never heard of. \care{None
+of that is visible from the phone} --- which is the argument for testing against
+the real server rather than reasoning about it.
+&
+Trois choses qui ont coûté un jour chacune et sont invisibles dans un tableau de
+résultats.
+
+GAMA ne tourne pas sur un téléphone, donc l'application l'atteint de deux façons
+--- j'y reviens à la diapo suivante.
+
+Celle du milieu mérite qu'on s'y arrête. \must{La même erreur a été commise deux
+fois.} Multiplier l'énergie totale par un facteur de trafic compte le fond deux
+fois. Nous l'avions trouvée et corrigée en Python en juillet. Puis reconstruite en
+Kotlin en août, en la connaissant. Elle donnait moins sept décibels là où le
+modèle donne moins trois virgule sept. \must{Connaître une erreur ne rend pas
+immunisé contre elle.} Ce qui l'a rattrapée la seconde fois, c'est un test qui
+affirme un invariant.
+
+Et la troisième~: KoboToolbox renomme votre formulaire au déploiement. La première
+vraie soumission a échoué en 404, pour un formulaire que le serveur n'avait jamais
+connu. \care{Rien de tout ça n'est visible depuis le téléphone} --- ce qui est
+l'argument pour tester contre le vrai serveur plutôt que de raisonner dessus.
+\end{say}
+
+\slide{34}{What the app measures, and what it refuses to claim}{24:15}
+\begin{say}
+The app's level is a \emph{different quantity} from the campaign's. This handset's
+microphone, not a trimmed reading from one of three cross-calibrated phones. It
+goes in its own field, with the device and the audio source the platform granted.
+\must{The two never share a column.}
+
+Verified end to end against the live server: a fix, a twenty-five second
+measurement, the instance written, a submission accepted.
+
+And the important one, which is not verified. \must{The level has never been
+checked against a sound source.} An emulator records silence. Until a reading from
+this app is compared to a meter, the absolute figure means nothing at all ---
+which, and I want to be even-handed here, \must{is equally true of the campaign's
+own numbers.}
+&
+Le niveau de l'application est une \emph{grandeur différente} de celle de la
+campagne. Le microphone de ce téléphone-ci, pas une lecture ajustée d'un des trois
+téléphones intercalibrés. Il va dans son propre champ, avec l'appareil et la
+source audio que la plateforme a accordée. \must{Les deux ne partagent jamais une
+colonne.}
+
+Vérifié de bout en bout contre le serveur réel~: un point GPS, une mesure de
+vingt-cinq secondes, l'instance écrite, une soumission acceptée.
+
+Et l'important, qui n'est pas vérifié. \must{Le niveau n'a jamais été confronté à
+une source sonore.} Un émulateur enregistre du silence. Tant qu'une lecture de
+cette application n'est pas comparée à un sonomètre, le chiffre absolu ne veut
+rien dire --- ce qui, et je veux être équitable, \must{vaut tout autant pour les
+chiffres de la campagne.}
+\end{say}
+
+\slide{35}{Driving GAMA from the phone}{25:00}
+\begin{say}
+This is new since the last version of this talk, so let me say how it is wired.
+
+GAMA is an Eclipse desktop platform with no Android port. But it exposes a
+WebSocket API. You start it headless with a socket, and the application is simply
+a client: load, play, step, ask, stop. \must{The phone is a remote control and a
+screen. It runs nothing.}
+
+Two things only driving it teaches you, and neither is in any documentation. An
+experiment with a graphical display \care{kills the socket} when it loads --- it
+takes the main thread. And \emph{step} without \emph{sync} advances nothing, while
+every indicator reads zero and reports success.
+
+And it does not invent a picture. Every layer and colour is read from the model's
+own aspect blocks, in declaration order --- because in GAMA \must{declaration order
+is the stacking}, and reversing it buries the measurements under the buildings.
+
+What this buys is the half of the model a precomputed grid cannot hold: the
+mitigation scenarios, the construction sites, the fleet by hour. Verified from the
+phone --- sixty-two point nine seven decibels with no mitigation, sixty point five
+three under pedestrianisation. The same figures the model gives when driven
+directly.
+&
+C'est nouveau depuis la dernière version de cet exposé, alors laissez-moi dire
+comment c'est branché.
+
+GAMA est une plateforme de bureau Eclipse, sans portage Android. Mais elle expose
+une API WebSocket. On la lance en mode headless avec un socket, et l'application
+est simplement un client~: load, play, step, ask, stop. \must{Le téléphone est une
+télécommande et un écran. Il n'exécute rien.}
+
+Deux choses que seule la pratique enseigne, et aucune n'est documentée. Une
+expérience avec affichage graphique \care{tue le socket} au chargement --- elle
+prend le thread principal. Et \emph{step} sans \emph{sync} n'avance rien, pendant
+que chaque indicateur lit zéro et signale un succès.
+
+Et elle n'invente pas une image. Chaque couche et chaque couleur est lue depuis les
+blocs \emph{aspect} du modèle, dans l'ordre de déclaration --- parce qu'en GAMA
+\must{l'ordre de déclaration est l'empilement}, et l'inverser enterre les mesures
+sous les bâtiments.
+
+Ce que ça apporte, c'est la moitié du modèle qu'une grille précalculée ne peut pas
+porter~: les scénarios de mitigation, les chantiers, la flotte par heure. Vérifié
+depuis le téléphone --- soixante-deux virgule quatre-vingt-dix-sept décibels sans
+mitigation, soixante virgule cinquante-trois en piétonnisation. Les mêmes chiffres
+que le modèle donne piloté directement.
+\end{say}
+
+\slide{36}{Before this app goes to strangers}{26:00}
+\begin{say}
+Three things stop this being handed out, and \must{none of them is a bug.} The
+software is finished on its side.
+
+One. Whoever owns the KoboToolbox account holds the positions and timestamps of
+people they have never met, and answers for them. It must be an institutional
+account, not a student's --- a personal account leaves with its owner. The account
+is a build flag, never a constant, so \must{this is a decision, not a code
+change.} And it is not ours to make.
+
+Two. A consent screen is not an ethics review. A public campaign is a new
+collection campaign. Our video collection went ahead without review and the
+repository says so plainly. \care{We should not repeat that at a larger scale.}
+
+Three. Where does the GAMA server live once it is not a laptop in this room? For a
+demo it just has to be on and reachable. Beyond that it needs hosting, with TLS
+--- a release build accepts secure sockets only.
+&
+Trois choses empêchent de la distribuer, et \must{aucune n'est un bug.} Le logiciel
+est fini de son côté.
+
+Un. Celui qui détient le compte KoboToolbox détient les positions et horodatages de
+gens qu'il n'a jamais rencontrés, et en répond. Ce doit être un compte
+institutionnel, pas celui d'un étudiant --- un compte personnel part avec son
+propriétaire. Le compte est un drapeau de compilation, jamais une constante, donc
+\must{c'est une décision, pas une modification.} Et ce n'est pas à nous de la
+prendre.
+
+Deux. Un écran de consentement n'est pas un avis éthique. Une campagne publique est
+une nouvelle campagne de collecte. Notre collecte vidéo s'est faite sans examen et
+le dépôt le dit clairement. \care{Ne refaisons pas ça à plus grande échelle.}
+
+Trois. Où vit le serveur GAMA quand ce n'est plus un portable dans cette salle~?
+Pour une démo, il suffit qu'il soit allumé et joignable. Au-delà, il faut de
+l'hébergement, avec TLS --- une version de release n'accepte que les sockets
+sécurisés.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{Act IV --- what comes next, and what we would defend}{slides 37--44 \; $\cdot$ \; 26--30 min}
+
+\slide{38}{Clermont-Ferrand --- what it does and does not change}{26:45}
+\begin{say}
+I want to correct an expectation before anyone forms it.
+
+\must{There will be no sound level meter at Clermont either.} An earlier version of
+this talk said institutional equipment would close the calibration gap. It will
+not. The level stays relative, and the half-day next to a class 2 meter remains
+\emph{unbooked}, not \emph{done}.
+
+So the honest description of the coming months is: \must{maintenance and
+deployment.} Keep the application alive --- dependencies, Android target, the form
+identifiers, the server protocol --- then get it collecting in a second city.
+
+That is less glamorous than new physics, and it buys the strongest experiment
+available to this work. \must{The same binary in both cities.} The instrument
+stops being a confound --- which is the one thing the Uganda transfer could never
+fix. And two fabrics as different as we could pick: two-wheelers against cars and
+a tram, dense organic against European planned, flat delta against volcanic
+relief.
+
+And it finally moves the number that bounded everything here. \must{Three
+typologies becomes four or five.}
+&
+Je veux corriger une attente avant que quiconque la forme.
+
+\must{Il n'y aura pas non plus de sonomètre à Clermont.} Une version antérieure de
+cet exposé disait que l'équipement institutionnel refermerait l'écart de
+calibration. Il ne le fera pas. Le niveau reste relatif, et la demi-journée à côté
+d'un sonomètre de classe 2 reste \emph{non réservée}, pas \emph{faite}.
+
+Donc la description honnête des mois qui viennent, c'est~: \must{maintenance et
+déploiement.} Garder l'application vivante --- dépendances, cible Android,
+identifiants de formulaires, protocole serveur --- puis la faire collecter dans une
+deuxième ville.
+
+C'est moins spectaculaire que de la nouvelle physique, et ça achète l'expérience la
+plus forte disponible pour ce travail. \must{Le même binaire dans les deux villes.}
+L'instrument cesse d'être un facteur de confusion --- la seule chose que le
+transfert Ouganda ne pouvait pas régler. Et deux tissus urbains aussi différents que
+possible~: deux-roues contre voitures et tramway, dense organique contre européen
+planifié, delta plat contre relief volcanique.
+
+Et ça déplace enfin le nombre qui bornait tout ici. \must{Trois typologies
+deviennent quatre ou cinq.}
+\end{say}
+\aside{If someone asks about calibration again}{%
+The half-day rental is still the answer, still cheap, and still not booked. Say
+that. \never{Do not imply Clermont solves it.} ---
+\selectlanguage{french}La demi-journée de location reste la réponse, reste peu
+chère, et reste non réservée. Dites-le. \never{Ne laissez pas entendre que Clermont
+règle la question.}\selectlanguage{english}}
+
+\slide{39}{The comparative deployment}{28:00}
+\begin{say}
+This is the strongest slide in the section and it is worth the time.
+
+Negative result two says transfer fails. But in that experiment \care{the
+instrument, the protocol and the feature conventions all differed too.} So
+``transfer fails'' and ``the two datasets are not commensurable'' are not
+separable. It is an over-determined result.
+
+With one application deployed in both cities, the instrument stops being a
+confound. \must{A transfer failure then means what it says.} That is a genuine
+experimental design, not a wish.
+
+And Clermont-Ferrand falls under EU strategic noise mapping. \must{For the first
+time, predictions can be compared against an official, instrumented reference
+map.} Hanoi had no ground truth at all --- which is why we ended up anchoring
+against a campaign from two thousand and five.
+&
+C'est la diapo la plus forte de la section et elle mérite du temps.
+
+Le résultat négatif deux dit que le transfert échoue. Mais dans cette expérience,
+\care{l'instrument, le protocole et les conventions de variables différaient
+aussi.} Donc «~le transfert échoue~» et «~les deux jeux ne sont pas commensurables~»
+ne sont pas séparables. C'est un résultat sur-déterminé.
+
+Avec une seule application déployée dans les deux villes, l'instrument cesse d'être
+un facteur de confusion. \must{Un échec de transfert veut alors dire ce qu'il dit.}
+C'est un vrai plan d'expérience, pas un souhait.
+
+Et Clermont-Ferrand relève de la cartographie stratégique européenne du bruit.
+\must{Pour la première fois, les prédictions peuvent être comparées à une carte de
+référence officielle et instrumentée.} Hanoï n'avait aucune vérité terrain --- d'où
+l'ancrage sur une campagne de deux mille cinq.
+\end{say}
+
+\slide{40}{The programme, staged}{29:00}
+\begin{say}
+Five stages, sequenced by dependency and not by calendar. Every stage has a gate,
+and \must{the gates are falsifiable} --- a roadmap without exit conditions is a
+wish list.
+
+Point at the physics gate. It is written so a negative answer is still a result.
+If a real propagation model does not beat three constants on this data, that is a
+genuinely interesting finding about how much physics you can use at this sample
+size, and it gets published either way.
+
+And be honest that stage four depends on things nobody has confirmed. Framing and
+funding at Clermont are not settled. \never{Do not present it as scheduled.}
+&
+Cinq étapes, séquencées par dépendance et non par calendrier. Chaque étape a une
+porte, et \must{les portes sont falsifiables} --- une feuille de route sans
+conditions de sortie est une liste de vœux.
+
+Pointez la porte de la physique. Elle est écrite pour qu'une réponse négative reste
+un résultat. Si un vrai modèle de propagation ne bat pas trois constantes sur ces
+données, c'est un constat réellement intéressant sur la quantité de physique
+utilisable à cette taille d'échantillon, et ça se publie dans les deux cas.
+
+Et soyez honnête~: l'étape quatre dépend de choses que personne n'a confirmées. Le
+cadre et le financement à Clermont ne sont pas réglés. \never{Ne la présentez pas
+comme planifiée.}
+\end{say}
+
+\slide{41}{The two things a reviewer will press on}{29:45}
+\begin{say}
+Two objections, and both are better raised by us than by a reviewer.
+
+First. No absolute reference. Our metrology document owns this squarely --- but an
+acoustics reviewer will not ask whether we \emph{knew}. They will ask whether one
+side-by-side reading against a class 2 meter was genuinely unobtainable. It is the
+right question, and the honest answer is that a half-day rental would settle it.
+\must{One reading turns ``calibrated in relative terms'' into ``calibrated''.} It
+is the cheapest item anywhere in this work.
+
+Second, and this is the deeper one. Three sites are three typologies. Our own text
+says it: the number of independent morphological configurations is close to three,
+whatever the number of points. Three hundred and sixty-three measurements do not
+buy three hundred and sixty-three measurements' worth of generalisation.
+
+\must{The hard limit is the design, not the R-squared.} Leave-one-site-out is the
+column that measures it directly, and a fourth and fifth contrasting fabric would
+do more than any modelling change.
+&
+Deux objections, et les deux valent mieux soulevées par nous que par un relecteur.
+
+Première. Pas de référence absolue. Notre document de métrologie l'assume
+franchement --- mais un relecteur en acoustique ne demandera pas si nous
+\emph{savions}. Il demandera si une seule mesure côte à côte avec un sonomètre de
+classe 2 était vraiment inatteignable. C'est la bonne question, et la réponse
+honnête est qu'une demi-journée de location y répondrait. \must{Une mesure
+transforme «~calibré en relatif~» en «~calibré~».} C'est l'élément le moins cher de
+tout ce travail.
+
+Deuxième, et c'est la plus profonde. Trois sites, c'est trois typologies. Notre
+propre texte le dit~: le nombre de configurations morphologiques indépendantes est
+proche de trois, quel que soit le nombre de points. Trois cent soixante-trois
+mesures n'achètent pas trois cent soixante-trois mesures de généralisation.
+
+\must{La limite dure, c'est le plan d'échantillonnage, pas le R².} Le
+leave-one-site-out est la colonne qui le mesure directement, et un quatrième et un
+cinquième tissu contrasté feraient plus que n'importe quel changement de modèle.
+\end{say}
+
+\slide{43}{What this work established}{30:30}
+\begin{say}
+Four findings, and six practices that make them trustworthy.
+
+If the room is technical, close on the right-hand column. Those six practices
+transfer to any spatial machine learning project, and they are the part of this
+work most likely to be reused by someone who never measures a decibel.
+
+The buffer matches the feature radius --- always. Baselines and an ablation on the
+same splits. The delivered model chosen by code. Every number with exactly one
+home. Retracted work archived with its reason. Nothing predicted outside the
+sampled envelope.
+
+And the last line is the thesis of the whole talk. \must{The deliverable is a
+protocol, an instrument and an honest error bar. Not a noise map of Hanoi.}
+
+Say it slowly.
+&
+Quatre constats, et six pratiques qui les rendent fiables.
+
+Si la salle est technique, terminez sur la colonne de droite. Ces six pratiques se
+transfèrent à n'importe quel projet de machine learning spatial, et c'est la part
+de ce travail la plus susceptible d'être réutilisée par quelqu'un qui ne mesurera
+jamais un décibel.
+
+Le tampon égale le rayon des variables --- toujours. Baselines et ablation sur les
+mêmes découpages. Le modèle livré choisi par le code. Chaque chiffre avec
+exactement un domicile. Le travail retiré archivé avec sa raison. Rien de prédit
+hors de l'enveloppe échantillonnée.
+
+Et la dernière ligne est la thèse de tout l'exposé. \must{Le livrable, c'est un
+protocole, un instrument et une barre d'erreur honnête. Pas une carte de bruit de
+Hanoï.}
+
+Dites-la lentement.
+\end{say}
+
+\slide{44}{Thank you}{31:00}
+\begin{say}
+Thank you. Everything on these slides rebuilds from the repository --- four make
+commands, from two published CSV files. No raw export, no six gigabytes of video.
+
+I would rather offer you that than a summary.
+&
+Merci. Tout ce qui est sur ces diapos se reconstruit depuis le dépôt --- quatre
+commandes make, à partir de deux fichiers CSV publiés. Pas d'export brut, pas six
+gigaoctets de vidéo.
+
+Je préfère vous offrir ça qu'un résumé.
+\end{say}
+
+\clearpage
+% ============================================================================
+\act{The backup slides, and the questions to expect}{slides 45--48}
+
+\noindent
+Four backup slides exist to be jumped to. Know which one answers what.
+
+\vspace{3mm}
+\begin{tabularx}{\textwidth}{@{}p{34mm}p{40mm}X@{}}
+  \toprule
+  \textbf{If asked} & \textbf{Go to} & \textbf{And say} \\
+  \midrule
+  ``What exactly did you measure?'' / ``Why a distance law?'' &
+  45 --- every formula &
+  Decibels add in \emph{energy}, never as levels --- every simulation mistake this
+  project made came from forgetting that. And the buffer radius \emph{equals} the
+  feature radius; the retracted 0.45 came from breaking that identity. \\
+  \addlinespace
+  ``Is that ranking significant?'' &
+  46 --- the forest plot &
+  No. \texttt{physical} and \texttt{dist\_road} overlap almost entirely. ``The
+  physical kernel beats log-distance'' is a coin flip at this sample size. Show
+  the plot rather than arguing. \\
+  \addlinespace
+  ``How wrong could your absolute levels be?'' &
+  47 --- the bias interval &
+  Plausibly $+3.0$ to $+7.3$ dB, from peer-reviewed instrumented campaigns. It is
+  \emph{reported and never applied} --- no offset is written anywhere in the code. \\
+  \addlinespace
+  ``Can we have the data?'' &
+  48 --- what is published &
+  Measurements, counts and both forms, CC-BY. Not the videos --- faces and plates
+  --- and not the raw export. No ethics review was requested for the video
+  collection and none is claimed. \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{6mm}
+\noindent
+\colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1.5mm}
+\textbf{The four answers to have ready, in one place}
+
+\medskip
+\begin{tabular}{@{}p{54mm}p{112mm}@{}}
+  \must{``It is not calibrated.''} &
+    Any question about absolute levels. Never say ``measured in dB SPL''. \\
+  \addlinespace
+  \must{``We did not test that.''} &
+    A complete answer. Stronger than a plausible guess, and this project has spent
+    twenty minutes earning the right to say it. \\
+  \addlinespace
+  \must{``That is descriptive, not a compliance claim.''} &
+    Any question about the QCVN colours or exceedances. \\
+  \addlinespace
+  \must{``It is in the repository, with its reason.''} &
+    Anything about the retraction, the archive, or why an artefact still exists. \\
+\end{tabular}
+\vspace{1.5mm}}}
+
+\vspace{6mm}
+\noindent
+\selectlanguage{french}
+\colorbox{wash}{\parbox{\dimexpr\textwidth-2\fboxsep}{\vspace{1.5mm}
+\textbf{Trois pièges de langue, en anglais}
+
+\medskip
+\begin{tabular}{@{}p{54mm}p{112mm}@{}}
+  \never{«~We measured 68 dB~»} &
+    Dites \must{``we recorded a relative level of 68''}. En anglais comme en
+    français, «~measured~» sous-entend un instrument étalonné. \\
+  \addlinespace
+  \never{«~It exceeds the limit~»} &
+    Dites \must{``it sits above the QCVN reference band''}. «~Limit~» est un mot
+    réglementaire. \\
+  \addlinespace
+  \never{«~The app runs GAMA~»} &
+    Dites \must{``the app drives GAMA over a socket and redraws its display''}.
+    Quelqu'un qui connaît la plateforme entendra la différence. \\
+\end{tabular}
+\vspace{1.5mm}}}
+\selectlanguage{english}
+
+\end{document}

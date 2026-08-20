@@ -2,6 +2,7 @@
 #
 #   make                     -> main.pdf
 #   make notes               -> main-notes.pdf, presenter notes beside each slide
+#   make script              -> script.pdf, the bilingual speaker script
 #   make view                -> build, then open the PDF
 #   make logos               -> report which institutional marks are present
 #   make logos-placeholder   -> regenerate the typographic placeholder marks
@@ -39,8 +40,8 @@ else
   ENGINEFLAG := -pdf
 endif
 
-.PHONY: all notes view clean distclean logos logos-placeholder
-all: main.pdf
+.PHONY: all notes script view clean distclean logos logos-placeholder
+all: main.pdf script.pdf
 
 main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
 	$(LATEXMK) $(ENGINEFLAG) main.tex
@@ -52,6 +53,13 @@ notes:
 	sed 's|^% \\setbeameroption|\\setbeameroption|' main.tex > main-notes.tex
 	$(LATEXMK) $(ENGINEFLAG) main-notes.tex
 	rm -f main-notes.tex
+
+# The speaker script: what to say on each slide, English beside French. It is
+# prose and quotes no number the deck does not also carry, so it builds on its
+# own and does not depend on the figures.
+script: script.pdf
+script.pdf: script.tex
+	$(LATEXMK) $(ENGINEFLAG) script.tex
 
 view: main.pdf
 	@xdg-open main.pdf 2>/dev/null || open main.pdf 2>/dev/null || \
@@ -78,7 +86,8 @@ logos-placeholder:
 
 clean:
 	$(LATEXMK) -c
+	$(LATEXMK) -c script.tex
 	rm -f main-notes.*
 
 distclean: clean
-	rm -f main.pdf
+	rm -f main.pdf script.pdf

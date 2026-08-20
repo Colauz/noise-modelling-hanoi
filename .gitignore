@@ -66,6 +66,7 @@ presentation/*.vrb
 presentation/*.fls
 presentation/*.fdb_latexmk
 presentation/*.synctex.gz
+presentation/*.synctex(busy)
 presentation/main-notes.*
 
 # The intermediate the four placeholder marks are split out of. The marks

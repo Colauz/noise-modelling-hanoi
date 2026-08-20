@@ -4,8 +4,9 @@ End-of-internship presentation. LaTeX Beamer, *metropolis* theme, 16:9.
 
 ```bash
 make -C .. slides    # figures from the pipeline, then the deck   <- start here
-make                 # -> main.pdf   (47 slides incl. 4 backup)
+make                 # -> main.pdf and script.pdf   (48 slides incl. 4 backup)
 make notes           # -> main-notes.pdf, presenter notes beside each slide
+make script          # -> script.pdf, what to say on each slide, EN beside FR
 make logos           # report which institutional marks are present
 make ENGINE=lualatex # better typography if your TeX Live can load system Lato
 ```
@@ -19,7 +20,7 @@ make ENGINE=lualatex # better typography if your TeX Live can load system Lato
 | Method and evaluation protocol | 3 | The chain, the three CV splits, the model roster |
 | Results | 6 | **The inversion as a slope chart**, the kernel, **the ceiling on $R^2$**, **the map redrawn in English**, what the learned model leaned on, the three negative results |
 | **Auditing our own data** | 5 | The retracted R² = 0.45, then a second audit **of the measurements**, with the 27 June break drawn |
-| **From a pipeline to an instrument** | 8 | The three-month arc, **the four application screens**, architecture, engineering results, **the three blockers before a public release** |
+| **From a pipeline to an instrument** | 9 | The three-month arc, **the four application screens**, architecture, engineering results, **how GAMA is driven from the phone**, the three blockers before a public release |
 | **Next: Clermont-Ferrand** | 3 | Three upgrades, the two-city comparison, staged programme |
 | Conclusion | 3 | **The two things a reviewer will press on**, then what the work established |
 | Backup | 4 | **Every formula the talk rests on**, the forest plot of every interval, the bias interval, what is published |
@@ -78,13 +79,26 @@ pipeline. Nothing in the deck reads `results/figures/` any more — that set is
 French-labelled and partly not regenerable
 ([`sunbird/NOT-REGENERABLE.md`](../results/figures/sunbird/NOT-REGENERABLE.md)).
 
+## The speaker script
+
+[`script.tex`](script.tex) → `script.pdf`, 15 pages. Every spoken slide, in
+order, with **English on the left and French on the right**: the English is what
+you say, written to be spoken; the French is the same thing, so nobody recites a
+sentence they do not own. It carries the cumulative minute marks, the questions to
+expect with their answers, and the three phrases that must never be said in
+English (`"we measured 68 dB"`, `"it exceeds the limit"`, `"the app runs GAMA"`).
+
+It is prose. Every number in it is also on a slide, and the slide gets it from
+`metrics.json` — if the two disagree, the slide is right.
+
 ## The application screens
 
-[`appscreens.tex`](appscreens.tex) draws four phones — Home, Measure, Map,
+[`appscreens.tex`](appscreens.tex) draws five phones — Home, Measure, Map, GAMA,
 Results — in TikZ, from the Compose source in `mobile/.../ui/`. Every string and
-colour on them is the app's own, **so they go stale when the app changes**: the
-Home screen gained its GAMA card when #9 added one, and the next change to
-`HomeScreen.kt` should be followed here too.
+colour on them is the app's own, **so they go stale when the app changes**. They
+have already been redrawn twice: the Home screen gained its GAMA card, and the Map
+screen lost its hour slider and gained the here-and-now reading. When
+`mobile/.../ui/` moves, this file moves with it.
 
 **They are mock-ups, not device captures**, and the deck says so on the slide.
 Nobody has run the app on a handset in front of a sound source; that is the

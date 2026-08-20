@@ -458,7 +458,7 @@ bounds the bias; it does not correct it. No offset is written anywhere in the co
     \node[box] (cnt)  at (30,-16) {\textbf{02} count\\YOLOv8 $+$ ByteTrack};
 
     \node[box, text width=24mm] (eval) at (62, 16) {\textbf{04} evaluate\\8 models $\times$ 3 CV protocols};
-    \node[box, text width=24mm] (exp)  at (62,-16) {\textbf{07} export\\40\,m grid $\times$ 17\,h};
+    \node[box, text width=24mm] (exp)  at (62,-16) {\textbf{07} export\\40\,m grid, 5\,587 cells};
 
     \node[result, text width=22mm] (app) at (95, 32) {\textbf{Android app}\\collect $+$ show};
     \node[result, text width=22mm] (met) at (95, 16) {\texttt{metrics.json}\\delivered model};
@@ -684,19 +684,19 @@ makes the argument and concludes that 0.25 is reported without apology.}
 
 % ----------------------------------------------------------------
 \begin{frame}{The map --- and the caveat that goes with it}
-  \fig[.45]{map-grid}{results/maps/hanoi\_noise\_map.csv --- 5\,587 cells $\times$ 17 hours}
+  \fig[.38]{map-grid}{results/maps/hanoi\_noise\_map.csv --- 5\,587 cells}
   \vspace{-.5em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \begin{alertblock}{The grid step is not the accuracy}
-        40\,m cells, from a model whose typical error is \textbf{5\,dB}. The
-        bands are QCVN 26:2010, \textbf{descriptive}.
+        40\,m cells from a model whose typical error is \textbf{5\,dB}. Bands
+        are QCVN 26:2010, \textbf{descriptive}.
       \end{alertblock}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \begin{exampleblock}{The envelope rule}
-        \textbf{Nothing is predicted where nothing was measured} ---
-        \texttt{tests/test\_grid\_extent.py} enforces it.
+      \begin{exampleblock}{And no hour, either}
+        17 hourly columns, \textbf{all 17 identical}: the kernel has no hour
+        term. \textbf{Nothing varies that the model does not model.}
       \end{exampleblock}
     \end{column}
   \end{columns}
@@ -1079,7 +1079,7 @@ report a method for.}
     \end{column}
     \begin{column}{0.245\textwidth}\centering
       \scalebox{0.52}{\phoneMap}\\[.2em]
-      \textbf{Map}\\ \aside{40\,m grid, by hour}
+      \textbf{Map}\\ \aside{the level where you stand}
     \end{column}
     \begin{column}{0.245\textwidth}\centering
       \scalebox{0.52}{\phoneResults}\\[.2em]
@@ -1292,6 +1292,48 @@ is posted to it, and the free plan caps submissions. That is phase 6, and it is 
 solved. Do not distribute an APK before it is.}
 
 % ----------------------------------------------------------------
+\begin{frame}{Driving GAMA from the phone --- how it is wired}
+  \begin{columns}[T]
+    \begin{column}{0.66\textwidth}
+      \begin{block}{One socket, and the phone runs nothing}
+        No Android port --- but a \textbf{WebSocket API}:
+        \texttt{gama-headless.sh -socket 6868}. The app is a client
+        (\texttt{load}, \texttt{play}, \texttt{step}, \texttt{ask},
+        \texttt{stop}): a remote control and a screen.
+      \end{block}
+      \begin{alertblock}{Two things only driving it teaches you}
+        A \texttt{type: gui} experiment \textbf{kills the socket} on load, and
+        \texttt{step} without \texttt{sync} advances nothing while
+        \textbf{every indicator reads zero}.
+      \end{alertblock}
+      \begin{exampleblock}{It redraws the model's display, it does not invent one}
+        Every layer and colour comes from the \texttt{aspect} blocks of
+        \texttt{hanoi\_noise.gaml}, \textbf{in declaration order --- which in
+        GAMA is the stacking}.
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.34\textwidth}
+      \centering
+      \scalebox{0.54}{\phoneGama}\\[.2em]
+      \src{ARCHITECTURE.md \S5.2}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{The honest framing, and the one to use: the phone is a REMOTE CONTROL and a
+screen. GAMA runs where it always ran.
+
+What that buys is the half of the model the exported grid cannot hold --- the
+mitigation scenarios, the construction sites, the fleet by hour --- because those
+are agent behaviour, not a field you can precompute into a CSV.
+
+The two lessons are worth a sentence each because they are invisible from any
+documentation: an experiment with a display kills the socket on load, and step
+without sync advances nothing while reporting success. Both cost a day.
+
+Verified end to end from the phone: 62.97 dB with no mitigation, 60.53 under
+pedestrianisation --- the same figures the model gives when driven directly.}
+
+% ----------------------------------------------------------------
 \begin{frame}{Before this app goes to strangers --- three blockers}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
@@ -1339,49 +1381,56 @@ uncertain on the day, rehearse the demo without step 3.}
 \section{Next: Clermont-Ferrand}
 % ============================================================================
 
-\begin{frame}{What Clermont-Ferrand unlocks that Hanoi could not}
+\begin{frame}{Clermont-Ferrand --- what it does and does not change}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \begin{alertblock}{The binding constraint, restated}
-        Every limitation in this study reduces to one fact: \textbf{no
-        reference instrument was ever available}. Not borrowed, not rented, not
-        bought.
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Still no reference instrument}
+        \textbf{There will be no sound level meter at Clermont either.} The
+        calibration gap does not close, and nothing said here should suggest it
+        will: the app's level stays relative, and the half-day next to a class 2
+        meter remains \emph{unbooked}, not \emph{done}.
       \end{alertblock}
-      \vspace{.4em}
-      \begin{exampleblock}{What changes}
-        At ISIMA / Université Clermont Auvergne, a \textbf{class 1 or class 2
-        sound level meter and a 94\,dB / 1\,kHz acoustic calibrator} are
-        institutional equipment, not a budget line.
+      \vspace{.3em}
+      \begin{exampleblock}{So what \emph{is} the work}
+        \textbf{Maintenance and deployment}, not new instrumentation. Keep the
+        application alive, then get it collecting in a second city.
       \end{exampleblock}
     \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{The three upgrades, in dependency order}
-      \vspace{.3em}
-      \begin{enumerate}
-        \item \up{Anchor the absolute scale.} Calibrate the app against the
-              reference meter across levels and handsets. Turn
-              \texttt{micOffset} from a plausible constant into an
-              \textbf{affine, measured correction}. Everything downstream inherits
-              this.
-        \item \up{Validate the detector.} $\sim$10 videos, double-counted by hand,
-              precision/recall/MAPE per class. \emph{One day of work that turns an
-              open-ended limitation into a quantified uncertainty.}
-        \item \up{Replace the kernel with real physics.} CNOSSOS-EU via
-              \textbf{NoiseModelling}, corrected by a locally learned residual ---
-              the architecture the data has been pointing at since August.
-        \end{enumerate}
+    \begin{column}{0.52\textwidth}
+      \textbf{What the second city is actually for}
+      \begin{itemize}
+        \item \up{One instrument, two cities.} The \textbf{same APK} in Hanoi and
+              Clermont. That is the point: the instrument stops being a confound,
+              which is the one thing the Uganda transfer could never fix.
+        \item \up{Two fabrics as different as we could pick.} Two-wheelers against
+              cars and a tram; dense organic against European planned; flat delta
+              against volcanic relief.
+        \item \wn{A fourth typology, at last.} Three sites bounded everything
+              here. A second city is the only thing that moves that number.
+      \end{itemize}
     \end{column}
   \end{columns}
   \vfill
-  \src{docs/handover.md} \; \aside{\S6 ``the scientifically indicated next step'', debt \#2, P0-3}
+  \src{docs/handover.md} \; \aside{\S6, debt \#2, P0-3}
 \end{frame}
-\note{Order matters and it is a dependency order, not a preference order. Nothing
-about a propagation kernel is interesting while the levels it is fitted to are
-uncalibrated --- a physically correct model fitted to a 5 dB offset is a physically
-correct model of the wrong thing.
+\note{Correct the expectation before anyone forms it: there is NO sonometer at
+Clermont. An earlier version of this deck said institutional equipment would close
+the calibration gap. It will not, and promising it and then not delivering is worse
+than never promising it.
 
-Upgrade 2 is the cheapest thing on the list and blocks the modal shares, which block
-any emission model. One day.}
+So say plainly what the next months are: maintaining the application, and deploying
+it in a second city. That is less glamorous than new physics and it is the honest
+description.
+
+What it buys is nonetheless the strongest experiment available to this work. The
+Uganda transfer failure is over-determined --- instrument, protocol and feature
+conventions all differed at once. One APK in two cities makes the instrument a
+constant, and a transfer failure then means what it says. And it moves the number
+that bounded everything here: three typologies becomes four or five.
+
+If asked about calibration again: the half-day rental is still the answer, it is
+still cheap, and it is still not booked. Say that rather than implying Clermont
+solves it.}
 
 % ----------------------------------------------------------------
 \begin{frame}{The comparative deployment --- and why it is the decisive test}
@@ -1436,10 +1485,12 @@ why we ended up anchoring against a 2005--2007 campaign. France has a statutory 
     \toprule
     \textbf{Stage} & \textbf{Work} & \textbf{Gate --- what must be true to proceed} \\
     \midrule
-    \textbf{S1}\newline Instrument &
-      Calibrate the app against a class 1/2 meter and a 94\,dB calibrator, across
-      levels and handsets. Affine correction, per device. &
-      A reading from the app is traceable to a standard, with a stated uncertainty \\
+    \textbf{S1}\newline Maintain &
+      Keep the application deployable: dependencies, Android target, Kobo form
+      ids, the \texttt{gama-server} protocol. \wn{Calibration against a class 1/2
+      meter stays on this list, unbooked.} &
+      The APK still builds and submits, and every level is still reported as
+      relative \\
     \addlinespace
     \textbf{S2}\newline Repair &
       Diagnose the 27 June discontinuity and refit with the phase. Validate
@@ -1454,18 +1505,18 @@ why we ended up anchoring against a 2005--2007 campaign. France has a statutory 
     \addlinespace
     \textbf{S4}\newline Deploy &
       Clermont-Ferrand campaign, same APK. Backend for scale (phase 6): quota,
-      moderation, deduplication, path back into the pipeline. &
+      moderation, deduplication. &
       A second dataset, commensurable with the first by construction \\
     \addlinespace
     \textbf{S5}\newline Compare &
-      Transfer both ways. Validate against EU END strategic mapping.
-      Publish the two-city methodological study. &
+      Transfer both ways. Validate against EU END mapping. Publish the two-city
+      methodological study. &
       --- \\
     \bottomrule
   \end{tabular}
   \vspace{.4em}
 
-  \aside{Sequenced by dependency, not by calendar. Framing, supervision and funding at Clermont-Ferrand are unconfirmed.}
+  \aside{Sequenced by dependency, not by calendar. Framing and funding at Clermont-Ferrand are unconfirmed.}
 \end{frame}
 \note{Every stage has a gate, and the gates are falsifiable. That is deliberate: a
 roadmap without exit conditions is a wish list.
