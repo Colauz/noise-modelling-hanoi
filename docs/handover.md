@@ -332,6 +332,36 @@ Neither is fixable by code, and both will be asked about.
       of time budget for a three-month internship; it should be first on the list
       now, not in a "future work" paragraph.
 
+### Two directions the supervisor has pointed at, and what separates them
+
+**A real propagation kernel — the continuation.** The figure circulated in August
+2026 is Figure 2 of `bocher2019noisemodelling`, already in `references.bib`: the
+direct path, first-order horizontal diffraction, and first- and second-order
+specular reflections between a source and a receiver. It is precisely what a
+three-parameter distance law does not model — it knows a distance, not the
+buildings that block, reflect and bend around. This is the same next step already
+named above, arriving from outside, and it belongs in the manuscript as future
+work with that figure and a paragraph. Implementing CNOSSOS is months; citing
+what is missing is a page.
+
+**Acoustic event localisation — a different project, not a continuation.** The
+sketched output — *vehicle collision 0.94, estimated location intersection X,
+localization uncertainty ±12 m, detected independently by 5 sensors* — is the
+"gunshot paper" and the sensor-placement problem from the original plan. It
+cannot be done with this campaign's data, for a reason of physics rather than of
+effort: localisation by time difference of arrival needs synchronised clocks, and
+sound travels 343 m/s, so ±12 m demands agreement to about 35 ms across sensors.
+It also needs continuous listening rather than 25 s samples, and at least four
+sensors at known fixed positions for a 2D fix when the emission time is unknown.
+This project has 363 spot measurements from three unsynchronised handsets.
+
+Keep them apart in the writing. The manuscript's contribution is three negative
+results about low-cost spatial prediction; a promise of localisation grafted onto
+it invites the question of where the synchronised sensors are. As future work it
+is strong, and the mobile app is already half of the instrument — it records
+position, timestamp and level. What is missing is synchronisation and continuity,
+which is hardware.
+
 ### Deliberately abandoned
 
 - **LSTM / ST-GNN benchmark on Barcelona** — those models need continuous time
