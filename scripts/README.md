@@ -16,9 +16,14 @@ pipeline documentation: `ls` tells you what runs when.
 | `09_build_field_map.py` | measurements | `results/maps/hanoi_field_points.html` |
 | `10_build_report.py` | `models/metrics.json` | `results/report/{numbers,tab_*}.tex` -> `report.pdf` |
 | `11_build_dashboard.py` | metrics + map + counts | `results/report/dashboard/` |
+| `12_presentation_figures.py` | metrics + measurements + map | `presentation/figures/*.pdf` |
 
 `01` and `02` need inputs that are not published; the chain from `03` onwards runs
 from the versioned datasets alone. Use `make` rather than calling these by hand.
+
+`12` renders the slide deck's figures. It is a renderer, not a source: it types no
+number of its own, and its labels are English because `results/figures/` is French
+and partly not regenerable. `make slides` runs it and then builds the deck.
 
 `experiments/` holds one-shot studies that are **not** part of `make all`.
 `barcelona_transfer.py` is a closed dead end and says so in its own header.

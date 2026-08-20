@@ -1,24 +1,84 @@
-# Build the handover presentation.
+# Build the end-of-internship presentation.
 #
-#   make            -> main.pdf
-#   make notes      -> main-notes.pdf, slides with presenter notes beside them
-#   make clean      -> remove LaTeX build products (not the PDF)
+#   make                     -> main.pdf
+#   make notes               -> main-notes.pdf, presenter notes beside each slide
+#   make view                -> build, then open the PDF
+#   make logos               -> report which institutional marks are present
+#   make logos-placeholder   -> regenerate the typographic placeholder marks
+#   make clean               -> remove LaTeX build products (not the PDF)
+#   make distclean           -> also remove main.pdf
 #
-# Requires: a TeX Live install with beamer and beamertheme-metropolis.
-# Compiles with pdflatex; metropolis falls back to the default fonts when Fira
-# is absent, which is the case here.
+# FIGURES. figures/*.pdf are built from models/metrics.json and the published
+# CSVs by scripts/12_presentation_figures.py, at the repository root:
+#
+#     make -C .. slides        # figures, then this deck
+#
+# The deck does not regenerate them itself: they are pipeline output, and the
+# root Makefile is where pipeline output is declared.
+#
+# Requires a TeX Live install with beamer, beamertheme-metropolis, tikz,
+# booktabs, standalone and appendixnumberbeamer.
+#
+# ENGINE. pdflatex is the default because it is the one that works everywhere.
+# main.tex also compiles under lualatex, which picks up system Lato and gives
+# noticeably better typography:
+#
+#     make ENGINE=lualatex
+#
+# If lualatex fails with "Font ... not loadable: metric data not found", the
+# luaotfload cache is stale or the Latin Modern OpenType fonts are missing.
+# `luaotfload-tool --update --force` usually fixes it; otherwise stay on pdflatex,
+# which produces the same slides.
 
-.PHONY: all notes clean
+ENGINE  ?= pdflatex
+LATEXMK := latexmk -interaction=nonstopmode -halt-on-error
+
+ifeq ($(ENGINE),lualatex)
+  ENGINEFLAG := -lualatex
+else
+  ENGINEFLAG := -pdf
+endif
+
+.PHONY: all notes view clean distclean logos logos-placeholder
 all: main.pdf
 
-main.pdf: main.tex
-	latexmk -pdf -interaction=nonstopmode main.tex
+main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
+	$(LATEXMK) $(ENGINEFLAG) main.tex
 
+# Presenter notes on a second screen. The \setbeameroption line lives commented
+# out in main.tex; this uncomments it into a throwaway copy so main.tex itself is
+# never edited by the build.
 notes:
 	sed 's|^% \\setbeameroption|\\setbeameroption|' main.tex > main-notes.tex
-	latexmk -pdf -interaction=nonstopmode main-notes.tex
+	$(LATEXMK) $(ENGINEFLAG) main-notes.tex
 	rm -f main-notes.tex
 
+view: main.pdf
+	@xdg-open main.pdf 2>/dev/null || open main.pdf 2>/dev/null || \
+	 echo "Open presentation/main.pdf yourself."
+
+# Report which institutional marks are present. The deck compiles either way:
+# a missing logo degrades to the institution's name set in type.
+logos:
+	@for l in cosmos vinuni isima uca; do \
+	  if [ -f logos/$$l.pdf ]; then echo "  present  logos/$$l.pdf"; \
+	  else echo "  MISSING  logos/$$l.pdf  -> falls back to text"; fi; done
+	@echo "See logos/README.md for the expected files."
+
+# Regenerate the PLACEHOLDER marks. These are neutral typographic slugs, not the
+# institutions' logos: they exist so the logo band is composed and evenly
+# weighted while the real files are being obtained. Drop the real PDFs into
+# logos/ under the same names and this target becomes unnecessary.
+logos-placeholder:
+	cd logos && pdflatex -interaction=nonstopmode placeholders.tex
+	cd logos && pdfseparate placeholders.pdf tmp-%d.pdf \
+	  && mv tmp-1.pdf cosmos.pdf && mv tmp-2.pdf vinuni.pdf \
+	  && mv tmp-3.pdf isima.pdf && mv tmp-4.pdf uca.pdf
+	cd logos && rm -f placeholders.aux placeholders.log
+
 clean:
-	latexmk -c
+	$(LATEXMK) -c
 	rm -f main-notes.*
+
+distclean: clean
+	rm -f main.pdf
