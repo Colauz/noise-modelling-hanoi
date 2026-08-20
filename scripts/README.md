@@ -14,7 +14,7 @@ pipeline documentation: `ls` tells you what runs when.
 | `07_export_gama_inputs.py` | features + delivered model | `simulation/gama/inputs/`, `results/maps/` |
 | `08_validate_simulation.py` | grid + measurements | `results/tables/validation_simulation.*` |
 | `09_build_field_map.py` | measurements | `results/maps/hanoi_field_points.html` |
-| `10_build_report.py` | `models/metrics.json` | `results/report/report.pdf` |
+| `10_build_report.py` | `models/metrics.json` | `results/report/{numbers,tab_*}.tex` -> `report.pdf` |
 | `11_build_dashboard.py` | metrics + map + counts | `results/report/dashboard/` |
 
 `01` and `02` need inputs that are not published; the chain from `03` onwards runs

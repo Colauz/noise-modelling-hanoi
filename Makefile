@@ -82,7 +82,7 @@ results: models $(GRID) results/tables/validation_simulation.csv  ## Calibration
 	$(PYTHON) $(SCRIPTS)/09_build_field_map.py
 	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
 
-report: results  ## Build the 8-page PDF report (reads models/metrics.json)
+report: results  ## Typeset the PDF report with LaTeX (reads models/metrics.json; needs latexmk)
 	$(PYTHON) $(SCRIPTS)/10_build_report.py
 
 dashboard: results  ## Build the static HTML dashboard

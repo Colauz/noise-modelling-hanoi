@@ -96,7 +96,7 @@ make setup          # pip install -e .
 make features       # OSM morphology, 300 m radius
 make models         # 8 models x 3 CV protocols -> models/metrics.json
 make results        # grid, maps, figures, tables
-make report         # results/report/report.pdf
+make report         # results/report/report.pdf   (LaTeX; needs latexmk)
 ```
 
 This runs from the two datasets shipped with the repository. You do **not** need
@@ -116,7 +116,7 @@ For the simulation, open `simulation/gama/hanoi_noise.gaml` in
 | `notebooks/` | Exploration and narrative, outputs stripped |
 | `models/` | Fitted artefacts and `metrics.json`, the source of every published number |
 | `simulation/gama/` | The agent-based model and the GIS inputs it reads |
-| `results/` | Figures, maps, tables, the 8-page report and the dashboard |
+| `results/` | Figures, maps, tables, the typeset LaTeX report and the dashboard |
 | `docs/` | Methodology, data sources, metrology, negative results, handover |
 | `tests/` | Aimed at the failures this project actually had |
 | `mobile/` | Android field-collection app: the two forms, submitted to Kobo over OpenRosa |

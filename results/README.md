@@ -16,7 +16,7 @@ all of it derives from `models/metrics.json` and the published datasets.
 > mistaken for the Hanoi delivered model's 0.246. The two are unrelated.
 | `maps/` | `hanoi_noise_map.csv` (5 587 cells × 17 hours) and the interactive field-point map |
 | `tables/` | Exceedances, simulation validation, literature anchoring |
-| `report/` | `report.pdf` (8 pages) and the static `dashboard/` |
+| `report/` | `report.tex` + `report.pdf` (typeset LaTeX) and the static `dashboard/` |
 
 **The map covers the sampled envelope only** — the three measured sites plus a
 400 m margin, at 40 m resolution. It must never be extended to a district where
