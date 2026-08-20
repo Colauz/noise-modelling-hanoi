@@ -4,7 +4,7 @@ End-of-internship presentation. LaTeX Beamer, *metropolis* theme, 16:9.
 
 ```bash
 make -C .. slides    # figures from the pipeline, then the deck   <- start here
-make                 # -> main.pdf   (43 slides incl. 3 backup)
+make                 # -> main.pdf   (44 slides incl. 3 backup)
 make notes           # -> main-notes.pdf, presenter notes beside each slide
 make logos           # report which institutional marks are present
 make ENGINE=lualatex # better typography if your TeX Live can load system Lato
@@ -17,7 +17,7 @@ make ENGINE=lualatex # better typography if your TeX Live can load system Lato
 | Context and research questions | 3 | The gap, the four questions, related work by function |
 | Data and protocol | 2 | The campaign **with its two distributions drawn**, and the metrology |
 | Method and evaluation protocol | 3 | The chain, the three CV splits, the model roster |
-| Results | 5 | **The inversion as a slope chart**, the kernel, **the map redrawn in English**, what the learned model leaned on, the three negative results |
+| Results | 6 | **The inversion as a slope chart**, the kernel, **the ceiling on $R^2$**, **the map redrawn in English**, what the learned model leaned on, the three negative results |
 | **Auditing our own data** | 5 | The retracted R² = 0.45, then a second audit **of the measurements**, with the 27 June break drawn |
 | **From a pipeline to an instrument** | 7 | The three-month arc, **the four application screens**, architecture, engineering results |
 | **Next: Clermont-Ferrand** | 3 | Three upgrades, the two-city comparison, staged programme |
@@ -68,6 +68,7 @@ make clean && make && grep -c 'Overfull .vbox' main.log   # must print 0
 | `campaign.pdf` | levels by site and by hour | `data/processed/measurements.csv` |
 | `discontinuity.pdf` | the 27 June break | `data/processed/measurements.csv` |
 | `feature-importance.pdf` | LightGBM's split gain, in English | `models/metrics.json` |
+| `ceiling.pdf` | how much of $R^2$ is reachable at all | `data/processed/measurements.csv` |
 | `map-grid.pdf` | the 40 m grid over all three sites at 17:00 | `results/maps/hanoi_noise_map.csv` |
 
 `map-grid.pdf` replaces the GAMA screenshot the deck used to carry. That capture
@@ -81,7 +82,9 @@ French-labelled and partly not regenerable
 
 [`appscreens.tex`](appscreens.tex) draws four phones — Home, Measure, Map,
 Results — in TikZ, from the Compose source in `mobile/.../ui/`. Every string and
-colour on them is the app's own.
+colour on them is the app's own, **so they go stale when the app changes**: the
+Home screen gained its GAMA card when #9 added one, and the next change to
+`HomeScreen.kt` should be followed here too.
 
 **They are mock-ups, not device captures**, and the deck says so on the slide.
 Nobody has run the app on a handset in front of a sound source; that is the

@@ -420,7 +420,86 @@ def fig_feature_importance(m: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 6. The map, in English
+# 6. The ceiling on R^2
+# ---------------------------------------------------------------------------
+def fig_ceiling(df: pd.DataFrame, m: dict) -> None:
+    """The answer to "R2 = 0.25 --- isn't that very low?", drawn.
+
+    Two measurements a few metres apart at the same hour must be predicted
+    identically by any spatial model, so whatever they disagree by is variance no
+    spatial model can explain. That disagreement bounds the achievable R2, and
+    the bound is far below 1.
+
+    The conversion: for two readings of a common value with error sd sigma, the
+    difference is N(0, 2 sigma^2), so E|difference| = 2 sigma / sqrt(pi) and
+    sigma = mean|difference| * sqrt(pi) / 2.
+
+    docs/presentation-brief.md sec. 3 states the caveat that belongs on the same
+    slide: pairs at the same hour may fall on different days, so this sigma
+    carries day-to-day variation too and overestimates pure measurement noise.
+    It is an order of magnitude, not a bound.
+    """
+    R = 6_371_000.0
+    lat = np.radians(df["latitude"].to_numpy())
+    lon = np.radians(df["longitude"].to_numpy())
+    x = R * lon * np.cos(lat.mean())
+    y = R * lat
+    sep = np.hypot(x[:, None] - x[None, :], y[:, None] - y[None, :])
+    hour = df["hour"].to_numpy()
+    same_hour = hour[:, None] == hour[None, :]
+    level = df["noise_dB"].to_numpy()
+    iu = np.triu_indices(len(df), 1)
+
+    total_var = float(np.var(level, ddof=1))
+    bands = [20, 40, 60]
+    rows = []
+    for b in bands:
+        keep = (sep[iu] < b) & same_hour[iu]
+        diff = np.abs(level[iu[0]][keep] - level[iu[1]][keep])
+        sigma = diff.mean() * np.sqrt(np.pi) / 2
+        rows.append((b, int(keep.sum()), diff.mean(), sigma,
+                     1 - sigma**2 / total_var))
+
+    delivered = m["bloo"]["models"][m["meta"]["delivered_model"]]["r2"]
+
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    xs = np.arange(len(rows))
+    ceilings = [r[4] for r in rows]
+    ax.bar(xs, ceilings, width=0.5, color=ACCENT, alpha=0.20,
+           edgecolor=ACCENT, linewidth=0.8)
+    ax.bar(xs, [delivered] * len(rows), width=0.5, color=GOOD, alpha=0.85)
+
+    for i, (b, n, md, sd, ceil) in enumerate(rows):
+        ax.annotate(f"{ceil:.2f}", xy=(i, ceil), xytext=(0, 4),
+                    textcoords="offset points", ha="center", fontsize=8.5,
+                    color=ACCENT, fontweight="bold")
+
+    ax.annotate(f"delivered model  {delivered:.3f}", xy=(len(rows) - 0.7, delivered),
+                xytext=(6, 0), textcoords="offset points", va="center",
+                fontsize=8.5, color=GOOD, fontweight="bold")
+
+    ax.set_xticks(xs)
+    ax.set_xticklabels(
+        [f"pairs < {b} m apart, same hour\n"
+         f"{n} pairs, {md:.2f} dB apart\n"
+         f"$\\Rightarrow\\ \\sigma \\approx$ {sd:.1f} dB"
+         for b, n, md, sd, _ in rows],
+        fontsize=7.8, color=INK, linespacing=1.7)
+    ax.set_ylabel("$R^2$")
+    ax.set_ylim(0, 0.78)
+    ax.set_xlim(-0.55, len(rows) - 0.05)
+    ax.tick_params(axis="x", length=0, pad=8)
+    ax.spines["bottom"].set_visible(False)
+    ax.grid(axis="y", color=RULE, lw=0.5, alpha=0.6)
+    ax.set_axisbelow(True)
+    ax.set_title("What any spatial model could reach, given how much two "
+                 "neighbouring points disagree",
+                 fontsize=9, color=INK, loc="left", pad=8)
+    save(fig, "ceiling")
+
+
+# ---------------------------------------------------------------------------
+# 7. The map, in English
 # ---------------------------------------------------------------------------
 def fig_map(m: dict) -> None:
     """The published grid, redrawn from the CSV rather than screenshotted.
@@ -498,6 +577,7 @@ def main() -> None:
     fig_campaign(df, m)
     fig_discontinuity(df)
     fig_feature_importance(m)
+    fig_ceiling(df, m)
     fig_map(m)
 
 

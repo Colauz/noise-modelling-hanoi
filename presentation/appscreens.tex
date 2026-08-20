@@ -115,35 +115,42 @@
 % ============================================================================
 \newcommand{\phoneHome}{%
 \phoneframe{%
-  \node[bdy, text width=38mm] at (3,-2)
+  \node[bdy, text width=38mm] at (3,-1.5)
     {Field collection for the Hanoi urban noise campaign. Forms are the ones
      deployed on KoboToolbox.};
 
-  \node[ttl] at (3,-11) {Collect};
+  \node[ttl] at (3,-10) {Collect};
 
-  \appcard{-13.5}{16}{%
+  \appcard{-12.5}{14.5}{%
     \node[ttl] at (0,0) {Noise measurement};
     \node[bdy] at (0,-3) {16 questions {\textperiodcentered} v3};
-    \appbutton{0}{-6}{18}{Fill this form}}
+    \appbutton{0}{-5.6}{18}{Fill this form}}
 
-  \appcard{-31}{16}{%
+  \appcard{-28.5}{14.5}{%
     \node[ttl] at (0,0) {Construction site};
     \node[bdy] at (0,-3) {6 questions {\textperiodcentered} v1};
-    \appbutton{0}{-6}{18}{Fill this form}}
+    \appbutton{0}{-5.6}{18}{Fill this form}}
 
-  \node[ttl] at (3,-49) {The study};
+  \node[ttl] at (3,-45.5) {The study};
 
-  \appcard{-51.5}{13}{%
+  \appcard{-48}{13}{%
     \node[ttl] at (0,0) {Predicted noise map};
     \node[bdy, text width=34mm] at (0,-3)
       {The 40\,m grid, by hour, with the 363 points.};
     \appobutton{0}{-7.4}{16}{Open the map}}
 
-  \appcard{-66}{13}{%
+  % HomeScreen.kt, since #9: the model itself, driven over gama-server.
+  \appcard{-62}{15}{%
+    \node[ttl] at (0,0) {GAMA simulation};
+    \node[bdy, text width=34mm] at (0,-3)
+      {The model itself, driven from here --- mitigation scenarios, the fleet by
+       hour. Needs a gama-server on the network.};
+    \appbutton{0}{-9.4}{21}{Open the simulation}}
+
+  \appcard{-79}{13}{%
     \node[ttl] at (0,0) {What the study found};
     \node[bdy, text width=34mm] at (0,-3)
-      {The delivered model and the three negative results.};
-    \appobutton{0}{-7.4}{17}{Open the results}}
+      {The delivered model and the three negative results.};}
 }{Noise Hanoi}}
 
 % ============================================================================

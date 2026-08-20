@@ -633,6 +633,37 @@ The 5 dB MAE is the number to repeat. Every time someone looks at the map and st
 planning something with it, that number is the answer.}
 
 % ----------------------------------------------------------------
+\begin{frame}{``$R^2 = 0.25$ --- isn't that very low?''}
+  \fig[.46]{ceiling}{data/processed/measurements.csv \; $\cdot$ \; docs/metrology.md}
+  \vspace{-.5em}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      Two points a few metres apart \emph{at the same hour} must be predicted
+      identically by any spatial model. Whatever they disagree by is variance
+      \textbf{no spatial model can ever explain}.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{At the 40\,m scale the map works at}
+        The ceiling is near \up{$R^2 \approx 0.54$}. The delivered model reaches
+        \textbf{0.246} --- about \textbf{half} of what is attainable, not a
+        tenth of it.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{This is the question that always comes, and it is much stronger answered
+before it is asked than conceded afterwards.
+
+State the caveat on the slide out loud: pairs at the same hour may fall on
+different days, so this sigma carries day-to-day variation and OVERESTIMATES pure
+measurement noise --- which makes the ceiling an underestimate. And 29 pairs is
+few. It is an order of magnitude, not a bound.
+
+The underlying reason is the quantity: a 25 s A-weighted sample in motorcycle
+traffic, where one horn event reaches +17 dB (nguyen2025horn). docs/metrology.md
+makes the argument and concludes that 0.25 is reported without apology.}
+
+% ----------------------------------------------------------------
 \begin{frame}{The map --- and the caveat that goes with it}
   \fig[.45]{map-grid}{results/maps/hanoi\_noise\_map.csv --- 5\,587 cells $\times$ 17 hours}
   \vspace{-.5em}
@@ -701,10 +732,14 @@ morphological variable whatsoever.}
     architecture: all lose the reference protocol to two distances and a constant.
     At $n = 363$ over three sites, there is not enough signal to justify capacity.
   \end{block}
-  \begin{block}{2 --- Cross-city transfer fails}
-    A morphology$\rightarrow$noise model pretrained on the Sunbird Uganda
-    dataset scores \down{\rr{} $< 0$} on Hanoi, even with convention-invariant
-    features. \textbf{Local measurement is a prerequisite, not a refinement.}
+  \begin{block}{2 --- Cross-city transfer fails, and in three distinct ways}
+    Pretrained on Sunbird Uganda, scored on our 363 points: \down{\rr{} $=-15.9$}
+    (v1), \down{$-8.2$} (convention-invariant v2). \textbf{Not a calibration
+    offset} --- removing the $26\dB$ mean difference still leaves \rr{} negative.
+    \textbf{v1 transfers anti-information}, $r = -0.38$: it ranks quiet and loud
+    the wrong way round. \textbf{v2 leaves nothing}, $r = +0.08$ --- not wrong,
+    empty. Against which $\log(d_\mathrm{road})$ alone reaches \up{0.240} on the
+    same points.
   \end{block}
   \begin{block}{3 --- Vehicle flow does not explain the levels}
     Non-negative energy regression on 147 matched videos returns
@@ -713,7 +748,7 @@ morphological variable whatsoever.}
     \wn{Section 4 revisits how much of this is physics and how much is instrument.}
   \end{block}
   \vfill
-  \src{docs/negative-results.md \; $\cdot$ \; models/model\_comparison.md}
+  \src{make transfer \; $\cdot$ \; scripts/experiments/uganda\_transfer.py \; $\cdot$ \; docs/negative-results.md}
 \end{frame}
 \note{These three are the contribution. Say it in those words.
 
@@ -1072,9 +1107,9 @@ QCVN reading bands used descriptively, same as the map.}
       The delivered kernel in \texttt{study/Scenario.kt}, under test --- and
       a \textbf{refusal} outside the three mapped areas \\
     \addlinespace
-    \up{5 --- Simulate} & GAMA on the phone &
-      Tier 1 recomputed natively: a traffic multiplier $\times0.2$ to
-      $\times3$, $k=1$ asserted by a unit test \\
+    \up{5 --- Simulate} & Reach the model &
+      Tier 1 recomputed natively ($\times0.2$ to $\times3$, $k=1$ asserted by a
+      test) \emph{and} the real model driven over \texttt{gama-server} \\
     \addlinespace
     \wn{6 --- Backend} & Scale &
       \textbf{Not built.} Quota, moderation, deduplication, and the path back
@@ -1147,13 +1182,21 @@ hard-codes a number into a screen.}
 
 % ----------------------------------------------------------------
 \begin{frame}{Three engineering results worth reporting}
-  \begin{block}{GAMA cannot run on a phone --- and did not need to}
-    GAMA is an Eclipse RCP desktop application: SWT, AWT, a full JVM,
-    no Android port. But tier 1 is not an agent simulation --- it is a traffic
-    multiplier over 5\,587 cells we already export. Reimplemented natively, it runs
-    offline at 60\,fps. \textbf{The multiplier scales the traffic share of the
-    energy and never the background} --- the correction that took the claimed
-    benefit of pedestrianisation from $7.0\dB$ to $3.5\dB$.
+  \begin{block}{GAMA does not run on a phone --- so the app reaches it two ways}
+    \textbf{Tier 1, recomputed natively} over the 5\,587 cells already exported:
+    a traffic multiplier, offline, agreeing with the model to within
+    $0.2\dB$. \textbf{The model itself, over \texttt{gama-server}}: the app draws
+    GAMA's own display and drives it, which buys the mitigation scenarios the
+    grid cannot hold --- and needs a server the grid does not.
+    \wn{Drawing a model's display is not embedding it.}
+  \end{block}
+  \begin{block}{The same correction, found a second time}
+    The first on-device decomposition subtracted the kernel's constant
+    ($-99.6\dB$, i.e.\ nothing) from a cell energy of order $10^6$, so it scaled
+    the total after all: at a fifth of the traffic, $-7.0\dB$ where the model
+    gives $-3.7$. \textbf{Exactly the pedestrianisation error this project had
+    already made and corrected}, rebuilt on another platform. A unit test now
+    asserts that $k=1$ moves nothing.
   \end{block}
   \begin{block}{KoboToolbox renames your form at deployment}
     The first real submission failed with \textbf{404 for a form the server
@@ -1161,59 +1204,62 @@ hard-codes a number into a screen.}
     and substitutes the asset's own identifier
     ({\ttfamily\scriptsize aA8FaTuUVSkRjbUW7rCBz7}). The app now reads
     \texttt{/formList} and submits under whatever the server calls the form.
-    \textbf{Nothing about this is visible from the phone} --- which is the argument
-    for testing against the real server rather than reasoning about it.
-  \end{block}
-  \begin{block}{Consent is a version, not a flag}
-    \texttt{Settings.CONSENT\_VERSION} is raised when what is collected
-    changes, so consent is \textbf{asked again} rather than inherited from an
-    agreement given to different facts. Declining leaves the map and the results
-    usable --- they send nothing.
+    \textbf{None of this is visible from the phone} --- the argument for testing
+    against the real server rather than reasoning about it.
   \end{block}
 \end{frame}
 \note{All three are the kind of thing that costs a day and is invisible in a
 results table, which is exactly why they are on a slide.
 
-The 7.0 to 3.5 dB correction is a real scientific point hiding in an engineering
-slide: scaling total energy by a traffic multiplier double-counts the background,
-and it halved a mitigation benefit we had been about to report.}
+The middle one is the one to dwell on. The same error --- scaling total energy by
+a traffic multiplier, which double-counts the background --- was made twice, in
+Python in July and in Kotlin in August, by people who already knew about it. That
+is worth saying plainly: knowing a mistake is not the same as being immune to it,
+and the only thing that caught it the second time was a test asserting an
+invariant that has to hold.
+
+On the first block, be precise about the wording: the app DRAWS GAMA's own
+display and drives it over a socket. It does not embed GAMA, and anyone who
+knows the platform will hear the difference.}
 
 % ----------------------------------------------------------------
 \begin{frame}{What the app measures --- and what it refuses to claim}
   \begin{alertblock}{The app's level is a \emph{different quantity} from the campaign's}
     This handset's microphone, not a trimmed Decibel X reading. It goes in
-    \textbf{its own field}, with the device model, the OS version and the audio
-    source the platform granted. \textbf{The two never share a column.}
+    \textbf{its own field}, with the device and the audio source the platform
+    granted. \textbf{The two never share a column.}
   \end{alertblock}
-  \vspace{.3em}
+  \vspace{.2em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \textbf{Verified end to end, against the live server}
+      \textbf{Verified end to end, live}
       \begin{itemize}
         \item Fix, 25\,s measurement, instance written, \up{submission accepted
               by \texttt{kc.kobotoolbox.org}}
-        \item The map draws all three areas; both sliders move it
-        \item A position outside them is \textbf{refused, not answered}
+        \item A position outside the three areas is \textbf{refused, not
+              answered}
         \item 36 unit tests; weighting pinned to the IEC table
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{alertblock}{Not verified --- and it is the important one}
         \textbf{The level has never been checked against a sound source.} An
-        emulator records silence.
-        \vspace{.3em}
-
-        Until it is compared to a meter, \textbf{the absolute figure means
-        nothing} --- equally true, per \texttt{docs/metrology.md}, of the
-        campaign's own numbers.
+        emulator records silence. Until it is compared to a meter, \textbf{the
+        absolute figure means nothing} --- equally true, per
+        \texttt{docs/metrology.md}, of the campaign's own numbers.
       \end{alertblock}
-      \aside{First task on a real handset.}
+      \aside{First task on a real handset, alongside Decibel X on the three
+      campaign phones.}
     \end{column}
   \end{columns}
 \end{frame}
 \note{Do not oversell the app. It is a well-tested piece of software whose central
 number is unvalidated, and saying that plainly is the same discipline as the rest of
 the project.
+
+If consent comes up: CONSENT\_VERSION is raised whenever what is collected changes,
+so consent is asked again rather than inherited from an agreement given to different
+facts. Declining leaves the map and the results usable --- they send nothing.
 
 The microphone offset in Settings is one number that stands for the whole of a
 handset's absolute calibration. Its default is a plausible constant for a consumer
