@@ -245,9 +245,47 @@ package now; scripts read inputs, call the package, write outputs.
       automated requests, and a search engine's summary of a quartile is second-hand
       evidence, which this project classifies `grey` everywhere else.
 
+- [x] **The Uganda transfer is now reproducible.** It was asserted in
+      `literature-review.md` and in the header of `barcelona_transfer.py` and
+      appeared in neither `metrics.json` nor `model_comparison.md`; a reader could
+      not check it. `scripts/experiments/uganda_transfer.py` runs it from the two
+      versioned boosters and Hanoi's own features, so it needs no Ugandan data.
+      `02b_fetch_osm_extract.py` supplies the OSM extract that `03` requires and
+      that nothing in the repository produced. What it finds is stronger than the
+      R² < 0 that was claimed: see below.
+
 - [ ] Validate the YOLO detector on ~10 videos (debt #2). Without it, no modal shares.
 - [ ] Extract `validation.py` and `physics.py` from `04_evaluate_models.py` (debt #1).
 - [ ] Write the two remaining tests (debt #4).
+
+### What the transfer experiment actually shows
+
+Worth carrying into the manuscript, because it is sharper than "transfer fails".
+
+| | as delivered | mean difference removed | and rescaled (= r²) | r |
+|---|---|---|---|---|
+| Uganda 61K (v1) | R² = −15.8 | −2.17 | +0.151 | **−0.388** |
+| Uganda invariant (v2) | R² = −8.1 | −0.96 | +0.004 | +0.066 |
+
+Three readings, and the third is the one that matters.
+
+**It is not a calibration offset.** The Kampala model predicts 26 dB below Hanoi,
+but removing that difference still leaves R² negative. A recalibrated transfer
+would not work either.
+
+**v1 transfers anti-information.** Its correlation with Hanoi is *negative*: it
+ranks quiet and loud the wrong way round, and the only way to extract anything
+from it is to flip it. That is consistent with the convention artefact v2 was
+built to remove.
+
+**v2 removes the artefact and leaves nothing.** r = +0.066, Spearman +0.077. Not
+wrong — empty. Even granted a free bias and a free slope, its ceiling is R² =
+0.004.
+
+Against which: `log(distance to road)` alone, fitted on those same 363 points,
+reaches R² = 0.240, and the delivered physical kernel 0.246 under buffered
+leave-one-out. **One locally fitted distance term carries more than a
+61 000-point model trained in another city carries at all.**
 
 ### The scientifically indicated next step
 

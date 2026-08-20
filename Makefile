@@ -9,7 +9,7 @@ PYTHON ?= python3
 SCRIPTS = scripts
 
 .DEFAULT_GOAL := help
-.PHONY: help setup .check-env data counts features models results report dashboard simulate all test clean clean-all
+.PHONY: help setup .check-env data counts osm features transfer models results report dashboard simulate all test clean clean-all
 
 help:  ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -45,8 +45,14 @@ FEATURES  = data/interim/features.parquet
 METRICS   = models/metrics.json
 GRID      = simulation/gama/inputs/noise_points.shp
 MEASURES  = data/processed/measurements.csv
+BUILDINGS = data/interim/hanoi_sites_buildings.gpkg
 
-$(FEATURES): $(MEASURES) src/noise_hanoi/features.py
+# The OSM extract 03 reads. Regenerable, dated, and deliberately unversioned:
+# it is a snapshot of an upstream that moves.
+$(BUILDINGS): $(MEASURES)
+	$(PYTHON) $(SCRIPTS)/02b_fetch_osm_extract.py
+
+$(FEATURES): $(MEASURES) $(BUILDINGS) src/noise_hanoi/features.py
 	$(PYTHON) $(SCRIPTS)/03_build_features.py
 
 $(METRICS): $(FEATURES) $(SCRIPTS)/04_evaluate_models.py
@@ -61,7 +67,12 @@ results/tables/validation_simulation.csv: $(GRID) $(MEASURES)
 results/figures/analyse_1_horaire.png: $(MEASURES) $(SCRIPTS)/09b_build_analyses.py
 	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
 
+osm: .check-env $(BUILDINGS)  ## Download the OSM extract the features are built from
+
 features: .check-env $(FEATURES)  ## OSM morphology features for the measurement points
+
+transfer: .check-env $(FEATURES)  ## Uganda -> Hanoi transfer, the second negative result
+	$(PYTHON) $(SCRIPTS)/experiments/uganda_transfer.py
 
 models: .check-env $(METRICS)  ## Evaluate 8 models under 3 CV protocols, select and write the delivered one
 

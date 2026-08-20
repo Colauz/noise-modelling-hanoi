@@ -191,9 +191,8 @@ fun GamaScreen(onBack: () -> Unit) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("What this is", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "The model runs on a machine elsewhere, started with " +
-                            "gama-headless.sh -socket 6868. Nothing here works without a network " +
-                            "and a server that is on — unlike the map, which needs neither.",
+                        "The model runs on another machine, started with " +
+                            "gama-headless.sh -socket 6868. Needs a network and a running server.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -205,9 +204,7 @@ fun GamaScreen(onBack: () -> Unit) {
                 label = { Text("Server (ws://host:port)") },
                 supportingText = {
                     Text(
-                        "The machine running gama-server, on a network this phone can reach — " +
-                            "its address on the wifi, not localhost. ws://10.0.2.2:6868 means the " +
-                            "host machine, and only from an emulator.",
+                        "Its address on the wifi, not localhost.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 },
@@ -260,8 +257,7 @@ fun GamaScreen(onBack: () -> Unit) {
             Text(String.format(Locale.US, "Hour of day: %02d:00", hour.toInt()),
                 style = MaterialTheme.typography.titleSmall)
             Text(
-                "Changes the measured traffic and whether construction is working — not the " +
-                    "predicted field, which has no hour term.",
+                "Changes the traffic and the construction, not the predicted field.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )

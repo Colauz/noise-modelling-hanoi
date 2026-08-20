@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -93,6 +97,12 @@ fun MapScreen(onBack: () -> Unit) {
         var multiplier by remember { mutableStateOf(1f) }
         var showMeasured by remember { mutableStateOf(true) }
         var picked by remember { mutableStateOf<GridCell?>(null) }
+        // Pan and zoom, because 2 km across at 40 m a cell is unreadable held
+        // still on a phone. Kept in the projected plane rather than a tile
+        // framework: the area is 5 587 rectangles, so panning is a translation of
+        // the draw and needs neither tiles nor a network.
+        var zoom by remember(site) { mutableStateOf(1f) }
+        var pan by remember(site) { mutableStateOf(Offset.Zero) }
 
         val cells = remember(site, study) { study.map.cellsOf(site) }
         // The zone's own ambience at this hour, not a constant: it is what the
@@ -123,8 +133,37 @@ fun MapScreen(onBack: () -> Unit) {
                 hour = hour,
                 multiplier = multiplier.toDouble(),
                 background = ambient,
+                zoom = zoom,
+                pan = pan,
+                onTransform = { z, p ->
+                    zoom = z
+                    // Never let the map be pushed off its own frame and lost.
+                    val limit = 2_000f * (z - 1f)
+                    pan = Offset(p.x.coerceIn(-limit, limit), p.y.coerceIn(-limit, limit))
+                },
                 onPick = { picked = it },
             )
+
+            // Gestures work, and a thumb on a scrolling page does not always get
+            // them: the parent scroll takes the drag first. These always work.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { zoom = (zoom * 1.6f).coerceAtMost(12f) }) { Text("Zoom in") }
+                OutlinedButton(onClick = {
+                    zoom = (zoom / 1.6f).coerceAtLeast(1f)
+                    val limit = 2_000f * (zoom - 1f)
+                    pan = Offset(pan.x.coerceIn(-limit, limit), pan.y.coerceIn(-limit, limit))
+                }) { Text("Zoom out") }
+                if (zoom > 1f || pan != Offset.Zero) {
+                    OutlinedButton(onClick = { zoom = 1f; pan = Offset.Zero }) { Text("Reset") }
+                }
+            }
+            if (zoom > 1f) {
+                Text(
+                    String.format(Locale.US, "x%.1f — drag the map to move it", zoom),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
 
             Legend()
 
@@ -138,14 +177,11 @@ fun MapScreen(onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("This map does not vary by hour", style = MaterialTheme.typography.titleSmall)
+                    Text("No hour control", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "The delivered model is a three-parameter distance kernel with no hour " +
-                            "term, so every hour of the published grid holds the same levels. " +
-                            "Traffic does vary by hour — from about 24 vehicles a minute at 21:00 " +
-                            "to 76 at 17:00, measured on 147 videos — but that variation was not " +
-                            "found to move the predicted level, which is one of the study's " +
-                            "negative results rather than a gap in this app.",
+                        "The delivered model has no hour term, so every hour of the grid holds " +
+                            "the same levels. Traffic does vary by hour; the predicted level " +
+                            "does not.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -212,6 +248,9 @@ private fun NoiseCanvas(
     hour: Int,
     multiplier: Double,
     background: Double,
+    zoom: Float,
+    pan: Offset,
+    onTransform: (Float, Offset) -> Unit,
     onPick: (GridCell) -> Unit,
 ) {
     // Equirectangular, which over an area 2 km across is indistinguishable from
@@ -226,15 +265,31 @@ private fun NoiseCanvas(
             .fillMaxWidth()
             .aspectRatio(aspect)
             .clip(RoundedCornerShape(8.dp))
-            .pointerInput(cells, hour) {
+            .pointerInput(extent) {
+                detectTransformGestures { _, drag, gestureZoom, _ ->
+                    val next = (zoom * gestureZoom).coerceIn(1f, 12f)
+                    val scaled = if (zoom == 0f) Offset.Zero else pan * (next / zoom)
+                    onTransform(next, scaled + drag * next)
+                }
+            }
+            .pointerInput(cells, zoom, pan) {
                 detectTapGestures { tap ->
-                    val lon = extent.minLongitude + (tap.x / size.width) * lonSpan
-                    val lat = extent.maxLatitude - (tap.y / size.height) * latSpan
+                    // Undo the view transform before asking which cell was touched.
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val x = (tap.x - cx - pan.x) / zoom + cx
+                    val y = (tap.y - cy - pan.y) / zoom + cy
+                    val lon = extent.minLongitude + (x / size.width) * lonSpan
+                    val lat = extent.maxLatitude - (y / size.height) * latSpan
                     cells.minByOrNull { metresBetween(lat, lon, it.latitude, it.longitude) }
                         ?.let(onPick)
                 }
             }
     ) {
+      withTransform({
+          translate(pan.x, pan.y)
+          scale(zoom, zoom, pivot = Offset(size.width / 2f, size.height / 2f))
+      }) {
         drawRect(Color(0xFF12161A), size = Size(size.width, size.height))
 
         val cellW = (size.width * (NoiseMap.CELL_SIZE_M / (lonSpan * 111_320.0 *
@@ -259,9 +314,10 @@ private fun NoiseCanvas(
         for (point in points) {
             val x = ((point.longitude - extent.minLongitude) / lonSpan * size.width).toFloat()
             val y = ((extent.maxLatitude - point.latitude) / latSpan * size.height).toFloat()
-            drawCircle(Color.White, radius = 4.5f, center = Offset(x, y))
-            drawCircle(levelColour(point.levelDb), radius = 3f, center = Offset(x, y))
+            drawCircle(Color.White, radius = 4.5f / zoom, center = Offset(x, y))
+            drawCircle(levelColour(point.levelDb), radius = 3f / zoom, center = Offset(x, y))
         }
+      }
     }
 }
 
@@ -338,8 +394,8 @@ private fun HereCard(study: StudyData) {
                 )
             }) { Text("Read the map at my position") }
             Text(
-                "Outside the three measured areas the app has no answer, and says so. " +
-                    "The kernel was fitted here; it is not a model of Hanoi.",
+                "Outside the three measured areas there is no answer. The kernel was fitted " +
+                    "here; it is not a model of Hanoi.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -356,23 +412,15 @@ private fun ScopeNotice(multiplier: Float) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("How to read this", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Coloured cells are predicted by a three-parameter physical kernel over a 40 m grid. " +
-                    "The bands are the QCVN 26:2010 references, shown descriptively — this is not a " +
-                    "compliance assessment, and the levels are calibrated in relative terms only.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-                "The dots are the 363 measurements themselves. Spatial contrast comes from distance " +
-                    "to the two road classes and from nothing else: morphology aggregated over 300 m " +
-                    "brought no measurable gain.",
+                "Cells are predicted over a 40 m grid; dots are the 363 measurements. The bands " +
+                    "are QCVN 26:2010, shown descriptively — not a compliance assessment, and the " +
+                    "levels are relative, not absolute.",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (multiplier != 1f) {
                 Text(
-                    "The traffic multiplier scales only the traffic share of the energy, never the " +
-                        "zone's residual ambience. Scaling the total is what once made the model " +
-                        "claim twice the benefit for pedestrianisation that it should have. Checked " +
-                        "against the GAMA model itself: the two agree within 0.2 dB.",
+                    "The multiplier scales the traffic share of the energy, never the zone's " +
+                        "residual ambience. Matches the GAMA model within 0.2 dB.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

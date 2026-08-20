@@ -67,32 +67,26 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
 
             Section(
                 "What a submission contains",
-                "The sound level, the time, and your position with its accuracy. What you " +
-                    "answered on the form: the site, the dominant source, the distance to the road, " +
-                    "any note you wrote. And, so that the measurements can be interpreted, your " +
-                    "phone's model, its Android version, the app version, and a random number this " +
-                    "phone invented the first time the app ran.",
+                "The sound level, the time, and your position with its accuracy. Your answers on " +
+                    "the form. Your phone's model, its Android version, the app version, and a " +
+                    "random number this phone invented on first run.",
             )
             Section(
                 "The random number, and why it is there",
-                "It is not a device identifier, not an account, not a name, and nothing that " +
-                    "can be traced back to you. It exists so the project can tell one " +
-                    "contributor's measurements from another's — a phone's microphone has its own " +
-                    "bias, and a flood of identical submissions has to be visible. You can see it " +
-                    "in Settings.",
+                "Not a device identifier, not an account, not a name. It exists so the project " +
+                    "can tell one contributor's measurements from another's. You can see it in " +
+                    "Settings.",
             )
             Section(
                 "Your position is personal data, even without your name",
-                "A position with a time says where somebody was at a moment. Measuring " +
-                    "repeatedly from the same place — your home, for instance — says where you " +
-                    "live. Measure where you would not mind being recorded as having stood.",
+                "A position with a time says where somebody was at a moment. Measuring repeatedly " +
+                    "from the same place — your home — says where you live. Measure where you " +
+                    "would not mind being recorded as having stood.",
             )
             Section(
                 "Sound recording",
-                "In public contributor mode the app makes no recording at all: it computes the " +
-                    "level and keeps nothing of what the microphone heard. A short audio clip is " +
-                    "submitted only when the app is set up for the campaign team, and that setting " +
-                    "is visible in Settings.",
+                "In public contributor mode no recording is made at all. A short clip is " +
+                    "submitted only when the app is set up for the campaign team.",
             )
             Section(
                 "Where it goes, and who holds it",
@@ -106,16 +100,15 @@ fun ConsentScreen(onAgree: () -> Unit, onDecline: () -> Unit, onBack: (() -> Uni
             )
             Section(
                 "Changing your mind",
-                "You can stop at any time by not submitting. To have measurements already sent " +
-                    "removed, contact whoever runs the project and give them the random number from " +
-                    "Settings — it is the only thing that points at your submissions.",
+                "Stop at any time by not submitting. To have sent measurements removed, contact " +
+                    "whoever runs the project with the random number from Settings — the only " +
+                    "thing that points at your submissions.",
             )
             Section(
                 "What the numbers are worth",
                 "A phone microphone is not a sound level meter. Unless this phone has been " +
-                    "calibrated against a reference, its decibel figures are comparable to each " +
-                    "other and to nothing else. They are not a compliance measurement and cannot be " +
-                    "used as one.",
+                    "calibrated against a reference, its decibels are comparable to each other and " +
+                    "to nothing else, and are not a compliance measurement.",
             )
 
             Button(onClick = onAgree, modifier = Modifier.fillMaxWidth()) {
