@@ -35,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -355,30 +356,37 @@ private fun HereCard(study: StudyData) {
     var reading by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var best by remember { mutableStateOf<GeoPoint?>(null) }
+    val collected = remember { mutableStateListOf<GeoPoint>() }
     var job by remember { mutableStateOf<Job?>(null) }
 
     fun readHere() {
         job?.cancel()
         searching = true
         best = null
+        collected.clear()
         reading = null
         job = scope.launch {
-            // `first` ends the flow the moment a fix is good enough, and the
-            // timeout ends it otherwise; `best` holds the best seen either way.
-            // Throwing to break out of the collect would cancel this coroutine
-            // whole, and the answer below would never be written.
+            // Keep listening past the first good fix: several of them averaged
+            // land closer to the truth than any one of them. `first` ends the flow
+            // once there are enough; the timeout ends it otherwise. Throwing to
+            // break out would cancel this coroutine whole, and the answer below
+            // would never be written.
             withTimeoutOrNull(SEARCH_MS) {
                 GpsFixes.stream(context)
                     .catch { reading = it.message ?: "Location unavailable" }
                     .filter { it.accuracyM > 0 && it.ageMillis() <= GpsFixes.STALE_AFTER_MS }
                     .onEach { fix ->
+                        collected += fix
                         val current = best
                         if (current == null || fix.accuracyM < current.accuracyM) best = fix
                     }
-                    .first { it.accuracyM <= GOOD_ENOUGH_M }
+                    .first { fix ->
+                        fix.accuracyM <= GOOD_ENOUGH_M &&
+                            collected.count { it.accuracyM <= GOOD_ENOUGH_M } >= ENOUGH_FIXES
+                    }
             }
             searching = false
-            val fix = best
+            val fix = GpsFixes.combine(collected.toList())
             reading = when {
                 fix == null -> "No fix in ${SEARCH_MS / 1000} s. Try outdoors."
                 else -> {
@@ -403,8 +411,10 @@ private fun HereCard(study: StudyData) {
                         }
                         String.format(
                             Locale.US,
-                            "%.1f dB predicted — %s, %.0f m from the cell centre, fix ±%.0f m.%s",
-                            cell.levelAt(NoiseMap.FIRST_HOUR), cell.site, distance, fix.accuracyM, caveat,
+                            "%.1f dB predicted — %s, %.0f m from the cell centre, fix ±%.0f m " +
+                                "from %d readings.%s",
+                            cell.levelAt(NoiseMap.FIRST_HOUR), cell.site, distance,
+                            fix.accuracyM, collected.size, caveat,
                         )
                     }
                 }
@@ -448,8 +458,11 @@ private fun HereCard(study: StudyData) {
 /** How long to listen for a better fix before answering with the best seen. */
 private const val SEARCH_MS = 25_000L
 
-/** Accurate enough to choose a 40 m cell without ambiguity; stop looking. */
+/** Accurate enough to choose a 40 m cell without ambiguity. */
 private const val GOOD_ENOUGH_M = 15.0
+
+/** How many good fixes to average before answering. */
+private const val ENOUGH_FIXES = 5
 
 @Composable
 private fun ScopeNotice(multiplier: Float) {
