@@ -915,7 +915,14 @@ than that would be inventing.}
 % ----------------------------------------------------------------
 \begin{frame}{Findings 2 and 3 --- the video chain, and the intervals}
   \begin{block}{2 --- The video chain is measuring something, but not what we think}
-    \begin{columns}[T]
+    % [T] aligns columns on the FIRST LINE'S BASELINE. Started immediately after
+    % a block title that baseline is the title's own, so the first bullet rode up
+    % into the heading. [t] aligns the tops of the column boxes instead, and the
+    % \vspace gives the block title its own line back. This is the only place in
+    % the deck where columns open inside a block; the other 23 are at frame level,
+    % where there is room above the first line anyway.
+    \vspace{.5em}
+    \begin{columns}[t]
       \begin{column}{0.5\textwidth}
         \begin{itemize}
           \item Detector modal split: \down{57\,\% cars, 36\,\% motorcycles}.
