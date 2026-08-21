@@ -7,6 +7,7 @@ make -C .. slides    # figures from the pipeline, then the deck   <- start here
 make                 # -> main.pdf and script.pdf   (48 slides incl. 4 backup)
 make notes           # -> main-notes.pdf, presenter notes beside each slide
 make script          # -> script.pdf, what to say on each slide, EN beside FR
+make script-short    # -> script-short.pdf, the same talk at 30 s a slide
 make formulas        # -> formulas.pdf, every equation explained, EN beside FR
 make logos           # report which institutional marks are present
 make ENGINE=lualatex # better typography if your TeX Live can load system Lato
@@ -80,7 +81,29 @@ pipeline. Nothing in the deck reads `results/figures/` any more — that set is
 French-labelled and partly not regenerable
 ([`sunbird/NOT-REGENERABLE.md`](../results/figures/sunbird/NOT-REGENERABLE.md)).
 
-## The speaker script
+## The speaker scripts
+
+Two lengths of the same talk. Both are EN | FR: the English is what you say, the
+French is the same thing so nobody recites a sentence they do not own. Both share
+[`scriptstyle.tex`](scriptstyle.tex), so they cannot drift apart in layout, and
+both are held to the deck's slide titles by `check_script.py`.
+
+| | | |
+|---|---|---|
+| [`script.tex`](script.tex) | **~30 min**, 15 pages | The full version: every slide, the reasoning behind each line, the questions to expect with their answers. |
+| [`script-short.tex`](script-short.tex) | **~19 min**, 11 pages | 36 content slides at **30 seconds each**, plus 8 one-sentence section signposts. |
+
+The short one is written to a word budget: about **60 English words a slide**, none
+over 75. That is ~25 seconds read aloud, leaving five a slide for the pause, the
+pointing and the breath — a cell written to the full 30 seconds is a cell read at
+a rush.
+
+**What was cut, and what was not.** Every caveat survived. What went is
+elaboration: the second example, the reason behind the reason. A talk can be short
+or long; it cannot be short and overclaiming, because the sentence dropped under
+time pressure is always the qualifying one.
+
+### The full script
 
 [`script.tex`](script.tex) → `script.pdf`, 15 pages. Every spoken slide, in
 order, with **English on the left and French on the right**: the English is what

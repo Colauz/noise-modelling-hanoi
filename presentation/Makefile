@@ -2,7 +2,8 @@
 #
 #   make                     -> main.pdf
 #   make notes               -> main-notes.pdf, presenter notes beside each slide
-#   make script              -> script.pdf, the bilingual speaker script
+#   make script              -> script.pdf, the bilingual speaker script (~30 min)
+#   make script-short        -> script-short.pdf, 30 seconds a slide (~19 min)
 #   make formulas            -> formulas.pdf, every equation explained, EN | FR
 #   make check               -> verify script.pdf names the slides main.tex has
 #   make view                -> build, then open the PDF
@@ -43,8 +44,8 @@ else
   ENGINEFLAG := -pdf
 endif
 
-.PHONY: all notes script formulas check view clean distclean logos logos-placeholder
-all: main.pdf script.pdf formulas.pdf
+.PHONY: all notes script script-short formulas check view clean distclean logos logos-placeholder
+all: main.pdf script.pdf script-short.pdf formulas.pdf
 
 main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
 	$(LATEXMK) $(ENGINEFLAG) main.tex
@@ -63,9 +64,17 @@ notes:
 # the deck's. check_script.py enforces that, and the build refuses rather than
 # handing a presenter a script that disagrees with the screen.
 script: script.pdf
-script.pdf: script.tex main.tex
+script.pdf: script.tex scriptstyle.tex main.tex
 	$(PYTHON) check_script.py
 	$(LATEXMK) $(ENGINEFLAG) script.tex
+
+# The same talk at half the length: 36 content slides at 30 s each, ~19 minutes.
+# Shares scriptstyle.tex with the full script, so the two cannot drift apart in
+# layout, and check_script.py holds both of them to the deck's titles.
+script-short: script-short.pdf
+script-short.pdf: script-short.tex scriptstyle.tex main.tex
+	$(PYTHON) check_script.py
+	$(LATEXMK) $(ENGINEFLAG) script-short.tex
 
 # The equations, explained: the companion to script.pdf. Prose about the maths,
 # so it depends on nothing but itself -- but every number in it was recomputed
@@ -104,8 +113,9 @@ logos-placeholder:
 clean:
 	$(LATEXMK) -c
 	$(LATEXMK) -c script.tex
+	$(LATEXMK) -c script-short.tex
 	$(LATEXMK) -c formulas.tex
 	rm -f main-notes.*
 
 distclean: clean
-	rm -f main.pdf script.pdf formulas.pdf
+	rm -f main.pdf script.pdf script-short.pdf formulas.pdf
