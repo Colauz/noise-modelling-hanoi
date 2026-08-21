@@ -1,9 +1,11 @@
 # Build the end-of-internship presentation.
 #
-#   make                     -> main.pdf
+#   make                     -> main.pdf, and everything below
+#   make short               -> main-short.pdf, the fifteen-minute deck
 #   make notes               -> main-notes.pdf, presenter notes beside each slide
 #   make script              -> script.pdf, the bilingual speaker script (~30 min)
 #   make script-short        -> script-short.pdf, 30 seconds a slide (~19 min)
+#   make script-15           -> script-15.pdf, the script for the SHORT deck
 #   make formulas            -> formulas.pdf, every equation explained, EN | FR
 #   make check               -> verify script.pdf names the slides main.tex has
 #   make view                -> build, then open the PDF
@@ -44,11 +46,20 @@ else
   ENGINEFLAG := -pdf
 endif
 
-.PHONY: all notes script script-short formulas check view clean distclean logos logos-placeholder
-all: main.pdf script.pdf script-short.pdf formulas.pdf
+.PHONY: all notes short script script-short script-15 formulas check view clean distclean logos logos-placeholder
+all: main.pdf main-short.pdf script.pdf script-short.pdf script-15.pdf formulas.pdf
 
-main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
+DECKDEPS = main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard logos/*.png) $(wildcard figures/*.pdf)
+
+main.pdf: $(DECKDEPS)
 	$(LATEXMK) $(ENGINEFLAG) main.tex
+
+# The fifteen-minute deck. main-short.tex is two lines: it defines \SHORTDECK and
+# inputs main.tex, which then drops every frame wrapped in \onlyfull. One source,
+# two outputs -- a correction cannot land in one deck and not the other.
+short: main-short.pdf
+main-short.pdf: main-short.tex $(DECKDEPS)
+	$(LATEXMK) $(ENGINEFLAG) main-short.tex
 
 # Presenter notes on a second screen. The \setbeameroption line lives commented
 # out in main.tex; this uncomments it into a throwaway copy so main.tex itself is
@@ -75,6 +86,14 @@ script-short: script-short.pdf
 script-short.pdf: script-short.tex scriptstyle.tex main.tex
 	$(PYTHON) check_script.py
 	$(LATEXMK) $(ENGINEFLAG) script-short.tex
+
+# The script for main-short.pdf. Its slide numbers are the SHORT deck's, which is
+# why check_script.py has to know which script belongs to which deck rather than
+# checking everything against one numbering.
+script-15: script-15.pdf
+script-15.pdf: script-15.tex scriptstyle.tex main.tex
+	$(PYTHON) check_script.py
+	$(LATEXMK) $(ENGINEFLAG) script-15.tex
 
 # The equations, explained: the companion to script.pdf. Prose about the maths,
 # so it depends on nothing but itself -- but every number in it was recomputed
@@ -114,8 +133,10 @@ clean:
 	$(LATEXMK) -c
 	$(LATEXMK) -c script.tex
 	$(LATEXMK) -c script-short.tex
+	$(LATEXMK) -c script-15.tex
+	$(LATEXMK) -c main-short.tex
 	$(LATEXMK) -c formulas.tex
 	rm -f main-notes.*
 
 distclean: clean
-	rm -f main.pdf script.pdf script-short.pdf formulas.pdf
+	rm -f main.pdf main-short.pdf script.pdf script-short.pdf script-15.pdf formulas.pdf

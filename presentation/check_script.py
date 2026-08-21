@@ -38,7 +38,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 MAIN = HERE / "main.tex"
-SCRIPTS = [HERE / "script.tex", HERE / "script-short.tex"]
+# Which script is held against which deck. main.tex builds two: the full one,
+# and the fifteen-minute one that drops every frame wrapped in \onlyfull.
+SCRIPTS = {
+    HERE / "script.tex":       False,   # full deck
+    HERE / "script-short.tex": False,   # full deck, said faster
+    HERE / "script-15.tex":    True,    # the short deck
+}
 
 # \begin{frame}, optionally [opts], optionally {Title}. A frame with no braced
 # argument -- [plain], [standout] -- is a slide with no title of its own.
@@ -60,10 +66,27 @@ def balanced(text: str, start: int) -> tuple[str, int]:
     raise ValueError("unbalanced brace in main.tex")
 
 
-def deck_slides() -> list[str]:
-    """Every slide, in order, as its title. '' for a slide with no frame title."""
+def onlyfull_spans(body: str) -> list[tuple[int, int]]:
+    r"""Character ranges of every \onlyfull{...}: the frames the short deck drops."""
+    spans = []
+    for m in re.finditer(r"\\onlyfull\{", body):
+        spans.append((m.start(), balanced(body, m.end() - 1)[1]))
+    return spans
+
+
+def deck_slides(short: bool = False) -> list[str]:
+    r"""Every slide, in order, as its title. '' for a slide with no frame title.
+
+    With short=True this is the deck main-short.tex builds: the frames inside
+    \onlyfull are not emitted, so they do not take a slide number either. That
+    is the whole reason the numbering has to be derived rather than typed.
+    """
     src = MAIN.read_text()
     body = src[src.index(r"\begin{document}"):]
+    dropped = onlyfull_spans(body) if short else []
+
+    def cut(pos: int) -> bool:
+        return any(a <= pos < b for a, b in dropped)
 
     events: list[tuple[int, str, str]] = []
     for m in re.finditer(r"\\maketitle\b", body):
@@ -78,7 +101,7 @@ def deck_slides() -> list[str]:
         events.append((m.start(), "frame", title))
 
     events.sort(key=lambda e: e[0])
-    return [t.strip() for _, _, t in events]
+    return [t.strip() for pos, _, t in events if not cut(pos)]
 
 
 def tex_to_plain(t: str) -> str:
@@ -94,7 +117,11 @@ def script_headers(path: Path) -> list[tuple[int, str, int, int]]:
     """(number, title, span start, span end) for each \\slide{n}{title}{time}."""
     src = path.read_text()
     out = []
-    for m in re.finditer(r"\\slide\{(\d+)\}\{", src):
+    # \slide{n}{title}{time} or \slide[fraction]{n}{title}{time}. The optional
+    # argument was added later and this pattern silently stopped matching, so
+    # the checker reported "2 headers, all match" and checked nothing. A checker
+    # that can pass by finding nothing is worse than no checker.
+    for m in re.finditer(r"\\slide(?:\[[^\]]*\])?\{(\d+)\}\{", src):
         title, end = balanced(src, m.end() - 1)
         out.append((int(m.group(1)), title, m.start(), end))
     return out
@@ -113,6 +140,11 @@ def check(path: Path, slides: list[str], fix: bool) -> int:
             continue
         if tex_to_plain(want) != tex_to_plain(title):
             drift.append((n, title, want, a, b))
+
+    if len(headers) < 5:
+        print(f"  {path.name}: only {len(headers)} headers found -- the pattern "
+              f"is probably out of step with the file. Refusing to call that a pass.")
+        return 1
 
     if not drift and not missing:
         print(f"  {path.name}: {len(headers)} headers, all match")
@@ -145,15 +177,15 @@ def main() -> int:
                     help="rewrite the scripts' titles to the deck's")
     args = ap.parse_args()
 
-    slides = deck_slides()
-    print(f"main.tex: {len(slides)} slides")
+    full, short = deck_slides(False), deck_slides(True)
+    print(f"main.tex: {len(full)} slides full, {len(short)} short")
 
     problems = 0
-    for path in SCRIPTS:
+    for path, is_short in SCRIPTS.items():
         if not path.exists():
             print(f"  {path.name}: absent, skipped")
             continue
-        problems += check(path, slides, args.fix)
+        problems += check(path, short if is_short else full, args.fix)
 
     if problems:
         print(f"\n{problems} problem(s). Run with --fix to take the deck's titles.")

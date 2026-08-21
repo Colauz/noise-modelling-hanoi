@@ -4,14 +4,42 @@ End-of-internship presentation. LaTeX Beamer, *metropolis* theme, 16:9.
 
 ```bash
 make -C .. slides    # figures from the pipeline, then the deck   <- start here
-make                 # -> main.pdf and script.pdf   (48 slides incl. 4 backup)
+make                 # -> everything below
+make short           # -> main-short.pdf, the 15-minute deck (36 slides)
 make notes           # -> main-notes.pdf, presenter notes beside each slide
 make script          # -> script.pdf, what to say on each slide, EN beside FR
 make script-short    # -> script-short.pdf, the same talk at 30 s a slide
+make script-15       # -> script-15.pdf, the script for the SHORT deck
 make formulas        # -> formulas.pdf, every equation explained, EN beside FR
 make logos           # report which institutional marks are present
 make ENGINE=lualatex # better typography if your TeX Live can load system Lato
 ```
+
+## Two decks, one source
+
+`main.tex` builds both. `main-short.tex` is two lines — it defines `\SHORTDECK`
+and inputs `main.tex`, which then drops every frame wrapped in `\onlyfull`.
+
+| | | |
+|---|---|---|
+| `main.pdf` | **~30 min** | 48 slides: 36 content, 8 section pages, 4 backup |
+| `main-short.pdf` | **~15 min** | 36 slides: 24 content, 8 section pages, 4 backup |
+
+It is a conditional and not a second file because **a copied deck drifts on the
+first correction**, and this project has already been bitten by a number living in
+two places. There is exactly one frame per slide, in one file; the short deck is a
+*subset*, never a variant.
+
+**Twelve frames are dropped:** the outline, the bibliography, the pipeline
+diagram, the model roster, feature importance, the audit's clean-checks table, the
+timeline, the phase table, the architecture rule, the engineering results, the
+release blockers, the staged programme — elaboration, machinery and governance.
+
+**No caveat is dropped, and no backup slide.** The calibration gap, the grid step,
+the absent hour, the overlapping intervals and the three typologies are all still
+said out loud. A short talk that drops its qualifications is not a short talk, it
+is a worse one. Whole frames are cut rather than trimmed inside, precisely because
+a frame trimmed for time is a frame whose caveats go first.
 
 ## What is in it
 
@@ -88,10 +116,21 @@ French is the same thing so nobody recites a sentence they do not own. Both shar
 [`scriptstyle.tex`](scriptstyle.tex), so they cannot drift apart in layout, and
 both are held to the deck's slide titles by `check_script.py`.
 
-| | | |
-|---|---|---|
-| [`script.tex`](script.tex) | **~30 min**, 15 pages | The full version: every slide, the reasoning behind each line, the questions to expect with their answers. |
-| [`script-short.tex`](script-short.tex) | **~19 min**, 11 pages | 36 content slides at **30 seconds each**, plus 8 one-sentence section signposts. |
+| | For | | |
+|---|---|---|---|
+| [`script.tex`](script.tex) | `main.pdf` | **~30 min**, 15 pages | The full version: every slide, the reasoning behind each line, the questions to expect with their answers. |
+| [`script-short.tex`](script-short.tex) | `main.pdf` | **~19 min**, 11 pages | The same 36 slides at **30 seconds each**. |
+| [`script-15.tex`](script-15.tex) | **`main-short.pdf`** | **~14 min 30**, 9 pages | The 24 slides of the short deck, ~35 s each. |
+
+**Every header carries two numbers**, because the deck shows one and the file has
+the other: the bold one is the **fraction printed on the slide itself** — what a
+presenter can see from where they are standing — and the grey `(p. n)` after it is
+the PDF page. Metropolis does not count section pages or the appendix in its
+fraction, which is why the two never agree.
+
+⚠️ **`script-15.pdf` uses the short deck's numbering**, which differs again.
+`check_script.py` knows which script belongs to which deck and holds each to its
+own.
 
 The short one is written to a word budget: about **60 English words a slide**, none
 over 75. That is ~25 seconds read aloud, leaving five a slide for the pause, the

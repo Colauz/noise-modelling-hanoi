@@ -61,11 +61,24 @@
 
 % --------------------------------------------------------------- structure
 % \slide{number}{short title}{minute mark}
-\newcommand{\slide}[3]{%
+% \slide[<on-screen fraction>]{<page>}{<title>}{<minute mark>}
+%
+% TWO NUMBERS, because the deck shows one and the file has the other. \#1 is the
+% PDF page -- what you get by pressing right that many times from the start. The
+% optional argument is the FRACTION PRINTED ON THE SLIDE ITSELF, which is lower,
+% because metropolis does not count section pages or the appendix. Presenters
+% navigate by what they can see, so the visible number is given first and in
+% bold; the page number follows it in grey for anyone opening the PDF.
+\newcommand{\slide}[4][]{%
   \par\vspace{5mm}\noindent
   \colorbox{accent}{\parbox{\dimexpr\textwidth-2\fboxsep}{%
     \color{white}\vspace{.6mm}
-    \textbf{#1}\hspace{3mm}#2\hfill\small #3\vspace{.6mm}}}
+    \if\relax\detokenize{#1}\relax
+      \textbf{#2}%
+    \else
+      \textbf{#1}\,{\footnotesize\color{white!70}(p.\,#2)}%
+    \fi
+    \hspace{3mm}#3\hfill\small #4\vspace{.6mm}}}
   \par\vspace{1.5mm}}
 
 % \section-level marker for an act of the talk

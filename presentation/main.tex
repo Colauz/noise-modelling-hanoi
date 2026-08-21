@@ -16,6 +16,26 @@
 % ============================================================================
 \documentclass[aspectratio=169,10pt]{beamer}
 
+% ---------------------------------------------------------------- two lengths
+% ONE SOURCE, TWO DECKS. main.pdf is the full talk (~30 min). main-short.pdf is
+% the same file built with \SHORTDECK defined, which drops the twelve frames
+% wrapped in \onlyfull below and lands at about fifteen minutes.
+%
+% It is a conditional rather than a second file because a copied deck drifts on
+% the first correction, and this project has already been bitten by a number
+% living in two places. There is exactly one frame for every slide, in one file,
+% and the short deck is a subset of it -- never a variant.
+%
+% Build:  make            -> main.pdf
+%         make short      -> main-short.pdf   (via main-short.tex)
+\newif\ifshortdeck
+\ifdefined\SHORTDECK \shortdecktrue \else \shortdeckfalse \fi
+
+% \onlyfull{...} -- a frame that earns its place in thirty minutes and not in
+% fifteen. Cutting whole frames rather than trimming inside them is deliberate:
+% a frame trimmed for time is a frame whose caveats go first.
+\long\def\onlyfull#1{\ifshortdeck\else#1\fi}
+
 % ---------------------------------------------------------------- engine
 % Compiles under lualatex (better typography, system Lato) and under pdflatex
 % (no system fonts). The Makefile tries lualatex first.
@@ -230,6 +250,7 @@ files into presentation/logos/ under the same names and they are picked up with 
 edit; see presentation/logos/README.md.}
 
 % ============================================================================
+\onlyfull{%
 \begin{frame}{Outline}
   \setbeamertemplate{section in toc}[sections numbered]
   \begin{columns}[T]
@@ -246,6 +267,8 @@ edit; see presentation/logos/README.md.}
 \note{Signpost the three acts here so nobody spends the results section wondering
 when the app is coming. The audit section is the one people will not expect; flag
 that it is us auditing ourselves, not a reviewer auditing us.}
+}%
+
 
 % ============================================================================
 \section{Context and research questions}
@@ -349,6 +372,7 @@ percent QCVN exceedance rate. All three were withdrawn in August. If someone in 
 say so plainly rather than to let it pass.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{Related work --- ten references, selected by what they are used for}
   \small
   \begin{tabular}{@{}p{4.3cm}p{4.2cm}p{4.2cm}@{}}
@@ -377,6 +401,8 @@ retract our own headline figure, and it comes back in section 3.
 
 Do not claim to reproduce Sunbird's own figures as a contribution: we reproduced
 them to learn the pipeline, and the transfer failed. That is section 3.}
+}%
+
 
 % ============================================================================
 \section{Data and protocol}
@@ -463,6 +489,7 @@ bounds the bias; it does not correct it. No offset is written anywhere in the co
 \section{Method and evaluation protocol}
 % ============================================================================
 
+\onlyfull{%
 \begin{frame}{The chain, end to end}
   \centering
   \vspace{.2em}
@@ -520,6 +547,8 @@ last line: the delivered model is selected by code, not by us.
 That was a direct response to the audit. Before it, a permissive split could put a
 model on the published map that lost every strict split, and nobody would have
 noticed. Now 04 writes meta.delivered\_model and 07 reads a flag.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{The evaluation protocol --- and why it is the whole story}
@@ -562,6 +591,7 @@ broke in July. Anyone doing spatial ML on aggregated features has probably broke
 it too, which is why this slide usually starts a conversation.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{Eight models, three baselines, one ablation}
   \scriptsize
   Nothing is compared against nothing. The baselines are the point:
@@ -597,6 +627,8 @@ genuinely informative in a city with this traffic rhythm.
 Second, the hybrid is the architecture \emph{we ourselves} recommended in an
 earlier draft. Putting it in the candidate list and letting it lose is the whole
 methodological point of the next section.}
+}%
+
 
 % ============================================================================
 \section{Results}
@@ -739,6 +771,7 @@ screenshotted from GAMA. The old GAMA capture carried a French legend and showed
 site; this shows all three, in English, and regenerates with the pipeline.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{What the learned model was leaning on}
   \begin{columns}[T]
     \begin{column}{0.56\textwidth}
@@ -769,6 +802,8 @@ does not: the morphology-only ablation is at 0.041 out of sample.
 If someone asks why morphology is in the model at all --- it is not, in the
 delivered one. The delivered kernel uses two distances and a constant, and no
 morphological variable whatsoever.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{The three negative results}
@@ -848,6 +883,7 @@ The rule that came out of it --- retracted work is archived with its reason, nev
 silently deleted --- is now written into the repository's working rules.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{A second audit, on the data itself}
   \begin{block}{The first audit checked the \emph{method}. This one checks the \emph{measurements}.}
     One question, over the published CSVs, the raw Kobo export and the cleaning
@@ -880,6 +916,8 @@ never been interrogated adversarially is a dataset whose defects are still in it
 The top half matters as much as the bottom: it establishes that the provenance and
 the arithmetic are sound, which is what makes the bottom half credible rather than
 alarming.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{Finding 1 --- a $-5.1\dB$ discontinuity on 27 June}
@@ -1006,6 +1044,7 @@ section stops looking like a side project.}
 \section{From a pipeline to an instrument}
 % ============================================================================
 
+\onlyfull{%
 \begin{frame}{Three months, in one picture}
   \centering
   \begin{tikzpicture}[font=\scriptsize, >={Stealth[length=4pt]}]
@@ -1058,6 +1097,8 @@ labels, which are the two retractions, and then at the last box.
 The framing to use: this was not a project that went to plan and it was not a
 project that failed. It was a project that kept finding its own answer was wrong,
 and the app is what that process converged on.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{Why build an application at all}
@@ -1135,6 +1176,7 @@ If asked what the big orange number is: that is levelColour() in ui/Theme.kt, th
 QCVN reading bands used descriptively, same as the map.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{What was built --- phase by phase}
   \scriptsize
   \begin{tabular}{@{}p{1.6cm}p{4.5cm}p{7.0cm}@{}}
@@ -1181,8 +1223,11 @@ under test for the day a prediction is wanted where the grid does not reach --- 
 under the envelope rule, is nowhere yet.
 
 Phase 6 is not started and should not be hidden. Say so.}
+}%
+
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{Architecture --- and the one design rule that matters}
   \begin{columns}[T]
     \begin{column}{0.47\textwidth}
@@ -1231,8 +1276,11 @@ diverge --- and they had.
 The build-time sync is the mobile version of that rule. It is worth a sentence
 because it is the sort of thing that decays the moment someone is in a hurry and
 hard-codes a number into a screen.}
+}%
+
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{Three engineering results worth reporting}
   \begin{block}{GAMA does not run on a phone --- so the app reaches it two ways}
     \textbf{A map that carries the data, and needs nothing.} The 5\,587 cells
@@ -1284,6 +1332,8 @@ invariant that has to hold.
 On the first block, be precise about the wording: the app DRAWS GAMA's own
 display and drives it over a socket. It does not embed GAMA, and anyone who
 knows the platform will hear the difference.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{What the app measures --- and what it refuses to claim}
@@ -1375,6 +1425,7 @@ Verified end to end from the phone: 62.97 dB with no mitigation, 60.53 under
 pedestrianisation --- the same figures the model gives when driven directly.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{Before this app goes to strangers --- three blockers}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
@@ -1417,6 +1468,8 @@ somebody still has to name it, and until they do there is nowhere to send data.
 Blocker 3 catches people out: the map, the measurement and the outbox need no
 network at all; it is only the GAMA screen that needs a server. If the wifi is
 uncertain on the day, rehearse the demo without step 3.}
+}%
+
 
 % ============================================================================
 \section{Next: Clermont-Ferrand}
@@ -1520,6 +1573,7 @@ The END mapping point is the other half: Hanoi had no ground truth at all, which
 why we ended up anchoring against a 2005--2007 campaign. France has a statutory one.}
 
 % ----------------------------------------------------------------
+\onlyfull{%
 \begin{frame}{The programme, staged}
   \scriptsize
   \begin{tabular}{@{}p{1.9cm}p{6.0cm}p{5.2cm}@{}}
@@ -1569,6 +1623,8 @@ gets published either way.
 
 Be honest that S4 depends on things nobody has confirmed yet: supervision, framing,
 and whether the backend gets built. Do not present it as scheduled.}
+}%
+
 
 % ----------------------------------------------------------------
 \begin{frame}{The two things a reviewer will press on}

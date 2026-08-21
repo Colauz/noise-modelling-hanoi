@@ -94,7 +94,7 @@ Trois mois, 363 mesures, trois téléphones ordinaires --- et trois résultats
 négatifs qui tiennent mieux que le positif.
 \end{say}
 
-\slide{2}{Outline}{0:30}
+\slide[1/35]{2}{Outline}{0:30}
 \begin{say}
 Three parts. What we measured and what it supports. What our own audit found in
 it. And where it goes --- an Android application, and a second city.
@@ -109,7 +109,7 @@ L'audit est la partie inattendue. \must{C'est nous qui nous auditons.}
 \end{say}
 \cue{Section page 3 --- ``First, the context.'' Then move on.}
 
-\slide{4}{The gap this project sits in}{1:05}
+\slide[2/35]{4}{The gap this project sits in}{1:05}
 \begin{say}
 Hanoi is dense, growing fast, and its traffic is motorcycles rather than cars.
 
@@ -130,7 +130,7 @@ plupart des budgets locaux. Donc~: jusqu'où va un protocole fait de trois
 téléphones grand public et de données ouvertes~?
 \end{say}
 
-\slide{5}{The research question, and what is out of scope}{1:35}
+\slide[3/35]{5}{The research question, and what is out of scope}{1:35}
 \begin{say}
 \must{``Can urban noise be attributed to the form of the city, and to the type of
 vehicle passing through it?''} That is our question from June, word for word.
@@ -149,7 +149,7 @@ les protocoles stricts puissent voir. Le type de véhicule~: non --- et la chaî
 censée le mesurer ne fonctionne pas.
 \end{say}
 
-\slide{6}{Related work --- ten references, selected by what they are used for}{2:05}
+\slide[4/35]{6}{Related work --- ten references, selected by what they are used for}{2:05}
 \begin{say}
 The bibliography is organised by what each reference is \emph{for}, not by date.
 
@@ -168,7 +168,7 @@ deux.
 \end{say}
 \cue{Section page 7 --- ``The data.''}
 
-\slide{8}{The campaign}{2:40}
+\slide[5/35]{8}{The campaign}{2:40}
 \begin{say}
 363 points across three deliberately contrasted areas: a new peri-urban
 development, the dense historic quarter, a transport corridor.
@@ -190,7 +190,7 @@ Trois téléphones, vingt-cinq secondes par point, une porte GPS à dix mètres.
 deux jeux publiés.
 \end{say}
 
-\slide{9}{Metrology --- the constraint everything else is built around}{3:10}
+\slide[6/35]{9}{Metrology --- the constraint everything else is built around}{3:10}
 \begin{say}
 This slide is the spine of everything that follows.
 
@@ -220,7 +220,7 @@ $L_\mathrm{den}$, qui est une année.}
 question here}: yes, half a day beside a class 2 meter would settle it; no, it was
 not done. Slide 41 says so on the record.}
 
-\slide{11}{The chain, end to end}{3:45}
+\slide[7/35]{11}{The chain, end to end}{3:45}
 \begin{say}
 Left to right, once. Three sources: the survey, OpenStreetMap, the traffic
 videos. Then cleaning, features, counting. Then evaluation. Then the outputs.
@@ -237,7 +237,7 @@ pas par nous.} Le script 04 écrit quel modèle a gagné~; le 07 lit ce drapeau.
 en aval ne peut en substituer un autre.
 \end{say}
 
-\slide{12}{The evaluation protocol --- and why it is the whole story}{4:15}
+\slide[8/35]{12}{The evaluation protocol --- and why it is the whole story}{4:15}
 \begin{say}
 If you take one methodological slide, take this one.
 
@@ -260,7 +260,7 @@ rayon trois cents mètres.} Regroupez des points plus proches et le modèle est
 testé sur des quasi-jumeaux. \must{Le tampon doit égaler le rayon des variables.}
 \end{say}
 
-\slide{13}{Eight models, three baselines, one ablation}{4:45}
+\slide[9/35]{13}{Eight models, three baselines, one ablation}{4:45}
 \begin{say}
 Nothing is compared against nothing. The baselines are the point.
 
@@ -285,7 +285,7 @@ C'est tout l'enjeu de la section suivante.
 % ============================================================================
 \act{Act II --- the results, and the audit}{slides 15--26 \; $\cdot$ \; 5--11 min}
 
-\slide{15}{The ranking inverts --- and that is the result}{5:20}
+\slide[10/35]{15}{The ranking inverts --- and that is the result}{5:20}
 \begin{say}
 Give the room ten seconds before you speak.
 
@@ -308,7 +308,7 @@ teste la généralisation.} C'est ça le résultat --- pas quel modèle gagne, m
 la réponse dépende du découpage.
 \end{say}
 
-\slide{16}{The delivered model}{5:50}
+\slide[11/35]{16}{The delivered model}{5:50}
 \begin{say}
 What won is a line-source attenuation law. Two distances, three constants,
 \must{no morphology at all}. Energy falls as one over $d$ --- a street is a line,
@@ -331,7 +331,7 @@ Et dites l'erreur à voix haute. \care{Une prédiction typique se trompe de cinq
 décibels.} Assez pour un contraste, très loin d'une évaluation.
 \end{say}
 
-\slide{17}{``$R^2 = 0.25$ --- isn't that very low?''}{6:20}
+\slide[12/35]{17}{``$R^2 = 0.25$ --- isn't that very low?''}{6:20}
 \begin{say}
 This question always comes. Answer it first.
 
@@ -354,7 +354,7 @@ Nous atteignons 0,246 --- la moitié de l'atteignable, pas le dixième.
 \cue{If you have the time, add the caveat: same-hour pairs may be on different
 days, so this overestimates measurement noise. If you do not, it is on the slide.}
 
-\slide{18}{The map --- and the caveat that goes with it}{6:50}
+\slide[13/35]{18}{The map --- and the caveat that goes with it}{6:50}
 \begin{say}
 The predicted grid over the three measured areas. Forty-metre cells.
 
@@ -378,7 +378,7 @@ Le noyau n'a pas de terme horaire.
 Les couleurs sont les bandes QCVN, descriptives. \never{Pas une conformité.}
 \end{say}
 
-\slide{19}{What the learned model was leaning on}{7:20}
+\slide[14/35]{19}{What the learned model was leaning on}{7:20}
 \begin{say}
 Two thirds of the learned model's gain goes to morphology.
 
@@ -396,7 +396,7 @@ référence.
 questions différentes.} Seule la seconde est un résultat.
 \end{say}
 
-\slide{20}{The three negative results}{7:50}
+\slide[15/35]{20}{The three negative results}{7:50}
 \begin{say}
 These three are the contribution. Say it in those words.
 
@@ -423,7 +423,7 @@ c'est un résultat instrumental.
 \end{say}
 \cue{Section page 21 --- ``Now we audit ourselves.''}
 
-\slide{22}{We found one of our own published results was wrong}{8:25}
+\slide[16/35]{22}{We found one of our own published results was wrong}{8:25}
 \begin{say}
 In August we withdrew our own headline number.
 
@@ -445,7 +445,7 @@ Ce qui l'a remplacé, c'est 0,246. La présentation et la carte retirées sont
 archivées \must{avec leur raison}, pas supprimées.
 \end{say}
 
-\slide{23}{A second audit, on the data itself}{8:55}
+\slide[17/35]{23}{A second audit, on the data itself}{8:55}
 \begin{say}
 The first audit checked the method. This one checks the measurements.
 
@@ -465,7 +465,7 @@ métriques.
 constats, aucun connu quand les résultats ont été écrits.
 \end{say}
 
-\slide{24}{Finding 1 --- a $-5.1\dB$ discontinuity on 27 June}{9:25}
+\slide[18/35]{24}{Finding 1 --- a $-5.1\dB$ discontinuity on 27 June}{9:25}
 \begin{say}
 On 27 June the level distribution steps down by five decibels, and it survives
 controlling for site, hour and class.
@@ -488,7 +488,7 @@ instrumentale, un modèle peut l'apprendre comme de la morphologie. Statut~:
 ouvert.
 \end{say}
 
-\slide{25}{Findings 2 and 3 --- the video chain, and the intervals}{9:55}
+\slide[19/35]{25}{Findings 2 and 3 --- the video chain, and the intervals}{9:55}
 \begin{say}
 The detector reports fifty-seven percent cars in Hanoi. Reality is the inverse.
 And video-to-measurement gaps reach a hundred and sixty seconds, for a
@@ -511,7 +511,7 @@ Le constat trois est de présentation~: le classement principal n'est \must{pas
 séparé statistiquement}. Les intervalles se recouvrent presque entièrement.
 \end{say}
 
-\slide{26}{What the audit leaves standing}{10:25}
+\slide[20/35]{26}{What the audit leaves standing}{10:25}
 \begin{say}
 The protocol holds. The ranking inversion holds. Negative results one and two
 hold. Provenance is lossless and checkable.
@@ -537,7 +537,7 @@ seule chose~: nous ne contrôlions pas l'instrument.}
 % ============================================================================
 \act{Act III --- the instrument}{slides 28--36 \; $\cdot$ \; 11--15 min}
 
-\slide{28}{Three months, in one picture}{11:00}
+\slide[21/35]{28}{Three months, in one picture}{11:00}
 \begin{say}
 Do not read the boxes. Point at the two raised labels --- the two retractions ---
 then at the last one.
@@ -559,7 +559,7 @@ Chaque rejet pointait la même cause racine. Donc les trois dernières semaines 
 construit un instrument.
 \end{say}
 
-\slide{29}{Why build an application at all}{11:30}
+\slide[22/35]{29}{Why build an application at all}{11:30}
 \begin{say}
 Four things the campaign could not do.
 
@@ -581,7 +581,7 @@ Le point deux est une vraie contrainte~: Android ne donne pas le microphone à d
 consommateurs à la fois.
 \end{say}
 
-\slide{30}{The application}{12:00}
+\slide[23/35]{30}{The application}{12:00}
 \begin{say}
 One sentence each. Collect --- both forms, offline. Measure --- twenty-five
 seconds, A-weighted. Map --- the predicted level where you stand. Results --- read
@@ -600,7 +600,7 @@ captures.} L'application n'a jamais tourné devant une source sonore. C'est la
 limite de la diapo dans quatre.
 \end{say}
 
-\slide{31}{What was built --- phase by phase}{12:30}
+\slide[24/35]{31}{What was built --- phase by phase}{12:30}
 \begin{say}
 Summarise with a supervisor; slow down with the people who inherit it. \care{This
 is the slide they should photograph.}
@@ -623,7 +623,7 @@ la sortie du noyau, donc lire la cellule la plus proche \emph{est} la prédictio
 \must{La phase six n'est pas construite, et je ne le cache pas.}
 \end{say}
 
-\slide{32}{Architecture --- and the one design rule that matters}{13:00}
+\slide[25/35]{32}{Architecture --- and the one design rule that matters}{13:00}
 \begin{say}
 One rule. \must{The application does not carry a copy of the study.} The build
 copies the map, the measurements and the metrics file out of the repository. Re-run
@@ -643,7 +643,7 @@ exactement un domicile.}
 \cue{\textbf{Behind time?} Cut this slide and the next. Nothing later depends on
 either.}
 
-\slide{33}{Three engineering results worth reporting}{13:30}
+\slide[26/35]{33}{Three engineering results worth reporting}{13:30}
 \begin{say}
 Three things that each cost a day and are invisible in a results table.
 
@@ -666,7 +666,7 @@ fois. Corrigée en juillet, reconstruite en août en la connaissant.
 \must{Connaître une erreur ne rend pas immunisé.} Un test l'a rattrapée.
 \end{say}
 
-\slide{34}{What the app measures --- and what it refuses to claim}{14:00}
+\slide[27/35]{34}{What the app measures --- and what it refuses to claim}{14:00}
 \begin{say}
 The app's level is a \emph{different quantity} from the campaign's. It goes in
 its own field. \must{The two never share a column.}
@@ -690,7 +690,7 @@ sonore} --- ce qui, pour être équitable, \must{vaut aussi pour les chiffres de
 campagne.}
 \end{say}
 
-\slide{35}{Driving GAMA from the phone --- how it is wired}{14:30}
+\slide[28/35]{35}{Driving GAMA from the phone --- how it is wired}{14:30}
 \begin{say}
 GAMA has no Android port, but it exposes a WebSocket API. You start it headless
 with a socket, and the app is a client. \must{The phone is a remote control and a
@@ -712,7 +712,7 @@ Ce que ça apporte, c'est la moitié qu'une grille précalculée ne peut pas por
 mitigation, chantiers, flotte par heure.
 \end{say}
 
-\slide{36}{Before this app goes to strangers --- three blockers}{15:00}
+\slide[29/35]{36}{Before this app goes to strangers --- three blockers}{15:00}
 \begin{say}
 Three things stop this being handed out, and \must{none is a bug.}
 
@@ -739,7 +739,7 @@ Et le serveur GAMA demande de l'hébergement, avec TLS.
 % ============================================================================
 \act{Act IV --- what comes next}{slides 38--44 \; $\cdot$ \; 15--19 min}
 
-\slide{38}{Clermont-Ferrand --- what it does and does not change}{15:35}
+\slide[30/35]{38}{Clermont-Ferrand --- what it does and does not change}{15:35}
 \begin{say}
 Correct one expectation before anyone forms it. \must{There will be no sound level
 meter at Clermont either.} The calibration gap does not close.
@@ -760,7 +760,7 @@ l'application vivante, puis la faire collecter dans une deuxième ville.
 deux villes} --- l'instrument cesse d'être un facteur de confusion.
 \end{say}
 
-\slide{39}{The comparative deployment --- and why it is the decisive test}{16:05}
+\slide[31/35]{39}{The comparative deployment --- and why it is the decisive test}{16:05}
 \begin{say}
 Negative result two says transfer fails. But there, \care{the instrument, the
 protocol and the feature conventions all differed too.} It is an over-determined
@@ -781,7 +781,7 @@ Et Clermont relève de la cartographie stratégique européenne --- \must{la pre
 carte de référence officielle instrumentée} à laquelle nous comparer.
 \end{say}
 
-\slide{40}{The programme, staged}{16:35}
+\slide[32/35]{40}{The programme, staged}{16:35}
 \begin{say}
 Five stages, sequenced by dependency, not by calendar. Every stage has a gate, and
 \must{the gates are falsifiable} --- a roadmap without exit conditions is a wish
@@ -803,7 +803,7 @@ Et soyez honnête~: l'étape quatre dépend de choses non confirmées. \never{Ne
 présentez pas comme planifiée.}
 \end{say}
 
-\slide{41}{The two things a reviewer will press on}{17:05}
+\slide[33/35]{41}{The two things a reviewer will press on}{17:05}
 \begin{say}
 Two objections, better raised by us than by a reviewer.
 
@@ -825,7 +825,7 @@ d'échantillonnage, pas le $R^2$.}
 \end{say}
 \cue{Section page 42 --- ``To close.''}
 
-\slide{43}{What this work established}{17:40}
+\slide[34/35]{43}{What this work established}{17:40}
 \begin{say}
 Four findings, and six practices that make them trustworthy.
 
