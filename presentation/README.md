@@ -7,6 +7,7 @@ make -C .. slides    # figures from the pipeline, then the deck   <- start here
 make                 # -> main.pdf and script.pdf   (48 slides incl. 4 backup)
 make notes           # -> main-notes.pdf, presenter notes beside each slide
 make script          # -> script.pdf, what to say on each slide, EN beside FR
+make formulas        # -> formulas.pdf, every equation explained, EN beside FR
 make logos           # report which institutional marks are present
 make ENGINE=lualatex # better typography if your TeX Live can load system Lato
 ```
@@ -105,6 +106,31 @@ python3 check_script.py --fix     # take the deck's titles
 This caught fifteen paraphrased titles the first time it ran, including *"Metrology
 — the spine of the talk"* against the deck's *"Metrology — the constraint everything
 else is built around"*.
+
+## The equations
+
+[`formulas.tex`](formulas.tex) → `formulas.pdf`, 10 pages. The eleven equations in
+the deck. Each one carries, in this order:
+
+1. the equation;
+2. **what it is for** — one line, plain language: what it predicts, what it
+   decides, what it draws. *"Predicting a level where nobody measured. This is the
+   model that draws all 5 587 cells of the map."*
+3. the symbols named;
+4. why that form and not another, and **what it refuses to claim** — the half an
+   acoustics audience actually tests.
+
+Same EN | FR layout as the script. Step 2 exists because an explanation that only
+says what a formula *means* leaves you unable to answer the first thing anyone
+asks, which is what it is *for*.
+
+Every number in it was **recomputed from the repository**, not copied off a slide.
+One recomputation disagreed with the deck and is flagged in the document rather
+than quietly reconciled: slide 12 said two points 110 m apart share *"more than
+85 %"* of a 300 m disc; the lens formula gives **76.8 %** (85 % is reached at
+71 m). The slide has been corrected — the argument never needed the bigger number,
+because the real leak is two points either side of a cell boundary sharing
+essentially all of it.
 
 ## The application screens
 

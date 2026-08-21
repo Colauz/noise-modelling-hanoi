@@ -3,6 +3,7 @@
 #   make                     -> main.pdf
 #   make notes               -> main-notes.pdf, presenter notes beside each slide
 #   make script              -> script.pdf, the bilingual speaker script
+#   make formulas            -> formulas.pdf, every equation explained, EN | FR
 #   make check               -> verify script.pdf names the slides main.tex has
 #   make view                -> build, then open the PDF
 #   make logos               -> report which institutional marks are present
@@ -42,8 +43,8 @@ else
   ENGINEFLAG := -pdf
 endif
 
-.PHONY: all notes script check view clean distclean logos logos-placeholder
-all: main.pdf script.pdf
+.PHONY: all notes script formulas check view clean distclean logos logos-placeholder
+all: main.pdf script.pdf formulas.pdf
 
 main.pdf: main.tex appscreens.tex $(wildcard logos/*.pdf) $(wildcard figures/*.pdf)
 	$(LATEXMK) $(ENGINEFLAG) main.tex
@@ -65,6 +66,13 @@ script: script.pdf
 script.pdf: script.tex main.tex
 	$(PYTHON) check_script.py
 	$(LATEXMK) $(ENGINEFLAG) script.tex
+
+# The equations, explained: the companion to script.pdf. Prose about the maths,
+# so it depends on nothing but itself -- but every number in it was recomputed
+# from the repository rather than copied off a slide.
+formulas: formulas.pdf
+formulas.pdf: formulas.tex
+	$(LATEXMK) $(ENGINEFLAG) formulas.tex
 
 # Same check on its own, and `check_script.py --fix` to take the deck's titles.
 check:
@@ -96,7 +104,8 @@ logos-placeholder:
 clean:
 	$(LATEXMK) -c
 	$(LATEXMK) -c script.tex
+	$(LATEXMK) -c formulas.tex
 	rm -f main-notes.*
 
 distclean: clean
-	rm -f main.pdf script.pdf
+	rm -f main.pdf script.pdf formulas.pdf

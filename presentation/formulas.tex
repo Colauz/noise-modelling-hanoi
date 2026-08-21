@@ -78,6 +78,22 @@
     \vspace{2mm}\begin{center}$\displaystyle #1$\end{center}\vspace{1mm}}}
   \par\vspace{2mm}}
 
+\newcolumntype{S}{>{\setlength{\parskip}{1.1mm}}p{84mm}}
+
+% \forwhat{EN}{FR} --- the one line that says what the formula is FOR in this
+% project: what it predicts, what it decides, what it draws. It sits directly
+% under the equation, before the symbols, because "why am I looking at this" is
+% the question a reader has first and the one an explanation usually answers
+% last.
+\newcommand{\forwhat}[2]{%
+  \par\vspace{-1mm}\noindent
+  {\footnotesize\color{good}\textsc{what it is for \; $\cdot$ \; à quoi elle sert}}
+  \par\vspace{1mm}\noindent
+  \begin{tabular}{@{}S@{\hspace{5mm}}|@{\hspace{5mm}}S@{}}
+    #1 & #2
+  \end{tabular}
+  \par\vspace{2.5mm}}
+
 % Symbol glossary. Two per row keeps it compact and still readable.
 \newenvironment{where}{%
   \par\vspace{.5mm}{\footnotesize\color{muted}\textsc{where}}\par\vspace{.8mm}
@@ -85,7 +101,6 @@
 }{%
   \end{tabular}\par\vspace{2mm}}
 
-\newcolumntype{S}{>{\setlength{\parskip}{1.1mm}}p{84mm}}
 \newenvironment{say}{%
   \begin{tabular}{@{}S@{\hspace{5mm}}|@{\hspace{5mm}}S@{}}
 }{%
@@ -150,6 +165,12 @@ flagged in formula 9 rather than quietly reconciled.}
 \eq{L_p \;=\; 10\log_{10}\!\frac{p^{2}}{p_0^{2}}
     \;=\; 20\log_{10}\!\frac{p}{p_0},
     \qquad p_0 = 20\,\mu\mathrm{Pa}}
+\forwhat{Turning what the microphone hears into a number. \must{In this project it
+    is the reason we can compare places and hours, but never state an absolute
+    level} --- because we never fixed our reference.}{Convertir ce qu'entend le microphone en un nombre. \must{Dans ce projet,
+    c'est la raison pour laquelle nous pouvons comparer des lieux et des heures,
+    mais jamais énoncer un niveau absolu} --- faute d'avoir fixé notre référence.}
+
 \begin{where}
   $p$ & sound pressure, in pascals &
   $p_0$ & the reference: the quietest pressure a healthy young ear detects at
@@ -183,6 +204,13 @@ Leur \emph{origine} sur l'échelle nous est inconnue à quelques décibels près
 \eq{L_{A,25\mathrm{s}} \;=\; 10\log_{10}\!\left(\frac{1}{T}\int_{0}^{T}
     \frac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right),
     \qquad T \approx 25\,\mathrm{s}}
+\forwhat{\must{Defining what one field measurement \emph{is}.} Each of the 363
+    points is one evaluation of this integral. It is what the app computes over
+    25 seconds, and the quantity every model in the deck tries to predict.}{\must{Définir ce qu'\emph{est} une mesure de terrain.} Chacun des 363
+    points est une évaluation de cette intégrale. C'est ce que l'application
+    calcule sur 25 secondes, et la grandeur que tous les modèles tentent de
+    prédire.}
+
 \begin{where}
   $p_A(t)$ & the pressure \emph{after} A-weighting (formula 3) &
   $T$ & the integration window: about 25 seconds \\
@@ -225,6 +253,14 @@ complet des valeurs OMS 53/45 de ce travail.
 \eq{R_A(f) = \frac{12194^{2}f^{4}}
       {(f^{2}+20.6^{2})\,\sqrt{(f^{2}+107.7^{2})(f^{2}+737.9^{2})}\,(f^{2}+12194^{2})},
     \qquad A(f) = 20\log_{10}R_A(f) + 2.00}
+\forwhat{The filter applied to the microphone signal \emph{before} anything else.
+    \must{It is what makes our number comparable to every published noise
+    figure} --- and the app's implementation is checked against the IEC table by a
+    test.}{Le filtre appliqué au signal du microphone \emph{avant} tout le reste.
+    \must{C'est ce qui rend notre nombre comparable à toute mesure de bruit
+    publiée} --- et l'implémentation de l'application est vérifiée contre la table
+    IEC par un test.}
+
 \begin{where}
   $f$ & frequency, in hertz &
   $+2.00$ & the offset that makes $A(1000\,\mathrm{Hz}) = 0$ exactly \\
@@ -266,6 +302,14 @@ unitaire~: la courbe est vérifiée, pas supposée.
 \eq{L_{\Sigma} \;=\; 10\log_{10}\sum_{i} 10^{L_i/10},
     \qquad
     \bar L \;=\; 10\log_{10}\!\left(\frac{1}{n}\sum_{i} 10^{L_i/10}\right)}
+\forwhat{\must{Every time two noises are combined or averaged.} The two road terms
+    adding inside the kernel, the mean level of a site, the traffic scenario ---
+    all three go through this line, and skipping it produced the $-7.0\dB$ error
+    twice.}{\must{Chaque fois que deux bruits sont combinés ou moyennés.} Les deux
+    termes de route qui s'additionnent dans le noyau, le niveau moyen d'un site,
+    le scénario de trafic --- les trois passent par cette ligne, et l'oublier a
+    produit deux fois l'erreur de $-7,0\dB$.}
+
 \begin{say}
 To combine levels you must leave the log scale, add, and come back.
 \never{The arithmetic mean of decibels is not the mean level.}
@@ -298,6 +342,12 @@ de l'oubli de cette ligne.} La formule 6 en est une, commise deux fois.
         \;+\; \frac{A_\mathrm{res}}{\max(d_\mathrm{res},D_0)}
         \;+\; B,
     \qquad L \;=\; 10\log_{10}E}
+\forwhat{\must{Predicting a level where nobody measured.} This is the model that
+    draws all 5\,587 cells of the map, the one embedded in the phone, and the one
+    the whole evaluation section is about.}{\must{Prédire un niveau là où personne n'a mesuré.} C'est le modèle qui
+    dessine les 5\,587 cellules de la carte, celui embarqué dans le téléphone, et
+    celui dont parle toute la section évaluation.}
+
 \begin{where}
   $d_\mathrm{hw}$ & distance to the nearest highway-class road, in metres &
   $d_\mathrm{res}$ & distance to the nearest residential-class road \\
@@ -346,6 +396,12 @@ deux.
     \qquad
     \text{line source: } E \propto \frac{1}{d} \;\Rightarrow\; -3.01\dB
     \text{ per doubling}}
+\forwhat{\must{Choosing the shape of the kernel before fitting anything.} It is
+    the reason a two-parameter distance law competes at all --- and the reason
+    distance to the road carries nearly all the spatial signal.}{\must{Choisir la forme du noyau avant tout ajustement.} C'est pourquoi une
+    loi de distance à deux paramètres tient la comparaison --- et pourquoi la
+    distance à la route porte presque tout le signal spatial.}
+
 \begin{say}
 A point source spreads its energy over a sphere, whose area goes as $d^{2}$. A
 long line of sources spreads it over a cylinder, whose area goes as $d$.
@@ -383,6 +439,12 @@ un seul véhicule.
 \eq{\underbrace{L(k) = 10\log_{10}\!\big(k\,(E-E_\mathrm{res}) + E_\mathrm{res}\big)}_{\text{\color{good}correct}}
     \qquad\qquad
     \underbrace{L(k) = 10\log_{10}(kE) = L + 10\log_{10}k}_{\text{\color{bad}wrong}}}
+\forwhat{\must{The traffic slider.} What the map becomes with a fifth of the
+    traffic, or three times as much --- in the app, and in the GAMA model it
+    drives. It is what turns a static map into a scenario.}{\must{Le curseur de trafic.} Ce que devient la carte avec un cinquième du
+    trafic, ou trois fois plus --- dans l'application, et dans le modèle GAMA
+    qu'elle pilote. C'est ce qui transforme une carte figée en scénario.}
+
 \begin{where}
   $k$ & the traffic multiplier, $0.2$ to $3$ &
   $E$ & the cell's total energy at the measured traffic \\
@@ -441,6 +503,12 @@ toute la plage.
     \mathrm{MAE} = \frac{1}{n}\sum_i |y_i-\hat y_i|,
     \qquad
     \mathrm{RMSE} = \sqrt{\frac{1}{n}\sum_i (y_i-\hat y_i)^{2}}}
+\forwhat{\must{Deciding which model ships.} \texttt{04\_evaluate\_models.py} picks
+    the winner on $R^2$ under the reference protocol --- by code, not by hand. MAE
+    is the one you say out loud: \must{5\,dB}.}{\must{Décider quel modèle est livré.} \texttt{04\_evaluate\_models.py}
+    choisit le gagnant au $R^2$ sous le protocole de référence --- par le code, pas
+    à la main. La MAE est celle qu'on dit à voix haute~: \must{5\,dB}.}
+
 \begin{say}
 $R^{2}$ compares your errors to the errors of the dumbest possible model:
 \must{always predicting the mean}. One is perfect, zero is no better than the
@@ -470,6 +538,12 @@ représente. \must{5\,dB} --- un facteur trois en énergie.
 \formula{9}{Buffered leave-one-out --- and why 300 m}{slide 12 --- the methodological core}
 \eq{\text{for each point } i:\quad \text{train on } \{\,j : d(i,j) > r\,\},
     \qquad r = 300\,\mathrm{m} = \text{the feature aggregation radius}}
+\forwhat{\must{Making the score honest rather than flattering.} It is the entire
+    difference between $R^2 = 0.45$ (withdrawn) and $R^2 = 0.246$ (delivered).
+    Same data, same model --- a different split.}{\must{Rendre le score honnête plutôt que flatteur.} C'est toute la
+    différence entre $R^2 = 0,45$ (retiré) et $R^2 = 0,246$ (livré). Mêmes
+    données, même modèle --- un découpage différent.}
+
 \begin{say}
 The morphology features are computed over a disc of radius 300\,m around each
 point. So two nearby points are partly built from \emph{the same buildings and
@@ -526,6 +600,12 @@ peuvent être à quelques centimètres et partager ~100~\%.\selectlanguage{engli
 \eq{\text{resample the } 17 \text{ blocks with replacement},\;
     B = 2000\;\Rightarrow\;
     \text{CI} = \big[\,q_{2.5},\, q_{97.5}\,\big] \text{ of the recomputed statistic}}
+\forwhat{\must{The error bars on every score in the deck.} It is what shows the
+    top two models are not actually separated --- and a by-point bootstrap would
+    have hidden that.}{\must{Les barres d'erreur de chaque score du deck.} C'est ce qui montre
+    que les deux premiers modèles ne sont pas réellement séparés --- un bootstrap
+    par point l'aurait masqué.}
+
 \begin{say}
 The interval is built by resampling \must{blocks}, not points.
 
@@ -558,6 +638,12 @@ bootstrap par point l'aurait masqué.
     \sigma = \frac{\sqrt{\pi}}{2}\,\mathbb{E}|\Delta L| \approx 0.886\,\mathbb{E}|\Delta L|,
     \qquad
     R^{2}_{\max} = 1 - \frac{\sigma^{2}}{s^{2}}}
+\forwhat{\must{Answering ``isn't 0.25 very low?'' before it is asked.} It turns a
+    number that looks weak into a number that is about half of what the data
+    physically allows.}{\must{Répondre à «~0,25, ce n'est pas très bas~?~» avant qu'on le
+    demande.} Il transforme un chiffre qui semble faible en un chiffre qui vaut
+    environ la moitié de ce que les données permettent physiquement.}
+
 \begin{where}
   $\Delta L$ & the difference between two readings a few metres apart, at the
                same hour &
