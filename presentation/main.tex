@@ -1235,11 +1235,15 @@ hard-codes a number into a screen.}
 % ----------------------------------------------------------------
 \begin{frame}{Three engineering results worth reporting}
   \begin{block}{GAMA does not run on a phone --- so the app reaches it two ways}
-    \textbf{Tier 1, recomputed natively} over the 5\,587 exported cells: a
-    traffic multiplier, offline, within $0.2\dB$ of the model. \textbf{The model
-    itself, over \texttt{gama-server}}: the app draws GAMA's own display and
-    drives it --- the scenarios the grid cannot hold, and a server the grid does
-    not need. \wn{Drawing a model's display is not embedding it.}
+    \textbf{A map that carries the data, and needs nothing.} The 5\,587 cells
+    and the 363 points travel inside the APK; the traffic multiplier is
+    recomputed on the device. \up{No network, no server, works in the street.}
+    \vspace{.3em}
+
+    \textbf{And the model itself, when you want the rest.} GAMA runs
+    \textbf{headless on a laptop} --- \texttt{gama-headless.sh -socket 6868}, same
+    wifi --- and the app is a client. \wn{Drawing a display is not embedding it.}
+    \src{github.com/Colauz/noise-modelling-hanoi}
   \end{block}
   \begin{block}{The same correction, found a second time}
     \centering
@@ -1247,24 +1251,28 @@ hard-codes a number into a screen.}
     \quad\wn{not}\quad
     $10\log_{10}(kE) = L + 10\log_{10}k$
     \par\smallskip\raggedright
-    The first version took $E_\mathrm{res}$ to be the kernel's constant ---
-    $-99.6\dB$, i.e.\ nothing --- so it scaled the total after all: at $k=0.2$,
-    $-7.0\dB$ where the model gives $-3.7$. \textbf{Exactly the pedestrianisation
-    error this project had already corrected}, rebuilt on another platform.
-    $E_\mathrm{res}$ is the zone's own ambience.
+    Taking $E_\mathrm{res}$ to be the kernel's constant --- $-99.6\dB$, i.e.\
+    nothing --- scaled the total after all: at $k=0.2$, $-7.0\dB$ against the
+    model's $-3.7$. \textbf{Exactly the pedestrianisation error this project had
+    already corrected}, rebuilt on another platform.
   \end{block}
   \begin{block}{KoboToolbox renames your form at deployment}
-    The first real submission failed with \textbf{404 for a form the server
-    had never heard of}. Kobo discards the XLSForm's \texttt{id\_string} on deploy
-    and substitutes the asset's own identifier
-    ({\ttfamily\scriptsize aA8FaTuUVSkRjbUW7rCBz7}). The app now reads
-    \texttt{/formList} and submits under whatever the server calls the form.
-    \textbf{None of this is visible from the phone} --- the argument for testing
-    against the real server rather than reasoning about it.
+\textbf{404 for a form the server had never heard of}: Kobo discards the
+    XLSForm's \texttt{id\_string} on deploy and substitutes its own. The app now
+    reads \texttt{/formList} first. \textbf{None of it is visible from the
+    phone.}
   \end{block}
 \end{frame}
 \note{All three are the kind of thing that costs a day and is invisible in a
 results table, which is exactly why they are on a slide.
+
+On the first block, make the distinction concrete, because it is the one people
+get wrong afterwards. The MAP needs nothing: the grid and the 363 points are
+inside the APK, tier 1 is recomputed on the device, and it works in the street
+with no signal at all. The SERVER is only for the rest of the model, and it is a
+laptop on the same wifi running gama-headless. Point at the repository for how to
+start it --- the command is in simulation/gama/README.md and the protocol in
+mobile/ARCHITECTURE.md.
 
 The middle one is the one to dwell on. The same error --- scaling total energy by
 a traffic multiplier, which double-counts the background --- was made twice, in
