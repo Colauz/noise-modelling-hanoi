@@ -334,7 +334,7 @@ with shared code in the installable package \pth{src/noise\_hanoi/}:
 02 & \pth{02\_count\_vehicles} & YOLOv8 + ByteTrack, line-crossing flow per class \\
 02b & \pth{02b\_fetch\_osm\_extract} & Fetch the OSM extract step 03 requires \\
 03 & \pth{03\_build\_features} & Morphology within a 300\,m radius \\
-04 & \pth{04\_evaluate\_models} & 8 models $\times$ 3 CV protocols $\to$ \pth{metrics.json} \\
+04 & \pth{04\_evaluate\_models} & 12 models $\times$ 3 CV protocols $\to$ \pth{metrics.json} \\
 05 & \pth{05\_calibrate\_emissions} & Non-negative energy regression on vehicle counts \\
 06 & \pth{06\_anchor\_literature} & Bias interval against instrumented campaigns \\
 07 & \pth{07\_export\_gama\_inputs} & 40\,m grid $\times$ 17 hours, GIS layers for GAMA \\
@@ -1026,9 +1026,10 @@ been executed, and no number in §4 depends on it.
   \caption{The sampling frame, and the size of the step. \textbf{Nothing on
   this map is a site}: the 160 sites have not been drawn, and 160 invented
   coordinates would commit the team to a sample nobody selected. What is drawn
-  is the frame, Hanoi's 51 urban \emph{phuong} under the July~2025 reform,
-  407\,km$^2$, against the 1.7\,km$^2$ the campaign has actually covered, a
-  factor of 236. Boundaries are OpenStreetMap
+  is the frame: the 51 urban \emph{phuong} of Hanoi under the July~2025 reform
+  plus the 9 \emph{xa} that contain a new urban development, 60 units and
+  636\,km$^2$, against the 1.7\,km$^2$ the campaign has actually covered, a
+  factor of 369. Boundaries are OpenStreetMap
   (\pth{data/processed/hanoi\_wards.geojson}, fetched by
   \pth{scripts/fetch\_hanoi\_wards.py}); areas are computed in UTM~48\,N, not
   from degrees. \pth{scripts/12\_presentation\_figures.py}.}
@@ -1300,7 +1301,7 @@ The frame: 60 units, 636\,km$^2$ & \pth{frame\_units} in
 The 30\,\% detector-resolution gap (§\ref{sec:sciwork}) & 12 frames sampled at
   \pth{random\_state=7}, \pth{yolov8n} at \pth{imgsz} 640 against 1280,
   \pth{conf} held at 0.30. A hint at this sample size, not a measurement. \\
-Frame area, measured area, the 236$\times$ ratio, and which areas fall inside
+Frame area, measured area, the 369$\times$ ratio, and which areas fall inside
   the frame & computed in \pth{fig\_campaign\_frame} from
   \pth{hanoi\_wards.geojson} and \pth{measurements.csv}, reprojected to
   UTM~48\,N \\
