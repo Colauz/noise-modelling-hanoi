@@ -38,7 +38,19 @@
 \definecolor{warnc} {HTML}{8A4B08}
 \definecolor{grayc} {HTML}{6E6E6E}
 
-\hypersetup{colorlinks=true, linkcolor=accent, urlcolor=accent,
+% Every link colour is named. hyperref's own defaults are red/green/cyan/magenta
+% and they only show up once colorlinks is switched back on, which the line
+% below does -- the [hidelinks] option above is not the last word. Leaving
+% citecolor unset is what put every (Nguyen et al., 2025a) in the body text in
+% pure neon green (0,1,0). Citations are set in ink: they belong to the
+% sentence, not to the navigation.
+\hypersetup{colorlinks=true,
+            linkcolor=accent,      % \ref, \pageref, the table of contents
+            urlcolor=accent,       % \url and \href
+            citecolor=ink,         % \citep and \citet -- reads as text
+            filecolor=accent,
+            menucolor=accent,
+            runcolor=accent,
             pdftitle={Hanoi urban noise -- end-of-internship progress report},
             pdfauthor={Laurian Jamin and Lucas Zborowski}}
 
