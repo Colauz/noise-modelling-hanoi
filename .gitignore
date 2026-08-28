@@ -104,3 +104,7 @@ mobile/**/*.keystore
 # footage has no custodian -- none of which belongs on a public repository.
 # It stays local, next to the documents it accompanies.
 deliverables/email_draft.md
+# Personal end-of-year report: drafts, marking guidelines and a colleague's
+# confidential report. Not part of the research record.
+rapport_lucas/
+
