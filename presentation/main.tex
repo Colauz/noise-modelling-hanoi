@@ -91,6 +91,15 @@
 
 \setbeamercolor{normal text}{fg=ink}
 \setbeamercolor{alerted text}{fg=bad}
+% `example text` was never named, so beamer's own default stood: a light neon
+% green that the 24 exampleblock titles in this deck were set in, on a light
+% grey block background. Naming it puts them on the deck's own dark green, the
+% one \up{} and \must{} already use. Colour categories left unnamed are the
+% same defect as an unset hypersetup citecolor -- the package fills the gap and
+% it is never with a colour anyone chose.
+\setbeamercolor{example text}{fg=good}
+\setbeamercolor{block title example}{fg=good, bg=rule!25}
+\setbeamercolor{block body example}{fg=ink, bg=rule!25}
 \setbeamercolor{frametitle}{bg=accent, fg=white}
 \setbeamercolor{progress bar}{fg=accent}
 \setbeamercolor{title separator}{fg=accent}
