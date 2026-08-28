@@ -1,0 +1,376 @@
+% ============================================================================
+%  presentation/appscreens.tex
+%
+%  The Android application, drawn.
+%
+%  WHAT THESE ARE. Vector mock-ups of four screens, drawn in TikZ from the
+%  Compose source in mobile/app/src/main/java/org/noisehanoi/mobile/ui/. Every
+%  string, every colour and every control on them is taken from that source:
+%
+%    Home     <- ui/HomeScreen.kt          Measure  <- ui/FormScreen.kt
+%    Map      <- ui/MapScreen.kt           Results  <- ui/ResultsScreen.kt
+%
+%  Colours are the app's own Material 3 scheme from ui/Theme.kt, and the map
+%  bands are levelColour() from the same file.
+%
+%  WHAT THESE ARE NOT. They are not device captures. Nobody on the team has run
+%  the app on a handset with a sound source in front of it — that is stated on
+%  the "what the app refuses to claim" slide and it is why there are no real
+%  screenshots here yet. Replace these with captures the day the app is run on a
+%  real phone: put the PNGs in presentation/screens/ and swap the \phone... call
+%  for an \includegraphics. Nothing else in main.tex has to change.
+%
+%  Each macro draws one phone at a nominal 44 mm x 92 mm. Wrap in \scalebox to
+%  resize; the text scales with it.
+% ============================================================================
+
+% ---------------------------------------------------------------- app palette
+\definecolor{appink} {HTML}{0B3D5C}   % Theme.kt  Ink   -> primary
+\definecolor{appsky} {HTML}{3E8FB8}   % Theme.kt  Sky   -> secondary
+\definecolor{appsurf}{HTML}{F4F6F8}   % Material 3 surfaceVariant, light scheme
+\definecolor{appline}{HTML}{C9D2D8}
+\definecolor{apptext}{HTML}{5A6A75}   % colorScheme.outline, the grey body text
+
+% levelColour() in ui/Theme.kt, band for band.
+\definecolor{lvlA}{HTML}{2E7D32}      % < 55
+\definecolor{lvlB}{HTML}{9E9D24}      % 55-65
+\definecolor{lvlC}{HTML}{EF6C00}      % 65-70
+\definecolor{lvlD}{HTML}{D84315}      % 70-80
+\definecolor{lvlE}{HTML}{B71C1C}      % > 80
+
+% ---------------------------------------------------------------- primitives
+\tikzset{
+  phonebody/.style   = {draw=appink!55, line width=.5pt, rounded corners=2.2mm,
+                        fill=white},
+  phonescreen/.style = {fill=white, draw=none},
+  appbar/.style      = {fill=appink, draw=none},
+  card/.style        = {draw=appline, line width=.3pt, rounded corners=1mm,
+                        fill=white},
+  cardfill/.style    = {card, fill=appsurf},
+  btn/.style         = {fill=appink, draw=none, rounded corners=1.6mm},
+  obtn/.style        = {draw=appink, line width=.3pt, rounded corners=1.6mm,
+                        fill=white},
+  chip/.style        = {draw=appline, line width=.3pt, rounded corners=1.2mm,
+                        fill=white},
+  chipon/.style      = {chip, fill=appink!12, draw=appink!45},
+  ttl/.style         = {font=\tiny\bfseries, text=black, anchor=north west,
+                        inner sep=0pt},
+  bdy/.style         = {font=\fontsize{3.4}{4}\selectfont, text=apptext,
+                        anchor=north west, inner sep=0pt},
+  btnlab/.style      = {font=\fontsize{3.6}{4}\selectfont, text=white,
+                        anchor=center, inner sep=0pt},
+  obtnlab/.style     = {font=\fontsize{3.6}{4}\selectfont, text=appink,
+                        anchor=center, inner sep=0pt},
+}
+
+% \phoneframe{<body>}{<app bar title>} — chrome shared by all four screens.
+% Draws the handset, the status bar and the Material 3 top app bar, then places
+% <body> in a scope whose origin is the top-left of the content area.
+\newcommand{\phoneframe}[2]{%
+  \begin{tikzpicture}[x=1mm, y=1mm, line cap=round, font=\sffamily]
+    \sffamily
+    \draw[phonebody] (-1.6,2.2) rectangle (45.6,-93.6);
+    \fill[phonescreen] (0,0) rectangle (44,-92);
+    % status bar
+    \node[font=\fontsize{2.8}{3}\selectfont, text=apptext, anchor=north west]
+      at (1.8,-0.4) {09:41};
+    \node[font=\fontsize{2.8}{3}\selectfont, text=apptext, anchor=north east]
+      at (42.2,-0.4) {LTE \raisebox{-.1ex}{\rule{1.6mm}{1.1mm}}};
+    % top app bar
+    \fill[appbar] (0,-3.4) rectangle (44,-11.4);
+    \node[font=\scriptsize, text=white, anchor=west] at (2.4,-7.4) {#2};
+    % Content is clipped to the screen exactly as it is on the device: these
+    % screens scroll, and a mock-up that spills past the bezel reads as a bug.
+    \begin{scope}
+      \clip (0,-3.4) rectangle (44,-92);
+      \begin{scope}[shift={(0,-11.4)}]
+        #1
+      \end{scope}
+    \end{scope}
+  \end{tikzpicture}%
+}
+
+% \appcard{<y top>}{<height>}{<inner>} — a Material 3 Card. Inner content is
+% placed from the card's top-left plus the 2 mm padding the app uses.
+\newcommand{\appcard}[4][card]{%
+  \draw[#1] (2,#2) rectangle (42,#2-#3);
+  \begin{scope}[shift={(4,#2-2)}] #4 \end{scope}%
+}
+
+% \appbutton{x}{y}{w}{label}
+\newcommand{\appbutton}[4]{%
+  \draw[btn] (#1,#2) rectangle (#1+#3,#2-4.6);
+  \node[btnlab] at (#1+#3/2,#2-2.3) {#4};}
+\newcommand{\appobutton}[4]{%
+  \draw[obtn] (#1,#2) rectangle (#1+#3,#2-4.6);
+  \node[obtnlab] at (#1+#3/2,#2-2.3) {#4};}
+
+% Grey text ruled as texture: body copy at this size is a shape, not a read.
+\newcommand{\bodylines}[3]{%
+  \foreach \i/\w in {#3} {\fill[apptext!35] (#1,#2-\i*2.2) rectangle
+                          (#1+\w,#2-\i*2.2-1.1);}}
+
+% ============================================================================
+%  1. Home  --  ui/HomeScreen.kt
+% ============================================================================
+\newcommand{\phoneHome}{%
+\phoneframe{%
+  \node[bdy, text width=38mm] at (3,-1.5)
+    {Field collection for the Hanoi urban noise campaign. Forms are the ones
+     deployed on KoboToolbox.};
+
+  \node[ttl] at (3,-10) {Collect};
+
+  \appcard{-12.5}{14.5}{%
+    \node[ttl] at (0,0) {Noise measurement};
+    \node[bdy] at (0,-3) {16 questions {\textperiodcentered} v3};
+    \appbutton{0}{-5.6}{18}{Fill this form}}
+
+  \appcard{-28.5}{14.5}{%
+    \node[ttl] at (0,0) {Construction site};
+    \node[bdy] at (0,-3) {6 questions {\textperiodcentered} v1};
+    \appbutton{0}{-5.6}{18}{Fill this form}}
+
+  \node[ttl] at (3,-45.5) {The study};
+
+  \appcard{-48}{15}{%
+    \node[ttl] at (0,0) {Predicted noise map};
+    \node[bdy, text width=34mm] at (0,-3)
+      {The predicted level where you are standing, the 40\,m grid, the 363
+       points.};
+    \appobutton{0}{-9.4}{16}{Open the map}}
+
+  % HomeScreen.kt, since #9: the model itself, driven over gama-server.
+  \appcard{-64}{15}{%
+    \node[ttl] at (0,0) {GAMA simulation};
+    \node[bdy, text width=34mm] at (0,-3)
+      {The model itself, driven from here --- mitigation scenarios, the fleet by
+       hour. Needs a gama-server on the network.};
+    \appbutton{0}{-9.4}{21}{Open the simulation}}
+
+  \appcard{-81}{13}{%
+    \node[ttl] at (0,0) {What the study found};
+    \node[bdy, text width=34mm] at (0,-3)
+      {The delivered model and the three negative results.};}
+}{Noise Hanoi}}
+
+% ============================================================================
+%  2. Measure  --  ui/FormScreen.kt, the measurement card
+% ============================================================================
+\newcommand{\phoneMeasure}{%
+\phoneframe{%
+  \node[bdy] at (3,-2) {Question 12 of 16};
+  \bodylines{3}{-5}{0/26, 1/34, 2/18}
+
+  \appcard[cardfill]{-14}{46}{%
+    \node[ttl] at (0,0) {Measurement and audio clip};
+    \node[bdy, text width=34mm] at (0,-3.2)
+      {One microphone session: 25\,s, A-weighted, SLOW. The clip submitted is
+       the stretch that was measured.};
+    % the live reading, in levelColour()
+    \node[font=\fontsize{11}{11}\selectfont, text=lvlD, anchor=north west]
+      at (0,-14) {71.4 dB};
+    \node[bdy] at (0,-22.5) {L\textsubscript{eq} 70.8 dB over 18 s};
+    % LinearProgressIndicator
+    \fill[appink!18, rounded corners=.4mm] (0,-26) rectangle (34,-27);
+    \fill[appink,    rounded corners=.4mm] (0,-26) rectangle (24.5,-27);
+    \node[bdy] at (0,-29) {0.00 \% of samples at full scale};
+    \appbutton{0}{-32}{15}{Measure 25 s}
+    \appobutton{16.5}{-32}{9}{Stop}}
+
+  \appcard{-62}{11}{%
+    \node[ttl] at (0,0) {Position};
+    \node[bdy] at (0,-3) {\textpm\,6\,m {\textperiodcentered} inside the 10\,m gate};
+    \node[bdy] at (0,-6) {20.99220, 105.94426};}
+
+  \appbutton{2}{-73.5}{40}{Save to outbox and send}
+  \node[bdy] at (3,-79.8) {Offline: 2 waiting in the outbox.};
+}{Noise measurement}}
+
+% ============================================================================
+%  3. Map  --  ui/MapScreen.kt
+%
+%  Reworked in #12. Two changes matter for the picture: the hour slider is GONE,
+%  because the delivered kernel has no hour term and all seventeen hourly columns
+%  of the published grid are byte-identical; and the screen now opens with the
+%  predicted level where the phone is standing.
+% ============================================================================
+\newcommand{\phoneMap}{%
+\phoneframe{%
+  % FilterChip row over the three sites
+  \draw[chipon] (2,-1.5) rectangle (16,-6);
+    \node[font=\fontsize{3.2}{3.6}\selectfont, text=appink] at (9,-3.75) {Ocean Park};
+  \draw[chip] (17,-1.5) rectangle (30,-6);
+    \node[font=\fontsize{3.2}{3.6}\selectfont, text=apptext] at (23.5,-3.75) {Hoan Kiem};
+  \draw[chip] (31,-1.5) rectangle (42,-6);
+    \node[font=\fontsize{3.2}{3.6}\selectfont, text=apptext] at (36.5,-3.75) {Vinh Tuy};
+
+  % HereCard: the predicted level where the phone is standing
+  \appcard{-8}{18}{%
+    \node[ttl] at (0,0) {Predicted level where I am};
+    \node[font=\fontsize{9}{9}\selectfont, text=lvlC, anchor=north west] at (0,-3.4)
+      {68 dB};
+    \node[bdy] at (0,-10.6) {Ocean Park {\textperiodcentered} fix averaged over 5 reads};
+    \appobutton{0}{-12.6}{15}{Read again}}
+
+  % NoiseCanvas
+  \begin{scope}
+    \clip (2,-28) rectangle (42,-58);
+    \foreach \r in {0,...,15} {
+      \foreach \c in {0,...,19} {
+        \pgfmathsetmacro{\v}{1.55 + 1.05*sin((\c*17+22)) + 0.75*cos((\r*23-14))
+                              + 0.55*sin(((\r+\c)*11)) + 0.35*cos(((\r-\c)*29))}
+        \pgfmathtruncatemacro{\band}{max(0, min(3, int(\v)))}
+        \edef\bc{\ifcase\band lvlA\or lvlB\or lvlC\or lvlD\fi}
+        \fill[\bc, opacity=.9] (2+\c*2,-28-\r*1.9) rectangle ++(2,-1.9);}}
+    \fill[lvlC] (2,-37.4) rectangle (42,-42);  \fill[lvlD] (2,-38.8) rectangle (42,-40.6);
+    \fill[lvlC] (24.4,-28) rectangle (30,-58); \fill[lvlD] (26,-28) rectangle (28.4,-58);
+    \foreach \x/\y in {8/-33, 13/-36, 19/-46, 31/-50, 22/-54, 35/-41, 11/-52, 38/-55} {
+      \fill[white] (\x,\y) circle (.75mm);
+      \fill[appink] (\x,\y) circle (.45mm);}
+  \end{scope}
+  \draw[appline, line width=.3pt] (2,-28) rectangle (42,-58);
+
+  % Gestures work; a thumb on a scrolling page does not always get them.
+  \appobutton{2}{-59.5}{11}{Zoom in}
+  \appobutton{14.5}{-59.5}{12}{Zoom out}
+  \appobutton{28}{-59.5}{9}{Reset}
+
+  \foreach \i/\c/\l in {0/lvlA/{<55}, 1/lvlB/{55-65}, 2/lvlC/{65-70},
+                        3/lvlD/{70-80}, 4/lvlE/{>80}} {
+    \fill[\c] (2+\i*8,-66) rectangle ++(2,-2);
+    \node[font=\fontsize{2.8}{3}\selectfont, text=apptext, anchor=west]
+      at (4.4+\i*8,-67) {\l};}
+
+  % The notice that replaced the hour slider.
+  \appcard[cardfill]{-70}{9}{%
+    \node[bdy, text width=34mm] at (0,0)
+      {No hour control: the delivered model has no hour term.};}
+
+  \node[ttl] at (2,-81) {Traffic volume: x1.00 of measured};
+  \fill[appink!20, rounded corners=.4mm] (2,-85) rectangle (42,-85.9);
+  \fill[appink,    rounded corners=.4mm] (2,-85) rectangle (16,-85.9);
+  \fill[appink] (16,-85.45) circle (1.1mm);
+}{Predicted noise map}}
+
+% ============================================================================
+%  3b. GAMA  --  ui/GamaScreen.kt and ui/GamaCanvas.kt
+%
+%  The screen does not report numbers at someone: it redraws the model's OWN
+%  "Noise map" display, layer for layer in the stacking order the aspect blocks
+%  declare -- grid, buildings, roads, construction, vehicles, measured points.
+%  GamaPalette in GamaCanvas.kt is that display's palette, transcribed.
+% ============================================================================
+\newcommand{\phoneGama}{%
+\phoneframe{%
+  \appcard[cardfill]{-1.5}{11}{%
+    \node[bdy, text width=34mm] at (0,0)
+      {The model runs on another machine:\\
+       \texttt{gama-headless.sh -socket 6868}. Needs a network.};}
+
+  % OutlinedTextField, server
+  \draw[obtn] (2,-14) rectangle (42,-20);
+  \node[font=\fontsize{2.8}{3}\selectfont, text=appink, anchor=west, fill=white,
+        inner xsep=1pt] at (4,-14) {Server (ws://host:port)};
+  \node[bdy] at (4,-15.6) {ws://192.168.1.24:6868};
+
+  \draw[obtn] (2,-22) rectangle (42,-28);
+  \node[font=\fontsize{2.8}{3}\selectfont, text=appink, anchor=west, fill=white,
+        inner xsep=1pt] at (4,-22) {Model path, on the server};
+  \node[bdy] at (4,-23.6) {/.../gama/hanoi\_noise.gaml};
+
+  \appbutton{2}{-30}{13}{Reconnect}
+  \appobutton{16.5}{-30}{15}{Run scenario}
+  \node[bdy] at (2,-36.5) {\texttt{Connected. Experiment loaded.}};
+
+  % Mitigation, a parameter: changing it re-runs rather than nudges
+  \node[ttl] at (2,-40) {Mitigation};
+  \draw[chip]   (2,-43) rectangle (12,-47.4);
+    \node[font=\fontsize{3}{3.4}\selectfont, text=apptext] at (7,-45.2) {None};
+  \draw[chip]   (13,-43) rectangle (25,-47.4);
+    \node[font=\fontsize{3}{3.4}\selectfont, text=apptext] at (19,-45.2) {Zone 30};
+  \draw[chipon] (26,-43) rectangle (42,-47.4);
+    \node[font=\fontsize{3}{3.4}\selectfont, text=appink] at (34,-45.2) {Pedestrianised};
+
+  \node[ttl] at (2,-50) {The model's noise map};
+  \begin{scope}
+    \clip (2,-53) rectangle (42,-74);
+    \fill[appsurf] (2,-53) rectangle (42,-74);
+    % the 40 m grid, then buildings, roads, sites, vehicles -- in that order,
+    % because in GAMA the declaration order IS the stacking
+    \foreach \r in {0,...,10} {
+      \foreach \c in {0,...,19} {
+        \pgfmathsetmacro{\v}{1.4 + 1.0*sin((\c*19+40)) + 0.7*cos((\r*27))
+                              + 0.5*sin(((\r+\c)*13))}
+        \pgfmathtruncatemacro{\band}{max(0, min(3, int(\v)))}
+        \edef\bc{\ifcase\band lvlA\or lvlB\or lvlC\or lvlD\fi}
+        \fill[\bc, opacity=.75] (2+\c*2,-53-\r*1.9) rectangle ++(2,-1.9);}}
+    \foreach \x/\y/\w/\h in {5/-56/4/3, 11/-55/5/4, 20/-57/4/3, 33/-56/6/4,
+                             7/-66/5/4, 17/-68/6/3, 30/-67/5/4, 37/-63/4/3} {
+      \fill[black!8] (\x,\y) rectangle ++(\w,-\h);
+      \draw[black!18, line width=.2pt] (\x,\y) rectangle ++(\w,-\h);}
+    \draw[black!35, line width=.4pt] (2,-62) -- (42,-62);
+    \draw[black!35, line width=.4pt] (27,-53) -- (27,-74);
+    % construction sites are diamonds in the model's aspect
+    % construction: loud and idle are different colours in GamaPalette
+    \fill[lvlE]  (14,-71) -- ++(1,1) -- ++(1,-1) -- ++(-1,-1) -- cycle;
+    \fill[lvlC]  (35,-58) -- ++(1,1) -- ++(1,-1) -- ++(-1,-1) -- cycle;
+    % vehicles, sized and coloured by type
+    \foreach \x/\y in {9/-62, 16/-62, 23/-62, 31/-62, 27/-58, 27/-66, 27/-70} {
+      \fill[appink] (\x,\y) circle (.4mm);}
+  \end{scope}
+  \draw[appline, line width=.3pt] (2,-53) rectangle (42,-74);
+  \foreach \i/\c/\l in {0/lvlA/{<55}, 1/lvlB/{55-65}, 2/lvlC/{65-70},
+                        3/lvlD/{70-80}, 4/lvlE/{>80}} {
+    \fill[\c] (2+\i*8,-76) rectangle ++(2,-2);
+    \node[font=\fontsize{2.8}{3}\selectfont, text=apptext, anchor=west]
+      at (4.4+\i*8,-77) {\l};}
+
+  \appcard{-80}{11}{%
+    \node[ttl] at (0,0) {What the model reports};
+    \node[bdy] at (0,-3) {mean level}; \node[bdy] at (26,-3) {60.53 dB};
+    \node[bdy] at (0,-5.6) {vs no mitigation}; \node[bdy] at (26,-5.6) {62.97 dB};}
+}{GAMA simulation}}
+
+% ============================================================================
+%  4. Results  --  ui/ResultsScreen.kt
+% ============================================================================
+\newcommand{\phoneResults}{%
+\phoneframe{%
+  \appcard[cardfill]{-2}{22}{%
+    \node[ttl] at (0,0) {The campaign};
+    \node[bdy] at (0,-3.2) {363 measurements, 2026-06-10 to};
+    \node[bdy] at (0,-6.0) {2026-07-22, 47 to 88 dB.};
+    \node[bdy] at (0,-9.2) {{\textperiodcentered} Ocean Park --- 184 points};
+    \node[bdy] at (0,-11.8) {{\textperiodcentered} Hoan Kiem lake --- 99 points};
+    \node[bdy] at (0,-14.4) {{\textperiodcentered} Vinh Tuy area --- 80 points};}
+
+  \node[ttl, text width=38mm] at (2,-26)
+    {The three negative results are the contribution};
+
+  \appcard{-33}{13}{%
+    \node[ttl, text width=34mm] at (0,0)
+      {1. A three-parameter physical law beat every learned model};
+    \bodylines{0}{-6}{0/34, 1/34, 2/21}}
+
+  \appcard{-47.5}{11}{%
+    \node[ttl, text width=34mm] at (0,0)
+      {2. Morphology from OpenStreetMap added nothing measurable};
+    \bodylines{0}{-6}{0/34, 1/26}}
+
+  \appcard{-60}{11}{%
+    \node[ttl, text width=34mm] at (0,0)
+      {3. A model trained in one city did not transfer};
+    \bodylines{0}{-4}{0/34, 1/29}}
+
+  \node[ttl] at (2,-70) {Delivered model: physical kernel};
+  \node[bdy] at (2,-73.2) {Buffered LOO 300 m};
+  % the ProtocolTable header and its first row
+  \node[bdy] at (2,-76.4) {Model};
+  \node[bdy] at (28,-76.4) {R\textsuperscript{2}};
+  \node[bdy] at (36,-76.4) {MAE};
+  \draw[appline, line width=.3pt] (2,-77.9) -- (42,-77.9);
+  \node[bdy] at (2,-78.8) {physical};
+  \node[bdy] at (28,-78.8) {0.246};
+  \node[bdy] at (36,-78.8) {5.01};
+}{What the study found}}

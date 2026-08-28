@@ -9,7 +9,7 @@ PYTHON ?= python3
 SCRIPTS = scripts
 
 .DEFAULT_GOAL := help
-.PHONY: help setup .check-env data counts osm features transfer models results report dashboard simulate all test clean clean-all
+.PHONY: help setup .check-env data counts osm features transfer models results report slides dashboard simulate all test clean clean-all
 
 help:  ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -67,6 +67,12 @@ results/tables/validation_simulation.csv: $(GRID) $(MEASURES)
 results/figures/analyse_1_horaire.png: $(MEASURES) $(SCRIPTS)/09b_build_analyses.py
 	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
 
+# The deck's figures are pipeline output like any other, and they are declared
+# here for the same reason everything else is: so a stale figure cannot survive
+# a rerun of the model that produced its numbers.
+presentation/figures/ranking-inversion.pdf: $(METRICS) $(MEASURES) $(SCRIPTS)/12_presentation_figures.py
+	$(PYTHON) $(SCRIPTS)/12_presentation_figures.py
+
 osm: .check-env $(BUILDINGS)  ## Download the OSM extract the features are built from
 
 features: .check-env $(FEATURES)  ## OSM morphology features for the measurement points
@@ -82,8 +88,11 @@ results: models $(GRID) results/tables/validation_simulation.csv  ## Calibration
 	$(PYTHON) $(SCRIPTS)/09_build_field_map.py
 	$(PYTHON) $(SCRIPTS)/09b_build_analyses.py
 
-report: results  ## Build the 8-page PDF report (reads models/metrics.json)
+report: results  ## Typeset the PDF report with LaTeX (reads models/metrics.json; needs latexmk)
 	$(PYTHON) $(SCRIPTS)/10_build_report.py
+
+slides: .check-env presentation/figures/ranking-inversion.pdf  ## Build the end-of-internship deck (needs latexmk + beamer)
+	$(MAKE) -C presentation
 
 dashboard: results  ## Build the static HTML dashboard
 	$(PYTHON) $(SCRIPTS)/11_build_dashboard.py

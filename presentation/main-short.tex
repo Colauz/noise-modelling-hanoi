@@ -1,0 +1,13 @@
+% ============================================================================
+%  presentation/main-short.tex --- the fifteen-minute deck
+%
+%  There is no content here. This defines one macro and hands over to main.tex,
+%  which drops every frame wrapped in \onlyfull when it sees it. Two outputs,
+%  one source: a correction to a slide cannot land in one deck and not the other,
+%  and no number can end up living in two files.
+%
+%  \def before \documentclass is legal -- it is a TeX primitive, not a LaTeX
+%  command, so it does not violate the rule that \documentclass comes first.
+% ============================================================================
+\def\SHORTDECK{1}
+\input{main}

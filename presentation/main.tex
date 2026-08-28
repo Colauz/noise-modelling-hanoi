@@ -1,485 +1,1885 @@
 % ============================================================================
-%  Noise Modelling Hanoi -- handover presentation
-%  Build:  latexmk -pdf main.tex        (or: pdflatex main.tex, twice)
-%  Notes:  \note{} on every slide. To show them on a second screen, uncomment
-%          \setbeameroption{show notes on second screen=right} below.
+%  Noise Modelling Hanoi --- end-of-internship presentation
 %
-%  Every figure on these slides is traceable to a file in the repository, named
-%  on the slide itself. No number is typed by hand: they come from
-%  models/metrics.json, models/model_comparison.md and
-%  results/tables/hanoi_exceedances.csv.
+%  Build:  make            -> main.pdf        (lualatex, falls back to pdflatex)
+%          make notes      -> main-notes.pdf  (presenter notes beside each slide)
+%
+%  DESIGN RULES THIS DECK FOLLOWS
+%  ------------------------------
+%  1. No number is typed by hand. Everything traceable comes from
+%     models/metrics.json, models/model_comparison.md and results/tables/.
+%     The source file is named on the slide that uses it, in grey.
+%  2. R2 = 0.45 and the WHO 53/45 values appear ONLY as retractions.
+%  3. Nothing claims regulatory compliance. QCVN thresholds are descriptive.
+%  4. Every slide carries a \note{}.
+%  5. Logos are optional: see logos/README.md. Missing files degrade to type.
 % ============================================================================
-\documentclass[aspectratio=169]{beamer}
-\usetheme{metropolis}
-\metroset{block=fill, numbering=fraction, progressbar=frametitle}
+\documentclass[aspectratio=169,10pt]{beamer}
 
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+% ---------------------------------------------------------------- two lengths
+% ONE SOURCE, TWO DECKS. main.pdf is the full talk (~30 min). main-short.pdf is
+% the same file built with \SHORTDECK defined, which drops the twelve frames
+% wrapped in \onlyfull below and lands at about fifteen minutes.
+%
+% It is a conditional rather than a second file because a copied deck drifts on
+% the first correction, and this project has already been bitten by a number
+% living in two places. There is exactly one frame for every slide, in one file,
+% and the short deck is a subset of it -- never a variant.
+%
+% Build:  make            -> main.pdf
+%         make short      -> main-short.pdf   (via main-short.tex)
+\newif\ifshortdeck
+\ifdefined\SHORTDECK \shortdecktrue \else \shortdeckfalse \fi
+
+% \onlyfull{...} -- a frame that earns its place in thirty minutes and not in
+% fifteen. Cutting whole frames rather than trimming inside them is deliberate:
+% a frame trimmed for time is a frame whose caveats go first.
+\long\def\onlyfull#1{\ifshortdeck\else#1\fi}
+
+% ---------------------------------------------------------------- engine
+% Compiles under lualatex (better typography, system Lato) and under pdflatex
+% (no system fonts). The Makefile tries lualatex first.
+\usepackage{iftex}
+\ifLuaTeX
+  \usepackage{fontspec}
+  \IfFontExistsTF{Lato}{%
+    \setsansfont{Lato}[
+      UprightFont = *-Regular, BoldFont = *-Bold,
+      ItalicFont  = *-Italic,  BoldItalicFont = *-BoldItalic ]%
+  }{}
+  \IfFontExistsTF{DejaVu Sans Mono}{\setmonofont{DejaVu Sans Mono}[Scale=0.85]}{}
+\else
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\fi
+
 \usepackage[english]{babel}
+\usepackage{microtype}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{appendixnumberbeamer}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, fit, backgrounds}
 
-% \setbeameroption{show notes on second screen=right}
+\usetheme{metropolis}
+\metroset{block=fill, numbering=fraction, progressbar=frametitle, sectionpage=progressbar}
 
-\definecolor{good}{HTML}{2E7D32}
-\definecolor{bad}{HTML}{C62828}
-\definecolor{warn}{HTML}{EF6C00}
-\newcommand{\src}[1]{{\scriptsize\color{gray}\texttt{#1}}}
-\newcommand{\up}[1]{\textcolor{good}{#1}}
-\newcommand{\down}[1]{\textcolor{bad}{#1}}
+% Figures live in presentation/figures/ and are built by
+% scripts/12_presentation_figures.py from metrics.json and the published CSVs.
+% Nothing in this deck reads results/figures/: that set is French-labelled and
+% partly not regenerable (results/figures/sunbird/NOT-REGENERABLE.md).
+\graphicspath{{figures/}}
 
-\title{What a smartphone protocol can and cannot establish}
-\subtitle{Urban noise in Hanoi --- three months, 363 measurements, three negative results}
-\author{Laurian Jamin \and Lucas Zborowski}
-\institute{ISIMA, Clermont-Ferrand \\ {}[AFFILIATION TO CONFIRM --- CEI or COSMOS Lab], VinUniversity, Hanoi \\[.4em]
-  \scriptsize Supervised by Doanh Nguyen-Ngoc \quad With Nguyen Thanh Quang}
-\date{June -- August 2026 \\ \scriptsize Handover meeting}
+% \setbeameroption{show notes on second screen=right}   % uncommented by `make notes`
+
+% The four application screens, drawn from the Compose source. See the header of
+% that file for what they are and what they are not.
+\input{appscreens}
+
+% ---------------------------------------------------------------- palette
+% One accent, three semantic colours. Deliberately restrained: on a projector
+% anything beyond this stops reading as meaning and starts reading as decoration.
+\definecolor{ink}      {HTML}{1A1A1A}
+\definecolor{accent}   {HTML}{1F5C8B}
+\definecolor{good}     {HTML}{2E7D32}
+\definecolor{bad}      {HTML}{C62828}
+\definecolor{warn}     {HTML}{EF6C00}
+\definecolor{muted}    {HTML}{6E6E6E}
+\definecolor{rule}     {HTML}{D8D8D4}
+
+\setbeamercolor{normal text}{fg=ink}
+\setbeamercolor{alerted text}{fg=bad}
+\setbeamercolor{frametitle}{bg=accent, fg=white}
+\setbeamercolor{progress bar}{fg=accent}
+\setbeamercolor{title separator}{fg=accent}
+\setbeamercolor{progress bar in head/foot}{fg=accent}
+\setbeamercolor{progress bar in section page}{fg=accent}
+
+% ---------------------------------------------------------------- type scale
+% ONE body size for the whole deck.
+%
+% Before this the slides switched between \normalsize, \small, \footnotesize and
+% \scriptsize inline, frame by frame, which is what made the deck read as
+% several documents stapled together. There are now three sizes and each has a
+% job. Do not introduce a fourth, and do not set a size inline unless the
+% content is a table:
+%
+%   body      every sentence on every slide       \footnotesize, set here
+%   \lead     the one line a slide is built around  \small
+%   \src{}    provenance lines, and table bodies    \scriptsize
+%
+% \footnotesize is the size the majority of these slides already used inline;
+% making it the default is what removed the mismatch rather than what created
+% it. Tables stay at \scriptsize because a table is a lookup, not a read.
+\setbeamerfont{normal text}{size=\footnotesize}
+\setbeamerfont{block title}{size=\footnotesize, series=\bfseries}
+\setbeamerfont{block body}{size=\footnotesize}
+\setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+\setbeamerfont{itemize/enumerate subbody}{size=\scriptsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\scriptsize}
+\setbeamerfont{caption}{size=\scriptsize}
+\newcommand{\lead}{\small}
+
+% Frame titles are one line. A title that wraps pushes the whole body down and
+% is the single commonest cause of a slide overflowing, so long ones are
+% shortened rather than allowed to wrap.
+\setbeamerfont{frametitle}{size=\normalsize, series=\bfseries}
+
+% Tables: a little air between rows, at every size. Beamer's default is tight
+% enough that a two-line cell touches its neighbours.
+\renewcommand{\arraystretch}{1.18}
+
+% ---------------------------------------------------------------- shorthands
+% \src{} is the traceability mark: every figure and every number on a slide
+% names the FILE it came from, in typewriter. It is what makes the deck
+% auditable from the room.
+%
+% \aside{} is the same grey and the same size, but roman: for a caption, a
+% citation or an aside. The two used to be one command, which is why half the
+% deck's captions were set in typewriter and read as filenames when they were
+% prose.
+\newcommand{\src}[1]{{\scriptsize\color{muted}\texttt{#1}}}
+\newcommand{\aside}[1]{{\scriptsize\color{muted}#1}}
+
+% A figure with its provenance underneath. The optional argument is a fraction
+% of the FRAME's text height, not of the column width: height is the dimension
+% that overflows a slide, and bounding it is what stops a figure pushing the
+% text under it off the bottom edge. Width is capped at the column either way,
+% so a figure is always the largest size that fits both.
+\newcommand{\fig}[3][.52]{%
+  \begin{center}
+    \includegraphics[width=\linewidth, height=#1\textheight, keepaspectratio]{#2}\\[.3em]
+    \src{#3}
+  \end{center}}
+\newcommand{\up}[1]{\textcolor{good}{\textbf{#1}}}
+\newcommand{\down}[1]{\textcolor{bad}{\textbf{#1}}}
+\newcommand{\wn}[1]{\textcolor{warn}{\textbf{#1}}}
+\newcommand{\unit}[1]{\,\text{#1}}
+\newcommand{\dB}{\,\mathrm{dB}}
+\newcommand{\rr}{$R^2$}
+\newcommand{\LA}{$L_{A,25\mathrm{s}}$}
+
+% Small caps section label used above a frame title block
+\newcommand{\kicker}[1]{{\scriptsize\color{accent}\textsc{#1}}\\[-.2em]}
+
+% ---------------------------------------------------------------- logo slots
+% \logoslot{basename}{fallback text}: draws logos/<basename>.pdf, or .png if
+% that is what you have, and falls back to the institution's name set in type if
+% neither is there. Every mark is scaled to the same \logoheight and sits on the
+% same baseline, which is what stops a band of four logos looking like an
+% accident. See logos/README.md.
+\newlength{\logoheight}\setlength{\logoheight}{8mm}
+% Every mark sits ON the baseline rather than straddling it. Straddling looked
+% right in isolation and cost the band half its height at the bottom of a frame,
+% where the depth below the baseline has nowhere to go and gets clipped.
+\newcommand{\logoslot}[2]{%
+  \IfFileExists{logos/#1.pdf}%
+    {\includegraphics[height=\logoheight]{logos/#1.pdf}}%
+    {\IfFileExists{logos/#1.png}%
+      {\includegraphics[height=\logoheight]{logos/#1.png}}%
+      {\raisebox{.3\logoheight}{\color{muted}\footnotesize\textsc{#2}}}}%
+}
+
+% The band itself. Both the title slide and the closing slide use this one
+% command, so the two can never drift apart -- which is exactly what had
+% happened: the closing slide set its logos in a \normalfont block with \hfill
+% between them, on a dark background they were invisible against.
+\newcommand{\logoband}{%
+  \hbox to \textwidth{%
+    \hfil\logoslot{cosmos}{COSMOS Lab}%
+    \hfil\logoslot{vinuni}{VinUniversity}%
+    \hfil\logoslot{isima}{ISIMA}\hfil}}
+
+% ---------------------------------------------------------------- metadata
+\title{What a low-cost smartphone protocol can\\and cannot establish about urban noise}
+\subtitle{Hanoi, 363 field measurements, three negative results\\and the instrument we ended up building}
+
+\author{%
+  \textbf{Laurian Jamin} \and \textbf{Lucas Zborowski}\\[.3em]
+  {\footnotesize Research interns, ISIMA --- Clermont-Ferrand, France}}
+
+\institute{%
+  {\footnotesize COSMOS Lab, VinUniversity --- Hanoi, Vietnam}\\[.25em]
+  {\scriptsize Supervised by Doanh Nguyen-Ngoc \quad$\cdot$\quad With Nguyen Thanh Quang}}
+
+\date{June -- August 2026}
+
+% ---------------------------------------------------------------- title page
+% The logo band sits under the date, not above the title: the work is the
+% headline, the institutions are the provenance.
+\makeatletter
+% Content flows DOWN from the top and the logo band is pushed to the bottom by
+% \vfill. The previous version set a fixed-height minipage bottom-aligned, so
+% content taller than the box grew upwards and silently cut the title's first
+% line off the top of the slide. Nothing here can clip: if the content grows, the
+% band moves down until it runs out of \vfill, and then the frame reports an
+% overfull box instead of losing a line.
+\setbeamertemplate{title page}{%
+  \vspace*{1mm}
+  \ifx\inserttitle\@empty\else\usebeamertemplate*{title}\fi
+  \ifx\insertsubtitle\@empty\else\usebeamertemplate*{subtitle}\fi
+  \usebeamertemplate*{title separator}
+  \ifx\beamer@shortauthor\@empty\else\usebeamertemplate*{author}\fi
+  \ifx\insertinstitute\@empty\else\usebeamertemplate*{institute}\fi
+  \ifx\insertdate\@empty\else\usebeamertemplate*{date}\fi
+  \vfill
+  {\color{rule}\hrule height .4pt}
+  \vspace*{3.6mm}
+  \logoband
+  \vspace*{4mm}
+}
+\makeatother
 
 \begin{document}
 
 \maketitle
-\note{Adapt for audience: with the supervisor present, keep the framing short and
-go early to the pivot and the negative results. With the incoming team, spend the
-time on the last third --- the pipeline, the guards and the handover priorities.
+\note{Say what the talk is before anything else: this is \emph{not} a noise map of
+Hanoi. We cannot produce one, and claiming otherwise would be indefensible. It is a
+methodological study of what a protocol built from consumer smartphones and open
+data actually supports --- plus the instrument we built once we understood the
+limit.
 
-Say up front what the talk is: not a noise map of Hanoi. We cannot produce one and
-saying otherwise would be indefensible. It is a methodological study of what this
-kind of protocol supports.}
+Three acts: what we measured and what it supports (1--3), what our own audit found
+in it (4), and where it goes --- the Android app and Clermont-Ferrand (5--6).
 
-% ---------------------------------------------------------------- 1. why
-\section{Why noise in Hanoi}
+The marks in the logo band are PLACEHOLDERS --- typographic slugs, not the
+institutions' logos. Do not describe them as the institutions' marks. Drop the real
+files into presentation/logos/ under the same names and they are picked up with no
+edit; see presentation/logos/README.md.}
+
+% ============================================================================
+\onlyfull{%
+\begin{frame}{Outline}
+  \setbeamertemplate{section in toc}[sections numbered]
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \tableofcontents[sections={1-3}]
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \tableofcontents[sections={4-7}]
+    \end{column}
+  \end{columns}
+  \vfill
+  \aside{Everything on these slides is reproducible from \texttt{github.com/Colauz/noise-modelling-hanoi}}
+\end{frame}
+\note{Signpost the three acts here so nobody spends the results section wondering
+when the app is coming. The audit section is the one people will not expect; flag
+that it is us auditing ourselves, not a reviewer auditing us.}
+}%
+
+
+% ============================================================================
+\section{Context and research questions}
+% ============================================================================
 
 \begin{frame}{The gap this project sits in}
   \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
+    \begin{column}{0.56\textwidth}
       \begin{itemize}
-        \item Dense, \textbf{motorcycle-dominated} traffic
-        \item \textbf{No national strategic noise mapping programme}, no statutory
-              noise action plan in Vietnam \\ \src{Nguyen et al. 2025, City Env.\ Interactions}
+        \item Hanoi: dense, fast-growing, \textbf{motorcycle-dominated} traffic
+        \item \textbf{No national strategic noise-mapping programme} and no
+              statutory noise action plan in Vietnam \\
+              \aside{Nguyen et al.\ 2025, \emph{City Environ.\ Interactions}}
         \item \textbf{One} instrumented campaign ever published for Hanoi ---
-              and it measured in \textbf{2005--2007} \\ \src{Phan et al. 2010, Applied Acoustics}
-        \item Class 1 meters and commercial models: out of reach for most local
-              research budgets
+              and it measured in \textbf{2005--2007} \\
+              \aside{Phan et al.\ 2010, \emph{Applied Acoustics} 71(5)}
+        \item Class 1 sound level meters and commercial propagation software:
+              out of reach for most local research budgets
       \end{itemize}
     \end{column}
-    \begin{column}{0.45\textwidth}
+    \begin{column}{0.44\textwidth}
       \begin{alertblock}{The question}
         How far does a protocol built from \textbf{three consumer smartphones}
         and \textbf{open data} actually get you?
       \end{alertblock}
+      \vspace{.5em}
+      {\color{muted}The honest answer turned out to be: further than
+      nothing, and much less far than a map.}
     \end{column}
   \end{columns}
 \end{frame}
-\note{Both citations are verified DOIs --- see docs/literature-review.md. Do not
-improvise a health-burden figure here: we did not verify one, and the talk's whole
+\note{Both citations are verified DOIs, listed in docs/literature-review.md. Do not
+improvise a health-burden figure: we never verified one, and this talk's whole
 credibility rests on not inventing numbers.
 
-The twenty-year-old campaign is not a rhetorical flourish. It is the single anchor
-of our absolute-bias interval, and its age is why that interval is wide.}
+The twenty-year-old campaign is not rhetorical. It is the single anchor of our
+absolute-bias interval, and its age is exactly why that interval is wide.}
 
-% ---------------------------------------------------------------- 2. questions
-\begin{frame}{Research questions --- and what is out of scope}
-  \begin{enumerate}
-    \item Can OSM morphology predict measured noise at an \textbf{unmeasured location}?
-    \item Does a model trained in one city \textbf{transfer} to another?
-    \item Does vehicle \textbf{flow from video} explain measured levels?
-    \item What can a protocol claim with \textbf{no absolute reference}?
-  \end{enumerate}
-  \vfill
-  \begin{block}{Out of scope --- stated, not discovered later}
-    Night-time noise (10 measurements after 21:00, none 00:00--05:00) \quad$\cdot$\quad
-    compliance assessment against any standard \quad$\cdot$\quad
-    any prediction beyond the three measured sites
-  \end{block}
-\end{frame}
-\note{Declaring the out-of-scope list early is a deliberate move: every one of
-these three was a temptation during the project, and two of them were briefly
-crossed before being retracted. Saying so at the start buys credibility for the
-results later.}
-
-% ---------------------------------------------------------------- 3. state of art
-\begin{frame}{State of the art --- ten references, selected by use}
+% ----------------------------------------------------------------
+% The research question dates from JUNE 2026, when the project was framed
+% (docs/project-timeline.md). The deck that presented it was assembled on
+% 31 July and is archived at docs/archive/july-deck/; the question is quoted
+% verbatim from its slide 2. Two dates, and they are not the same one: the
+% question is June's, the slide carrying it is July's. It is restated here
+% unchanged
+% BECAUSE the answer turned out to be no on both halves: a question you keep
+% after it defeats you is worth more than one rewritten to fit the result.
+%
+% Nothing else from that deck is carried over. The same slide there also
+% asserted a 53 dB WHO ceiling and, elsewhere, "model validated" and a 39 %
+% QCVN exceedance rate. All three were withdrawn in the August audit and must
+% not reappear -- see the design rules at the top of this file, and the table in
+% docs/archive/july-deck/README.md that lists them one by one.
+\begin{frame}{The research question, and what is out of scope}
+  \begin{alertblock}{The question, as we posed it in June --- unchanged}
+    Can urban noise be attributed to \textbf{the form of the city}, and to
+    \textbf{the type of vehicle} passing through it? Models validated on
+    car-centric European cities are unproven on motorcycle-heavy soundscapes.
+  \end{alertblock}
+  \vspace{.2em}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{What we lean on}
-      \begin{itemize}\small
-        \item \textbf{Roberts et al.\ 2017}, \emph{Ecography} --- a CV block must
-              exceed the autocorrelation range of the predictors
-        \item \textbf{Meyer \& Pebesma 2021}, \emph{MEE} --- area of applicability
-        \item \textbf{Kardous \& Shaw 2014}, \emph{JASA} --- smartphones depart from
-              reference instruments by several dB, non-constant
-        \item \textbf{Phan et al.\ 2010} --- the Hanoi anchor
-      \end{itemize}
+    \begin{column}{0.57\textwidth}
+      \textbf{How it was operationalised}
+      \begin{enumerate}
+        \item Can OpenStreetMap morphology predict noise at an
+              \textbf{unmeasured location}?
+        \item Does a model \textbf{transfer} between cities?
+        \item Does vehicle \textbf{flow from video} explain the levels?
+        \item What can the protocol claim with \textbf{no absolute reference}?
+      \end{enumerate}
+      \vspace{.3em}
+      \textbf{Out of scope, declared up front} --- night-time (10 points after
+      21:00), compliance against any standard, any prediction beyond the three
+      sites.
     \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Source policy, applied}
-      \begin{itemize}\small
-        \item \up{\texttt{verified}} --- read in the source (12)
-        \item \textcolor{warn}{\texttt{to\_check}} --- second-hand, flagged (2)
-        \item \down{\texttt{grey}} --- press-reported, undocumented protocol
-              \textbf{never a primary reference} (1)
-      \end{itemize}
-      \vspace{.6em}
-      \begin{exampleblock}{The test of a reliability policy}
-        The \textbf{most convenient} figures we had --- twelve Hanoi arteries,
-        via the press --- are the ones classified \texttt{grey} and excluded.
+    \begin{column}{0.43\textwidth}
+      \begin{exampleblock}{And the answer, on both halves}
+        \textbf{Form:} \down{no} --- morphology adds nothing the strict protocols
+        can see.\\[.3em]
+        \textbf{Vehicle type:} \down{no} --- and the chain that was meant to
+        measure it does not work.
+        \vspace{.3em}
+
+        What survives is \up{$\log(d_\mathrm{road})$}: distance to the road, and
+        little else.
       \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
-\note{If asked why so few references: the criterion was actual use. Each entry says
-which decision it informed. Four more are filed as "read, not used, reason".
+\note{Read the question off the slide exactly as it is written. It is the question
+we posed in June, word for word, and saying so is worth a sentence: we did not
+rewrite the question after the answer came back.
 
-Quartiles are deliberately blank: Scimago blocks automated access, and quoting a
-quartile from a search summary would be second-hand --- exactly what we classify
-grey. Fifteen-minute manual task, in the handover.}
+Both halves are answered no. Say that immediately --- an academic audience listens
+better to \emph{how} once it already knows \emph{what}, and it stops the talk
+reading as suspense.
 
-% ---------------------------------------------------------------- 4. data
-\section{Data}
+Do NOT carry anything else over from the deck that presented it at the end of
+July. That one also claimed a 53 dB WHO ceiling, a validated model, and a 39
+percent QCVN exceedance rate. All three were withdrawn in August. If someone in the room remembers them, that is the moment to
+say so plainly rather than to let it pass.}
 
-\begin{frame}{What we collected, and what we publish}
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{Related work --- ten references, selected by what they are used for}
   \small
-  \begin{tabular}{@{}llll@{}}
+  \begin{tabular}{@{}p{4.3cm}p{4.2cm}p{4.2cm}@{}}
     \toprule
-    \textbf{Dataset} & \textbf{Size} & \textbf{Published} & \textbf{Licence} \\
+    \textbf{Starting point} & \textbf{Method} & \textbf{Anchoring} \\
     \midrule
-    Field measurements & 363 points, 3 sites & \up{yes} & CC-BY-4.0 \\
-    Vehicle counts from video & 147 videos & \up{yes} & CC-BY-4.0 \\
-    Survey forms (XLSForm) & 2 forms & \up{yes} & CC-BY-4.0 \\
-    Traffic videos & 147, 6.0\,GB & \down{no} & not distributed \\
-    Raw Kobo exports & --- & \down{no} & not distributed \\
-    OpenStreetMap extract & 49\,146 buildings & \down{no} & ODbL \\
+    Sunbird Urban Noise Uganda 61K --- 61k clips, \emph{Sci.\ Data} 2026 &
+    Roberts et al.\ 2017, \emph{Ecography} --- spatial CV must exclude the
+    feature support &
+    Phan et al.\ 2010 --- the only instrumented Hanoi campaign \\[.4em]
+    The dataset we set out to transfer from &
+    The paper that told us our first \rr{} was wrong &
+    The reference our levels are compared against \\
+    \midrule
+    \multicolumn{3}{@{}p{12.9cm}@{}}{\textbf{Also used:} CNOSSOS-EU $\cdot$
+    NoiseModelling $\cdot$ GAMA $\cdot$ Gelb \& Apparicio 2019 (dosimeters,
+    HCMC) $\cdot$ QCVN 26:2010/BTNMT $\cdot$ TCVN 7878-2:2010} \\
     \bottomrule
   \end{tabular}
   \vfill
-  \begin{alertblock}{Ethics --- stated factually}
-    \textbf{No institutional ethics review was requested} for the video collection.
-    No approval, no exemption, no compliance is claimed. The originals contain faces
-    and licence plates and were not anonymised at source; \textbf{only the aggregate
-    counts are released}. \\
-    \src{docs/data-sources.md --- recommendation: submit to the VinUni ethics committee before any new campaign}
+  \aside{Full annotated bibliography with verified DOIs: \texttt{docs/literature-review.md}}
+\end{frame}
+\note{The point of this slide is that the bibliography is organised by function,
+not by date. Roberts 2017 is the one to dwell on --- it is the paper that made us
+retract our own headline figure, and it comes back in section 3.
+
+Do not claim to reproduce Sunbird's own figures as a contribution: we reproduced
+them to learn the pipeline, and the transfer failed. That is section 3.}
+}%
+
+
+% ============================================================================
+\section{Data and protocol}
+% ============================================================================
+
+\begin{frame}{The campaign}
+  \fig[.48]{campaign}{data/processed/measurements.csv}
+  \vspace{-.3em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Protocol} --- 3 handsets, \emph{Decibel X} (A-weighted, SLOW),
+      20--30\,s per point, a clip $\geq 10$\,s, a 10\,m GPS gate, ODK Collect
+      $\rightarrow$ Kobo.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{Published, CC-BY-4.0} --- both CSVs and both XLSForms.
+      {\color{muted} Videos and raw Kobo exports are \textbf{not}: faces,
+      plates, collector identities.}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{363 raw submissions, 363 published rows --- nothing was silently dropped, and
+that is checkable from the raw export.
+
+If asked about ethics: no ethics review was requested for the video collection and
+none is claimed. Only non-identifying aggregates are released. The full statement is
+docs/data-sources.md, and it says exactly that rather than dressing it up.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Metrology --- the constraint everything else is built around}
+  \begin{alertblock}{Three phones, cross-calibrated against \emph{each other} and against nothing}
+    A bias common to all three is \textbf{invisible in the data by construction}.
   \end{alertblock}
-\end{frame}
-\note{Do not soften this slide. A documented limitation is acceptable in a research
-record; a compliance claim that was never granted is not, and a reviewer will find it.
-
-If asked about the GPS coordinates: published at full precision. 26 of 363 points
-fall inside an OSM building footprint, 13 of them residential --- but none deeper
-inside than the worst GPS accuracy of the campaign (7.1 m against 9.0 m), and the
-apartment blocks are 26--35 storey towers whose multipath explains the offset.}
-
-% ---------------------------------------------------------------- 5. method
-\section{Method}
-
-\begin{frame}{The chain}
-  \begin{center}
-  \footnotesize
-  \begin{tabular}{@{}c@{~$\rightarrow$~}c@{~$\rightarrow$~}c@{~$\rightarrow$~}c@{~$\rightarrow$~}c@{}}
-    \textbf{acquisition} & \textbf{preparation} & \textbf{features} & \textbf{selection} & \textbf{map + simulation} \\
-    ODK / Kobo & cleaning & OSM 300\,m & 8 models & 40\,m grid \\
-    363 points & + weather & morphology & \textbf{3 CV protocols} & 17 hours \\
-     & & & \textbf{code picks} & GAMA agents \\
-  \end{tabular}
-  \end{center}
+  \vspace{.2em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{What that forbids}
+      \begin{itemize}
+        \item Stating an absolute level as a fact
+        \item Any compliance claim under QCVN 26:2010 --- it requires a class 1
+              or 2 instrument
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{What it still allows}
+      \begin{itemize}
+        \item Contrasts \emph{between places} and \emph{between hours} --- a
+              common bias cancels in a difference
+        \item A \emph{bounded} bias interval from instrumented literature:
+              \wn{$+3.0$ to $+7.3\dB$}
+      \end{itemize}
+    \end{column}
+  \end{columns}
   \vfill
-  \begin{block}{Three protocols, one set of splits}
-    \small
-    \textbf{Block-CV} 600\,m --- fast, permissive \quad$\cdot$\quad
-    \textbf{Buffered LOO} 300\,m --- \emph{the reference: its exclusion radius equals the feature radius} \quad$\cdot$\quad
-    \textbf{Leave-one-site-out} --- an unseen typology
-  \end{block}
-  \src{docs/methodology.md --- 7 assumptions and 3 limitations, each stated where it is made}
+  \begin{center}
+    The measured quantity, and the only one:\quad
+    $\displaystyle L_{A,25\mathrm{s}} \;=\; 10\log_{10}\!\left(\frac{1}{T}
+      \int_{0}^{T}\frac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right),
+      \quad T \approx 25\,\mathrm{s},\; p_0 = 20\,\mu\mathrm{Pa}$
+  \end{center}
+  \vspace{-.1em}
+  \begin{center}
+    \textbf{Not} $L_\mathrm{Aeq,\,8h}$, \textbf{not} $L_\mathrm{den}$,
+    \textbf{not} $L_\mathrm{night}$ --- those integrate over hours or a year.
+  \end{center}
+  \src{docs/metrology.md \; $\cdot$ \; results/tables/literature\_anchoring.md} \; \aside{the interval is estimated, never applied}
 \end{frame}
-\note{The delivered model is chosen by the code, under the reference protocol,
-among candidates fixed before seeing the scores. That guard is the reason the
-published map cannot silently inherit a model that only wins a permissive split.
+\note{This slide is the spine of the talk. Everything downstream --- the modest
+\rr{}, the refusal to publish an exceedance rate, and ultimately the decision to
+build our own app --- follows from one fact: nobody would lend us a class 1 meter,
+and we could not buy one.
 
-If time is short, this is the slide to compress --- the next two carry the science.}
+EXPECT THIS QUESTION, and do not be defensive about it: \emph{was a single
+side-by-side reading against a class 2 meter really out of reach?} It is the
+right question. A half-day rental would settle the absolute scale for good, and
+the slide on what a reviewer will press on says so in those words.
 
-% ---------------------------------------------------------------- 6. timeline
-\begin{frame}{Three months, and one pivot}
-  \small
-  \begin{tabular}{@{}p{2.4cm}p{10.5cm}@{}}
+The +3.0 to +7.3 dB interval comes from anchoring our roadside-day stratum against
+Phan 2010 and Gelb \& Apparicio 2019 after correcting for the quantity mismatch. It
+bounds the bias; it does not correct it. No offset is written anywhere in the code
+--- CALIBRATION\_OFFSET is 0.0 for all three collectors, deliberately.}
+
+% ============================================================================
+\section{Method and evaluation protocol}
+% ============================================================================
+
+\onlyfull{%
+\begin{frame}{The chain, end to end}
+  \centering
+  \vspace{.2em}
+  \begin{tikzpicture}[
+      font=\scriptsize, x=1.00mm, y=0.72mm,
+      box/.style={draw=rule, fill=white, rounded corners=1.5pt, align=center,
+                  inner sep=3pt, minimum height=9mm, text width=20mm},
+      source/.style={box, fill=accent!8, draw=accent!45},
+      result/.style={box, fill=good!8,   draw=good!45},
+      link/.style={->, draw=muted, thin, >={Stealth[length=4pt]}}]
+
+    % three lanes: measurements (top), morphology (middle), video (bottom)
+    \node[source] (kobo) at (0, 16) {ODK / Kobo\\\textbf{363} points};
+    \node[source] (osm)  at (0,  0) {OpenStreetMap\\buildings, roads};
+    \node[source] (vid)  at (0,-16) {\textbf{147} traffic\\videos};
+
+    \node[box] (prep) at (30, 16) {\textbf{01} prepare\\clean $+$ weather};
+    \node[box] (feat) at (30,  0) {\textbf{03} features\\morphology, 300\,m};
+    \node[box] (cnt)  at (30,-16) {\textbf{02} count\\YOLOv8 $+$ ByteTrack};
+
+    \node[box, text width=24mm] (eval) at (62, 16) {\textbf{04} evaluate\\8 models $\times$ 3 CV protocols};
+    \node[box, text width=24mm] (exp)  at (62,-16) {\textbf{07} export\\40\,m grid, 5\,587 cells};
+
+    \node[result, text width=22mm] (app) at (95, 32) {\textbf{Android app}\\collect $+$ show};
+    \node[result, text width=22mm] (met) at (95, 16) {\texttt{metrics.json}\\delivered model};
+    \node[result, text width=22mm] (res) at (95,-16) {\texttt{results/}\\maps, report};
+    \node[result, text width=22mm] (gama)at (95,-32) {GAMA\\simulation};
+
+    % lane flows
+    \draw[link] (kobo) -- (prep);
+    \draw[link] (osm)  -- (feat);
+    \draw[link] (vid)  -- (cnt);
+    \draw[link] (prep) -- (eval);
+    \draw[link] (eval) -- (met);
+    \draw[link] (cnt)  -- (exp);
+    \draw[link] (exp)  -- (res);
+    \draw[link] (res)  -- (gama);
+    \draw[link] (met)  -- (app);
+
+    % cross-lane: 01 feeds the features, the features feed the evaluation
+    \draw[link] (prep.south) -- (feat.north);
+    \draw[link] (feat.east) -| (eval.south);
+
+    % the export reads the model the evaluation delivered
+    \draw[link] (met.south) -- ++(0,-9)
+        node[above right=0pt and 1pt, color=muted, font=\tiny] {delivered model} -| (exp.north);
+  \end{tikzpicture}
+  \par\vspace{.5em}
+  The delivered model is chosen \textbf{by code} --- nothing downstream can
+  silently substitute another. \; \src{scripts/01\_...11\_ \; $\cdot$ \; docs/methodology.md}
+\end{frame}
+\note{Walk left to right once, then stop. The detail people actually need is the
+last line: the delivered model is selected by code, not by us.
+
+That was a direct response to the audit. Before it, a permissive split could put a
+model on the published map that lost every strict split, and nobody would have
+noticed. Now 04 writes meta.delivered\_model and 07 reads a flag.}
+}%
+
+
+% ----------------------------------------------------------------
+\begin{frame}{The evaluation protocol --- and why it is the whole story}
+  \begin{columns}[T]
+    \begin{column}{0.58\textwidth}
+      Every model is scored under \textbf{three splits}, on exactly the same folds:
+      \vspace{.4em}
+      \begin{enumerate}
+        \item \textbf{Block-CV, 600\,m} --- square blocks in UTM 48N,
+              \texttt{GroupKFold} on the block. The permissive one.
+        \item \textbf{Buffered leave-one-out, 300\,m} --- for each point, train on
+              \emph{all} points more than 300\,m away.\\
+              \up{The reference protocol.}
+        \item \textbf{Leave-one-site-out} --- generalisation to an unseen urban
+              typology.
+      \end{enumerate}
+      \vspace{.5em}
+      Every score carries a 95\,\% interval bootstrapped \textbf{by block}, not by
+      point: resampling correlated points gives an interval that is far too narrow.
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{alertblock}{Why 300\,m and not less}
+        The morphology features aggregate over a disc of \textbf{radius
+        300\,m}. Two points 110\,m apart still share \textbf{77\,\%} of that disc
+        --- and two either side of a cell boundary share \textbf{almost all} of it.
+        \vspace{.3em}
+
+        Group on 110\,m cells and the model sees near-twins of its test points in
+        training. The score is then not out-of-sample.
+      \end{alertblock}
+      \aside{Roberts et al.\ 2017, \emph{Ecography}}\\ \src{scripts/04\_evaluate\_models.py}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{This is the methodological core. If the audience takes one slide away from
+the method section, it should be this one.
+
+The buffer must match the feature radius --- that is the rule, and it is the rule we
+broke in July. Anyone doing spatial ML on aggregated features has probably broken
+it too, which is why this slide usually starts a conversation.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{Eight models, three baselines, one ablation}
+  \scriptsize
+  Nothing is compared against nothing. The baselines are the point:
+  \vspace{.4em}
+  \begin{tabular}{@{}ll@{}}
     \toprule
-    \textbf{June} & Reproduce the Uganda dataset; plan: pretrain there, transfer to Hanoi, calibrate locally \\
-    \textbf{June--July} & Field campaign: 363 measurements, 3 typologies, 147 videos \\
-    \textbf{July} & First model, \down{R\textsuperscript{2} = 0.45 announced}, GAMA simulation built \\
+    \multicolumn{2}{@{}l}{\textbf{Baselines} --- what any model must beat to have said anything} \\
     \midrule
-    \textbf{5 August} & \textbf{Internal audit $\rightarrow$ pivot.} No sound level meter would become
-                        available; the campaign closed. The project stopped trying to produce a reference
-                        noise map --- \emph{it cannot} --- and became a methodological study \\
-    \textbf{5--6 August} & Honest CV, baselines, ablation. \down{R\textsuperscript{2} = 0.45 withdrawn:}
-                        the split was grouped on 110\,m cells against a 300\,m feature radius \\
-    \textbf{11--12 August} & Restructuring for publication and handover \\
+    \texttt{global\_mean}    & the absolute floor \\
+    \texttt{site\_mean}      & no fine spatial information at all \\
+    \texttt{site\_hour\_mean}& mean per (site, hour) --- \textbf{the one to beat} \\
+    \texttt{dist\_road}      & linear regression on $\log(d_\mathrm{road})$ --- minimal physics \\
+    \texttt{idw}             & inverse distance weighting --- pure interpolation \\
+    \midrule
+    \multicolumn{2}{@{}l}{\textbf{Ablation} --- which half of the feature set is doing the work} \\
+    \midrule
+    \texttt{lgbm\_time}      & hour $+$ weekend only \\
+    \texttt{lgbm\_morpho}    & morphology only \\
+    \texttt{lgbm\_full}      & both --- the v1 model \\
+    \midrule
+    \multicolumn{2}{@{}l}{\textbf{V2} --- feature engineering, physics, and the architecture we had recommended} \\
+    \midrule
+    \texttt{lgbm\_v2}        & distances split by road class, cyclic hour \\
+    \texttt{physical}        & line-source kernel, three positive parameters, \emph{no morphology} \\
+    \texttt{hybrid}          & physical kernel $+$ LightGBM on the residual \\
     \bottomrule
   \end{tabular}
 \end{frame}
-\note{The pivot is the honest centre of the story. The audit was ours, written by
-us, and it is kept in the repository unchanged --- including the figures it cites
-that are now retracted, because an audit whose numbers are corrected afterwards
-documents nothing.
+\note{Two things worth saying out loud. First, site\_hour\_mean is a hard baseline
+and we said so before running it --- a lookup table of three sites by hour is
+genuinely informative in a city with this traffic rhythm.
 
-Expect the question "why did nobody catch the 0.45 earlier?" Answer: because
-reading the code looked fine. That is the next-but-two slide.}
+Second, the hybrid is the architecture \emph{we ourselves} recommended in an
+earlier draft. Putting it in the candidate list and letting it lose is the whole
+methodological point of the next section.}
+}%
 
-% ---------------------------------------------------------------- 7. results
+
+% ============================================================================
 \section{Results}
+% ============================================================================
 
 \begin{frame}{The ranking inverts --- and that is the result}
-  \small
-  \begin{tabular}{@{}lccc@{}}
-    \toprule
-    \textbf{Model} & \textbf{Block-CV 600\,m} & \textbf{Buffered LOO} & \textbf{Leave-one-site-out} \\
-                   & \scriptsize permissive & \scriptsize \textbf{reference} & \scriptsize unseen typology \\
-    \midrule
-    Site $\times$ hour table          & $-0.008$ & $-0.419$ & $-0.058$ \\
-    log(dist\_road), 2 param.         & $0.221$ & $0.200$ & $0.189$ \\
-    \textbf{Physical kernel, 3 param.} & $0.255$ & \up{$\mathbf{0.246}$} & \up{$\mathbf{0.222}$} \\
-    LightGBM v1 (6 features)          & $0.304$ & $0.137$ & $0.029$ \\
-    LightGBM v2 (8 features)          & $0.332$ & $0.099$ & $-0.035$ \\
-    Hybrid (physics + ML residual)    & \textbf{0.395} & \down{$0.123$} & \down{$0.035$} \\
-    \bottomrule
-  \end{tabular}
-  \vfill
-  \begin{alertblock}{}
-    The models that win the permissive split are the ones that lose the strict
-    splits, \textbf{monotonically}. That is the signature of a model learning the
-    sample's spatial autocorrelation, not physics.
-  \end{alertblock}
-  \src{models/model\_comparison.md --- 95\% CI by block bootstrap, n = 363, 17 blocks}
-\end{frame}
-\note{This is the scientific core. Do not rush it.
-
-The hybrid is the architecture we recommended ourselves, in writing, in an earlier
-draft. We built it, tested it, and it is rejected at this sample size --- not
-deferred to future work. Say that explicitly: it is the strongest thing on the slide.
-
-Roberts et al. 2017 predicts exactly this signature. Our finding is a confirmation,
-not a discovery --- which is what makes it defensible rather than embarrassing.}
-
-\begin{frame}{The bias--variance trade-off, in numbers}
+  \fig[.45]{ranking-inversion}{models/metrics.json --- the same folds for every model}
+  \vspace{-.6em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \begin{block}{In-sample fit \emph{(worse)}}
-        \begin{tabular}{@{}lr@{}}
-          R\textsuperscript{2} & $0.499 \rightarrow$ \down{$0.166$} \\
-          MAE & $3.79 \rightarrow$ \down{$5.30$ dB} \\
-          within $\pm$5 dB & $72.8 \rightarrow$ \down{$53.1\%$} \\
-          $\sigma$ simulated & $5.57 \rightarrow$ \down{$3.14$ dB} \\
-        \end{tabular}
-      \end{block}
+      \begin{alertblock}{Read across, not down}
+        The elaborate architecture \textbf{wins the permissive split and loses
+        both strict ones}. Three parameters is the only flat line.
+      \end{alertblock}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \begin{block}{Generalisation \emph{(better)}}
-        \begin{tabular}{@{}lr@{}}
-          Buffered LOO & $0.137 \rightarrow$ \up{$0.246$} \\
-          Leave-one-site-out & $0.029 \rightarrow$ \up{$0.222$} \\
-        \end{tabular}
-      \end{block}
-      \vspace{.5em}
-      {\small The three-parameter kernel fits the training points \emph{less}
-      closely and predicts unmeasured places \emph{better}. The map is flatter
-      because the model is less flexible.}
+      \begin{exampleblock}{What we did about it}
+        The hybrid is \textbf{tested and rejected at this sample size} --- not
+        deferred to future work.
+      \end{exampleblock}
     \end{column}
   \end{columns}
-  \vfill
-  \src{docs/methodology.md §5.3 --- MAE 5.30 dB read without this slide looks like a bad model}
 \end{frame}
-\note{This is the slide that makes MAE 5.30 dB defensible. Without the right-hand
-column it looks like a regression; with it, it is a documented methodological choice.
+\note{Do not rush this table. Give the room fifteen seconds to find the inversion
+themselves --- it lands much harder than being told.
 
-The left column is the old LightGBM grid, the right the delivered physical kernel.
-Same measurements, same validation code.}
+If someone asks why the hybrid wins block-CV: 600 m blocks still leave near-neighbours
+in training when features span 300 m, so a flexible learner picks up local structure
+it cannot generalise. That is exactly the effect Roberts 2017 describes.}
 
-\begin{frame}{The delivered model, and the map}
+% ----------------------------------------------------------------
+\begin{frame}{The delivered model}
   \begin{columns}[T]
     \begin{column}{0.52\textwidth}
-      \[ E = \frac{A_{hw}}{\max(d_{hw}, D_0)} + \frac{A_{res}}{\max(d_{res}, D_0)} + B \]
-      \[ L = 10 \log_{10} E \]
-      {\small A line-source attenuation law: energy falls as $1/d$ from two road
-      classes, plus a background term. \textbf{Three parameters}, fitted on 363
-      points, all constrained non-negative.}
-      \vspace{.5em}
-      {\footnotesize The learned residual is computed at every run and
-      \textbf{deliberately not applied}: under the reference protocol it degrades
-      the prediction.}
+      A \textbf{line}-source attenuation kernel --- energy falling as $1/d$,
+      not $1/d^{2}$: a street is a line of sources, not a point.
+      \begin{block}{}
+        \centering
+        $E = \dfrac{A_\mathrm{hw}}{\max(d_\mathrm{hw}, D_0)}
+           + \dfrac{A_\mathrm{res}}{\max(d_\mathrm{res}, D_0)} + B$
+        \vspace{.3em}
+
+        $L = 10\log_{10} E$
+      \end{block}
+      \aside{$A_\mathrm{hw} = 4.774\times10^{7}$ \; $A_\mathrm{res} = 3.800\times10^{7}$ \; $D_0 = 5$\,m}
+      \begin{itemize}
+        \item $-3\dB$ per doubling of distance, not $-6$
+        \item Positivity-constrained: $A_\mathrm{hw}, A_\mathrm{res}, B > 0$
+        \item \wn{$B$ fits to $-99.6\dB$}, a boundary solution.
+              \textbf{The background term is not identifiable here.}
+      \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
-      \includegraphics[width=\linewidth]{../results/figures/noise-map-oceanpark-17h.png}
-      \src{Ocean Park, 17:00. 40 m grid, 5\,587 cells over 3 sites + 400 m, 17 hours.}
+      \begin{block}{Performance under the reference protocol}
+        \begin{tabular}{@{}lr@{}}
+          \rr{}       & \textbf{0.246} \\
+          95\,\% CI   & $[0.097,\; 0.339]$ \\
+          RMSE        & $6.20\dB$ \\
+          MAE         & $5.01\dB$ \\
+          \midrule
+          data spread ($\sigma$) & $7.14\dB$ \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+      \begin{alertblock}{Say the error out loud}
+        A typical prediction is wrong by \textbf{5\,dB} --- a factor of three
+        in energy. Enough for a contrast, nowhere near an assessment.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+  \src{models/hybrid\_physical.json \; $\cdot$ \; models/metrics.json}
+\end{frame}
+\note{The degenerate B is ours to raise, not a reviewer's. Called a three-parameter
+model, it is effectively two: the optimiser pushed the background to the boundary
+because 363 points over three sites do not constrain a floor.
+
+The 5 dB MAE is the number to repeat. Every time someone looks at the map and starts
+planning something with it, that number is the answer.}
+
+% ----------------------------------------------------------------
+\begin{frame}{``$R^2 = 0.25$ --- isn't that very low?''}
+  \fig[.38]{ceiling}{data/processed/measurements.csv \; $\cdot$ \; docs/metrology.md}
+  \vspace{-.5em}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      Two points a few metres apart \emph{at the same hour} must be predicted
+      identically. Whatever they disagree by is variance \textbf{no spatial model
+      can explain}: \; $\Delta L \sim \mathcal{N}(0, 2\sigma^{2})
+      \Rightarrow \sigma = \tfrac{\sqrt{\pi}}{2}\mathbb{E}|\Delta L|$, and
+      $R^{2}_{\max} = 1 - \sigma^{2}/s^{2}$.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{At the 40\,m scale the map works at}
+        The ceiling is near \up{$R^2 \approx 0.54$}. The delivered \textbf{0.246}
+        is about \textbf{half} of what is attainable, not a tenth.
+      \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
-\note{Point out that the map covers the sampled envelope and nothing more. A grid
-was once published over Bach Khoa, a district with zero measurements; it was
-retracted and a test now fails if it recurs.
+\note{This is the question that always comes, and it is much stronger answered
+before it is asked than conceded afterwards.
 
-The figure is regenerated by GAMA headless. Its legend cites metrics.json rather
-than a hardcoded score --- the previous version of this image displayed the
-withdrawn 0.45.}
+State the caveat on the slide out loud: pairs at the same hour may fall on
+different days, so this sigma carries day-to-day variation and OVERESTIMATES pure
+measurement noise --- which makes the ceiling an underestimate. And 29 pairs is
+few. It is an order of magnitude, not a bound.
 
-% ---------------------------------------------------------------- 8. the finding
-\section{What the restructuring found}
+The underlying reason is the quantity: a 25 s A-weighted sample in motorcycle
+traffic, where one horn event reaches +17 dB (nguyen2025horn). docs/metrology.md
+makes the argument and concludes that 0.25 is reported without apology.}
 
-\begin{frame}{We found one of our own published results was wrong}
-  \begin{block}{How}
-    Translating figure labels. Re-running the script produced \textbf{a different
-    file}.
-  \end{block}
-  \vspace{.3em}
-  The published validation validated \textbf{a grid that no longer existed}:
-  regenerated on 5 August when the physical kernel replaced the hybrid, while the
-  validation was last built six days earlier. \textbf{Nothing expressed that
-  dependency.}
-  \vspace{.4em}
+% ----------------------------------------------------------------
+\begin{frame}{The map --- and the caveat that goes with it}
+  \fig[.38]{map-grid}{results/maps/hanoi\_noise\_map.csv --- 5\,587 cells}
+  \vspace{-.5em}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \small \textbf{Published (wrong)} \\
-      MAE 3.79 dB, r 0.715, 72.8\% within $\pm$5 dB
+      \begin{alertblock}{The grid step is not the accuracy}
+        40\,m cells from a model whose typical error is \textbf{5\,dB}. Bands
+        are QCVN 26:2010, \textbf{descriptive}.
+      \end{alertblock}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \small \textbf{Correct} \\
-      MAE 5.30 dB, r 0.444, 53.1\% within $\pm$5 dB
+      \begin{exampleblock}{And no hour, either}
+        17 hourly columns, \textbf{all 17 identical}: the kernel has no hour
+        term. \textbf{Nothing varies that the model does not model.}
+      \end{exampleblock}
     \end{column}
   \end{columns}
-  \vspace{.4em}
-  \begin{alertblock}{}
-    The old figures were \textbf{more flattering} and wrong. Published with the
-    trade-off explanation; the old ones archived with their reason; the Makefile now
-    carries the dependency so \texttt{make} rebuilds what is stale.
-  \end{alertblock}
 \end{frame}
-\note{Lead with this if the audience is the supervisor. A team that finds its own
-result wrong, publishes the worse number and fixes the mechanism is more credible
-than a team whose everything works.
+\note{Be first to say that a 40 m grid drawn from a model with 5 dB error promises
+a precision it does not have. The grid step is the model's output resolution, not
+its accuracy, and those are routinely confused --- including by us, in July.
 
-A date comparison across the whole tree then found three more stale artefacts, and
-two more a level above --- the report and the dashboard, which `make results` did
-not rebuild.}
+The envelope rule matters: nothing is drawn where nothing was measured. That is why
+each panel stops where it stops.
 
-\begin{frame}{Verify by executing, not by reading}
-  Every defect this project shipped was one that \textbf{reading could not catch}.
-  \vspace{.4em}
-  \small
-  \begin{tabular}{@{}p{5.2cm}p{8.3cm}@{}}
+This figure is drawn from results/maps/hanoi\_noise\_map.csv directly, not
+screenshotted from GAMA. The old GAMA capture carried a French legend and showed one
+site; this shows all three, in English, and regenerates with the pipeline.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{What the learned model was leaning on}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \fig[.62]{feature-importance}{models/metrics.json : feature\_importance\_gain}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      Two thirds of LightGBM's split gain goes to \textbf{morphology} --- built
+      area, road density, distance to the two road classes.
+      \vspace{.5em}
+
+      \begin{alertblock}{And it buys nothing}
+        Morphology alone scores \rr{} $= \mathbf{0.041}$ under the reference
+        protocol. \textbf{Where a model spends its capacity and where it earns
+        its score are different questions}, and only the second one is a result.
+      \end{alertblock}
+      \vspace{.2em}
+
+      {\color{muted}This is why the ablation is on the same three splits as
+      everything else.}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{Feature importance is the most over-read plot in applied ML and this slide
+exists to say so out loud. Gain measures what the trees used, on the training
+folds. It is not evidence that the feature generalises, and here it demonstrably
+does not: the morphology-only ablation is at 0.041 out of sample.
+
+If someone asks why morphology is in the model at all --- it is not, in the
+delivered one. The delivered kernel uses two distances and a constant, and no
+morphological variable whatsoever.}
+}%
+
+
+% ----------------------------------------------------------------
+\begin{frame}{The three negative results}
+  \begin{block}{1 --- A three-parameter physical law beats every learned model we built}
+    Six-variable gradient boosting, engineered features, a hybrid
+    architecture: all lose the reference protocol to two distances and a constant.
+    At $n = 363$ over three sites, there is not enough signal to justify capacity.
+  \end{block}
+  \begin{block}{2 --- Cross-city transfer fails, and in three distinct ways}
+    Pretrained on Sunbird Uganda, scored on our 363 points: \down{\rr{} $=-15.9$}
+    (v1), \down{$-8.2$} (convention-invariant v2). \textbf{Not a calibration
+    offset} --- removing the $26\dB$ mean difference still leaves \rr{} negative.
+    \textbf{v1 transfers anti-information}, $r = -0.38$: it ranks quiet and loud
+    the wrong way round. \textbf{v2 leaves nothing}, $r = +0.08$ --- not wrong,
+    empty. Against which $\log(d_\mathrm{road})$ alone reaches \up{0.240} on the
+    same points.
+  \end{block}
+  \begin{block}{3 --- Vehicle flow does not explain the levels}
+    Non-negative energy regression on 147 matched videos returns
+    \textbf{zero coefficients} for motorcycles and cars. Speed and
+    source--receiver distance are not observable from a non-georeferenced camera.
+    \wn{Section 4 revisits how much of this is physics and how much is instrument.}
+  \end{block}
+  \vfill
+  \src{make transfer \; $\cdot$ \; scripts/experiments/uganda\_transfer.py \; $\cdot$ \; docs/negative-results.md}
+\end{frame}
+\note{These three are the contribution. Say it in those words.
+
+Result 2 is the one with the most reuse value for the room: everyone building
+morphology-to-noise surrogates assumes some transferability, and we have a clean
+counter-example with matched features.
+
+Result 3 carries a flag forward to the next section on purpose --- we are not going
+to let it stand as a clean physical finding, because our own audit says it is not.}
+
+% ============================================================================
+\section{Auditing our own data}
+% ============================================================================
+
+\begin{frame}{We found one of our own published results was wrong}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{Retracted, August 2026}
+        A LightGBM model scored \down{\rr{} $= 0.45$} under what was then
+        described as honest spatial cross-validation. A GAMA simulation was built on
+        it. A project-update deck presented the figure.
+        \vspace{.4em}
+
+        The grouping was on \textbf{110\,m cells} while the features aggregate over
+        \textbf{300\,m}. It leaked.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{exampleblock}{What replaced it}
+        \up{\rr{} $= 0.246$} under buffered leave-one-out --- roughly half
+        the withdrawn figure, and the one that survives a split excluding the
+        feature support.
+      \end{exampleblock}
+      \vspace{.3em}
+      \begin{itemize}
+        \item The retracted deck and map are in \texttt{docs/archive/}, \textbf{with
+              their reason}, not deleted
+        \item Nine corrections applied the same day
+        \item The project pivoted from \emph{producing a noise map} to
+              \emph{studying what this protocol supports}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vfill
+  \src{docs/audit/scientific-audit.md \; $\cdot$ \; docs/project-timeline.md \; $\cdot$ \; docs/archive/}
+\end{frame}
+\note{Lead with this slide if the supervisor is in the room. It is the single
+strongest evidence that the rest of the numbers can be trusted: we caught it, we
+retracted it, we kept the retracted artefact with its reason attached.
+
+The rule that came out of it --- retracted work is archived with its reason, never
+silently deleted --- is now written into the repository's working rules.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{A second audit, on the data itself}
+  \begin{block}{The first audit checked the \emph{method}. This one checks the \emph{measurements}.}
+    One question, over the published CSVs, the raw Kobo export and the cleaning
+    script: \textbf{does anything here behave in a way the documentation does
+    not explain?}
+  \end{block}
+  \vspace{.3em}
+  \scriptsize
+  \begin{tabular}{@{}lll@{}}
     \toprule
-    \textbf{Guard (it runs)} & \textbf{What it catches} \\
+    \textbf{Checked} & \textbf{Result} & \\
     \midrule
-    \texttt{test\_cv\_protocols} & the 110\,m vs 300\,m leak behind R\textsuperscript{2}=0.45 \\
-    \texttt{test\_grid\_extent} & a map extended to unmeasured ground \\
-    \texttt{test\_features\_extraction} & drift in the input to every published number \\
-    \texttt{test\_gama\_fingerprint} & compares \emph{values}, never strings \\
-    \texttt{test\_pipeline\_end\_to\_end} & a broken import, \emph{including inside a function} \\
-    Makefile dependencies & a derived artefact older than its input \\
-    \texttt{make} environment check & an obscure \texttt{ModuleNotFoundError} \\
+    Raw rows vs published rows & 363 $\rightarrow$ 363, none dropped & \up{clean} \\
+    Every README figure vs \texttt{metrics.json} & exact match, none hand-copied & \up{clean} \\
+    Coordinate duplicates & none at 1\,m & \up{clean} \\
+    Weather fields & consistent hourly API values & \up{clean} \\
+    Test suite & 34 passing & \up{clean} \\
+    \midrule
+    Level distribution over time & a discontinuity on 27 June & \down{finding} \\
+    Video$\rightarrow$measurement chain & modal split implausible & \down{finding} \\
+    Confidence intervals in the headline table & overlapping & \wn{finding} \\
     \bottomrule
   \end{tabular}
-  \vspace{.3em}
-  \src{34 tests. Two habits: fingerprint before changing anything; compare commit dates across the whole tree.}
-\end{frame}
-\note{The renamed-import defect got through three times, twice past reviews that
-inspected module headers only --- the third occurrence was inside main(). That is
-why the guard executes rather than reads.
-
-This is the slide the incoming team should photograph.}
-
-\begin{frame}{Ten reasoning gaps, moved from code into documentation}
-  Each was written only in a comment, where a reviewer would not look.
-  \vspace{.5em}
-  \begin{itemize}
-    \item \textbf{The kernel is fitted in dB, not in energy.} Levels span 47--88 dB
-          --- four orders of magnitude in energy --- so a least-squares fit in energy
-          would be driven by the loudest points alone. \emph{A choice of loss function
-          that determines the published coefficients.}
-    \item \textbf{The construction source is calibrated on medians.} Means gave
-          74.7 dB, i.e.\ $+8$ dB simulated near a site, against $+2$ dB observed.
-    \item \textbf{The exported fleet shares are shares of \emph{density}, not of
-          flow.} In congestion density is maximal while flow collapses.
-  \end{itemize}
   \vfill
-  \begin{exampleblock}{On the calibration}
-    A choice made not by preferring the statistic that behaves better, but by
-    \textbf{rejecting the one whose output contradicts a field observation}.
-  \end{exampleblock}
+  \aside{The three findings are on the next two slides. None was known when the results section was written.}
 \end{frame}
-\note{Read the closing quote aloud. It is the single sentence that explains why the
-calibration is not arbitrary, and it generalises well beyond this project.
+\note{Frame this as normal practice rather than as a confession. A dataset that has
+never been interrogated adversarially is a dataset whose defects are still in it.
 
-Reasoning went into the documentation, a cross-reference stayed in the code, so the
-two cannot diverge.}
+The top half matters as much as the bottom: it establishes that the provenance and
+the arithmetic are sound, which is what makes the bottom half credible rather than
+alarming.}
+}%
 
-% ---------------------------------------------------------------- 9. limits
-\section{Limits}
 
-\begin{frame}{What we cannot claim}
-  \begin{itemize}
-    \item \textbf{The instrument is a smartphone application}, not a class 1 or 2
-          sound level meter --- the class QCVN 26:2010 requires. This governs the
-          uncertainty of every number in this talk.
-    \item \textbf{Levels are relative, not absolute.} Three phones cross-calibrated
-          against each other, never against a reference. A common bias is invisible
-          by construction.
-    \item \textbf{The vehicle detector is unvalidated.} Precision, recall and MAPE per
-          class unknown; two-wheeler under-detection expected but unquantified.
-          \textbf{Modal shares are not publishable.}
-    \item \textbf{A 24 s window estimates its hour to roughly $\pm$30\%} (1$\sigma$)
-          from sampling alone, measured across 11 site--hour pairs.
-    \item \textbf{The night is not sampled.} 10 measurements after 21:00.
-    \item \textbf{R\textsuperscript{2} $\approx$ 0.25 is modest} --- and it is the figure that
-          survives a split excluding the feature support.
-  \end{itemize}
+% ----------------------------------------------------------------
+\begin{frame}{Finding 1 --- a $-5.1\dB$ discontinuity on 27 June}
+  \fig[.40]{discontinuity}{data/processed/measurements.csv \; $\cdot$ \; docs/audit/}
+  \vspace{-.7em}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      Controlling for site, hour and class: \down{$-5.14\dB$} (SE 0.55,
+      $p \approx 10^{-20}$). The form version changes the same day --- integer
+      readings 87\,\% $\rightarrow$ 20\,\%.
+    \end{column}
+    \begin{column}{0.54\textwidth}
+      \begin{alertblock}{Why it matters}
+        Before/after is predictable from $(\mathrm{lat},\mathrm{lon})$ alone at
+        \textbf{AUC 0.83}. An instrumental shift is then spatially structured,
+        and a model can learn it \textbf{as morphology}. \textbf{Status:}
+        \wn{open}.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
 \end{frame}
-\note{The 38.6\% QCVN exceedance figure, if asked: it is a descriptive statistic of
-our sample, not a finding of non-compliance --- our quantity and our sensors are not
-those the standard prescribes. Always say the second half of that sentence.
+\note{Be precise about what this does and does not establish. It does NOT show the
+\rr{} is inflated. It shows there is a large, undocumented, spatially structured
+discontinuity that the model has no term for, and that nobody has tested.
 
-Never quote the WHO 53/45 values except to say they were withdrawn: they are annual
-L_den/L_night averages, not comparable to a 25 s sample.}
+The buffered LOO excludes 300 m around each test point. It does not exclude a
+period. That is the gap.
 
-% ---------------------------------------------------------------- 10. handover
-\section{Handover}
+If asked which cause: we do not know. The form version changed on that date, which
+is suggestive of a protocol change rather than the city getting quieter. Saying more
+than that would be inventing.}
 
-\begin{frame}{Where to start, ranked}
-  \begin{enumerate}
-    \item \textbf{Validate the detector} --- manual count on 10 videos, about one day.
-          \emph{Highest value per effort in the project}: it turns an open-ended
-          limitation into a quantified uncertainty, and it is the input uncertainty of
-          every downstream number.
-    \item \textbf{Extract \texttt{validation.py} and \texttt{physics.py}} from the
-          598-line evaluation script --- the most valuable code is the least testable.
-    \item \textbf{A real propagation kernel: CNOSSOS-EU via NoiseModelling.}
-          \emph{Indicated by our own result}: if a two-parameter distance term beats a
-          six-variable learned model, physics corrected by a local residual is the
-          architecture the data points at.
-  \end{enumerate}
-  \vfill
-  \begin{block}{Open items --- placeholders, not guesses}
-    Affiliation (CEI or COSMOS Lab) $\cdot$ one ORCID $\cdot$ a supervisor title $\cdot$
-    a co-authorship decision $\cdot$ \textbf{video retention: custodian, location, deletion deadline}
+% ----------------------------------------------------------------
+\begin{frame}{Findings 2 and 3 --- the video chain, and the intervals}
+  \begin{block}{2 --- The video chain is measuring something, but not what we think}
+    % [T] aligns columns on the FIRST LINE'S BASELINE. Started immediately after
+    % a block title that baseline is the title's own, so the first bullet rode up
+    % into the heading. [t] aligns the tops of the column boxes instead, and the
+    % \vspace gives the block title its own line back. This is the only place in
+    % the deck where columns open inside a block; the other 23 are at frame level,
+    % where there is room above the first line anyway.
+    \vspace{.5em}
+    \begin{columns}[t]
+      \begin{column}{0.5\textwidth}
+        \begin{itemize}
+          \item Detector modal split: \down{57\,\% cars, 36\,\% motorcycles}.
+                In Hanoi. Reality is roughly the inverse.
+          \item Video$\rightarrow$measurement gaps: median 15\,s, p90 56\,s,
+                \textbf{max 161\,s} --- for a 25\,s sample
+        \end{itemize}
+      \end{column}
+      \begin{column}{0.5\textwidth}
+        \begin{itemize}
+          \item Matched subset spans 61--80\,dB against 47--88\,dB overall:
+                \textbf{$\sigma$ cut by 42\,\%}
+          \item Flow vs level: $r = -0.11$. A \emph{negative} correlation between
+                traffic and noise is not physical.
+        \end{itemize}
+      \end{column}
+    \end{columns}
+    \vspace{.3em}
+    \textbf{Consequence for negative result 3:} it is far more likely an
+    \wn{instrument failure} than a finding about acoustics. It should be reported as
+    \emph{``the chain could not be made to work''}.
+  \end{block}
+  \begin{block}{3 --- The headline ranking is not statistically separated}
+    \texttt{physical} \rr{} $=0.246$, CI $[0.097, 0.339]$ \quad vs \quad
+    \texttt{dist\_road} \rr{} $=0.200$, CI $[0.077, 0.266]$.
+    The intervals overlap almost entirely. \textbf{``The physical kernel beats
+    log-distance'' is a coin flip, and the deck's own table should show the CIs.}
   \end{block}
 \end{frame}
-\note{The video retention item is the one with real consequences: 6 GB of
-unanonymised footage with faces and plates, currently with no named owner and no
-expiry.
+\note{Finding 2 is the one that changes a claim in the paper. We were already
+saying the detector is unvalidated; the audit turns that into demonstrably wrong on
+modal split, which is a stronger and more useful statement.
 
-If the incoming team is in the room, hand them docs/handover.md and stop there ---
-it opens with the working principle, then the open items, then this list.}
+Finding 3 is a presentation fix, not a science fix --- the CIs were always in
+metrics.json and model\_comparison.md. They were just not carried into the summary
+table. The appendix of this deck now shows them.}
 
-\begin{frame}[standout]
-  The repository is the deliverable.\\[.6em]
-  \normalsize
-  \texttt{github.com/Colauz/noise-modelling-hanoi}\\[.8em]
-  \small
-  \texttt{make setup \&\& make features \&\& make models \&\& make results}\\[.4em]
-  {\footnotesize Reproduces the maps and the model comparison from the two datasets
-  that ship with it --- no raw Kobo export, no 6 GB of video.}
+% ----------------------------------------------------------------
+\begin{frame}{What the audit leaves standing}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Holds}
+        \begin{itemize}
+          \item The evaluation protocol and the ranking inversion
+          \item Negative result 1 --- capacity does not pay at $n=363$
+          \item Negative result 2 --- transfer fails, \rr{} $<0$
+          \item Provenance: raw $\rightarrow$ published is lossless and checkable
+          \item Every published number traces to one file
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Needs work before submission}
+        \begin{itemize}
+          \item The 27 June discontinuity --- diagnose, then refit with the phase
+          \item Negative result 3 --- reframe as an instrument failure
+          \item Carry the confidence intervals into every summary table
+          \item Flag observed vs derived values in the published CSV
+                {\scriptsize (15\,\% of \texttt{construction\_nearby} is inferred
+                from the noise class)}
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+  \vfill
+  \begin{center}
+    \small\textbf{The instrument was the problem in July, and it is still the
+    problem in August.} \\
+    {\color{muted}Which is the argument for the next section.}
+  \end{center}
 \end{frame}
-\note{Close on this rather than on a summary slide. The claim is checkable in the
-room: clone, four commands, same figures.
+\note{This slide is the hinge of the talk. Everything the audit could not repair
+comes back to one thing: we did not control the instrument. Not the microphone, not
+the app that read it, not the form that recorded it, not the clock that timestamped
+the videos.
 
-Questions to expect: why R2 is low (answer with the bias-variance slide); whether
-the exceedance rate means non-compliance (no --- descriptive statistic); and what
-happens to the videos (open item, supervisor decision).}
+That is the sentence that motivates building our own. Land it here and the app
+section stops looking like a side project.}
+
+% ============================================================================
+\section{From a pipeline to an instrument}
+% ============================================================================
+
+\onlyfull{%
+\begin{frame}{Three months, in one picture}
+  \centering
+  \begin{tikzpicture}[font=\scriptsize, >={Stealth[length=4pt]}]
+    % timeline axis
+    \draw[draw=rule, line width=1pt] (0,0) -- (12.4,0);
+    \foreach \x/\lab in {0.4/June, 3.5/July, 7.0/5 Aug, 9.6/11 Aug, 11.6/19 Aug} {
+      \fill[accent] (\x,0) circle (2pt);
+      \node[below=2pt, color=muted] at (\x,0) {\lab};
+    }
+    % events above
+    \node[align=center, text width=25mm, above=5mm] at (0.4,0)
+      {\textbf{Reproduce}\\Sunbird 61K\\then transplant};
+    \node[align=center, text width=27mm, above=5mm] at (3.5,0)
+      {\textbf{Field campaign}\\363 points, 147 videos\\3 sites};
+    \node[align=center, text width=27mm, above=17mm] at (5.2,0)
+      {\textcolor{bad}{\textbf{$R^2 = 0.45$}}\\presented, then\\\textcolor{bad}{withdrawn}};
+    \node[align=center, text width=27mm, above=5mm] at (7.0,0)
+      {\textbf{Audit $+$ pivot}\\methodological study\\9 corrections};
+    \node[align=center, text width=25mm, above=17mm] at (8.4,0)
+      {\textbf{V2 rejected}\\by its own\\evaluation};
+    \node[align=center, text width=25mm, above=5mm] at (9.6,0)
+      {\textbf{Restructure}\\package, tests,\\licences, handover};
+    \node[align=center, text width=25mm, above=5mm, color=accent] at (11.6,0)
+      {\textbf{Android app}\\the instrument\\we lacked};
+    % dashed connectors for the raised labels
+    \draw[dashed, draw=rule] (5.2,0) -- (5.2,1.55);
+    \draw[dashed, draw=rule] (8.4,0) -- (8.4,1.55);
+  \end{tikzpicture}
+  \vfill
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{The pattern}
+        Every phase ended by \textbf{rejecting its own preferred answer}:
+        transfer, then the leaked \rr{}, then the hybrid architecture we had
+        recommended ourselves.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{exampleblock}{Where that led}
+        Each rejection pointed at the same root cause --- an instrument we
+        did not control. So the last three weeks were spent building one.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+  \src{docs/project-timeline.md}
+\end{frame}
+\note{This is the narrative slide. Do not read every box --- point at the two raised
+labels, which are the two retractions, and then at the last box.
+
+The framing to use: this was not a project that went to plan and it was not a
+project that failed. It was a project that kept finding its own answer was wrong,
+and the app is what that process converged on.}
+}%
+
+
+% ----------------------------------------------------------------
+\begin{frame}{Why build an application at all}
+  \begin{columns}[T]
+    \begin{column}{0.60\textwidth}
+      \textbf{Four things the campaign could not do}
+      \begin{enumerate}
+        \item \textbf{Control the instrument.} \emph{Decibel X} is closed: no
+              visible weighting, window or gain.
+        \item \textbf{Measure and record in one session.} Two apps meant the
+              level of one stretch of street and the audio of another.
+        \item \textbf{Scale beyond three people.} Nobody pairs ODK Collect and a
+              sound meter by hand.
+        \item \textbf{Record what the device was.} Handset, OS, audio source ---
+              none of it reached the dataset.
+      \end{enumerate}
+      \vspace{.3em}
+      \begin{block}{The decision, 19 August 2026}
+        One application that \textbf{replaces the pairing} --- forms, level,
+        clip, GPS fix, submission, offline-first --- and \textbf{carries the
+        study}, negative results included.
+      \end{block}
+      \src{mobile/README.md} \; \aside{Kotlin $+$ Compose, one \texttt{:app} module, \texttt{minSdk} 26}
+    \end{column}
+    \begin{column}{0.40\textwidth}
+      \centering
+      \scalebox{0.55}{\phoneMeasure}\\[.3em]
+      \aside{one session: level $+$ clip}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{Point 2 is the one that surprises people, and it is a real Android
+constraint: the platform does not usually grant AudioRecord and MediaRecorder the
+microphone at the same time. Measuring and recording as two steps would have
+produced a level and a clip from different stretches of street. One session now does
+both.
+
+Point 1 is the scientific one. A closed instrument is not an instrument you can
+report a method for.}
+
+% ----------------------------------------------------------------
+\begin{frame}{The application}
+  \vspace{-.2em}
+  \begin{columns}[T]
+    \begin{column}{0.245\textwidth}\centering
+      \scalebox{0.52}{\phoneHome}\\[.2em]
+      \textbf{Collect}\\ \aside{both forms, offline}
+    \end{column}
+    \begin{column}{0.245\textwidth}\centering
+      \scalebox{0.52}{\phoneMeasure}\\[.2em]
+      \textbf{Measure}\\ \aside{25\,s, A-weighted}
+    \end{column}
+    \begin{column}{0.245\textwidth}\centering
+      \scalebox{0.52}{\phoneMap}\\[.2em]
+      \textbf{Map}\\ \aside{the level where you stand}
+    \end{column}
+    \begin{column}{0.245\textwidth}\centering
+      \scalebox{0.52}{\phoneResults}\\[.2em]
+      \textbf{Results}\\ \aside{read from \texttt{metrics.json}}
+    \end{column}
+  \end{columns}
+  \vspace{.5em}
+  \centering
+  \aside{Vector mock-ups drawn from the Compose source. \textbf{No device capture exists yet} --- which is the last slide of this section.}
+\end{frame}
+\note{Walk left to right in one sentence each: collect, measure, show the map, show
+the results. Do not read the screens.
+
+Say plainly that these are drawn from the source rather than captured from a
+handset. The app has never been run next to a sound source, which is the honest
+limitation two slides from now, and presenting a mock-up as a screenshot would be
+exactly the kind of thing this talk spends twenty minutes arguing against.
+
+If asked what the big orange number is: that is levelColour() in ui/Theme.kt, the
+QCVN reading bands used descriptively, same as the map.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{What was built --- phase by phase}
+  \scriptsize
+  \begin{tabular}{@{}p{1.6cm}p{4.5cm}p{7.0cm}@{}}
+    \toprule
+    \textbf{Phase} & \textbf{Goal} & \textbf{Delivered} \\
+    \midrule
+    \up{1 --- Collect} & Replace ODK Collect &
+      Both XLSForms as native Compose screens (16 $+$ 6 questions), GPS with
+      the 10\,m gate, offline outbox drained by \texttt{WorkManager}, OpenRosa
+      submission \\
+    \addlinespace
+    \up{2 --- Measure} & Replace Decibel X &
+      \texttt{AudioRecord} at 48\,kHz, A-weighting, SLOW, 25\,s window after a
+      discarded warm-up; AGC, noise suppression and echo cancellation \textbf{off};
+      the same PCM encoded to AAC for the clip \\
+    \addlinespace
+    \up{3 --- Show} & Carry the study &
+      The 40\,m grid by hour, the 363 points, the figures, and every metric
+      \emph{read} from \texttt{metrics.json} --- negative results included \\
+    \addlinespace
+    \up{4 --- Predict} & On-device prediction &
+      The delivered kernel in \texttt{study/Scenario.kt}, under test --- and
+      a \textbf{refusal} outside the three mapped areas \\
+    \addlinespace
+    \up{5 --- Simulate} & Reach the model &
+      Tier 1 recomputed natively ($\times0.2$ to $\times3$, $k=1$ asserted by a
+      test) \emph{and} the real model driven over \texttt{gama-server} \\
+    \addlinespace
+    \wn{6 --- Backend} & Scale &
+      \textbf{Not built.} Quota, moderation, deduplication, and the path back
+      into \texttt{01\_prepare\_field\_data.py} \\
+    \bottomrule
+  \end{tabular}
+  \aside{5\,278 lines of Kotlin, 33 files, 36 JVM unit tests} \; \src{mobile/PLAN.md}
+\end{frame}
+\note{Phases 1 and 2 were deliberately not separated, for the microphone reason on
+the previous slide.
+
+Phase 4 is the one that got simpler on contact with reality: the plan was to compute
+distances to highway and residential roads on device against bundled geometry. But
+the published grid is already the kernel's output at 40 m, so reading the nearest
+cell IS the prediction, exactly and by construction. The kernel stays in the code
+under test for the day a prediction is wanted where the grid does not reach --- which,
+under the envelope rule, is nowhere yet.
+
+Phase 6 is not started and should not be hidden. Say so.}
+}%
+
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{Architecture --- and the one design rule that matters}
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      {\footnotesize\ttfamily
+      app/src/main/java/org/noisehanoi/mobile/\\
+      \begin{tabular}{@{}ll@{}}
+        form/     & the two XLSForms as data \\
+        odk/      & instance XML, OpenRosa client \\
+        outbox/   & on-disk queue $+$ WorkManager \\
+        measure/  & A-weighting, meter, PCM, AAC \\
+        location/ & GPS fixes, the three sites \\
+        settings/ & server config, mic offset \\
+        study/    & grid, kernel, tier 1 scenario \\
+        ui/       & Compose screens \\
+      \end{tabular}}
+      \vspace{.6em}
+
+      {\footnotesize \texttt{form/}, \texttt{odk/}, \texttt{AWeighting.kt} and
+      \texttt{PcmWriter.kt} are \textbf{pure Kotlin, no Android dependency} --- which
+      is why the constraint logic, the instance format, the weighting curve and the
+      sample byte order are covered by JVM unit tests rather than by an emulator.}
+    \end{column}
+    \begin{column}{0.53\textwidth}
+      \begin{block}{The rule: the app does not carry a copy of the study}
+        \texttt{syncStudyData} in \texttt{app/build.gradle.kts} copies
+        \texttt{hanoi\_noise\_map.csv}, \texttt{measurements.csv},
+        \texttt{metrics.json}, \texttt{hybrid\_physical.json} and the figures
+        \textbf{out of the repository at build time}.
+        \vspace{.4em}
+
+        Re-run the pipeline, rebuild the APK, and the app moves with it. No number
+        is transcribed; nothing can drift.
+      \end{block}
+      \begin{exampleblock}{Same principle, third time}
+        The report reads \texttt{metrics.json}. The dashboard reads
+        \texttt{metrics.json}. Now the app reads \texttt{metrics.json}.
+        \textbf{Every published number has exactly one home.}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{The single-home rule came out of the first audit: until August the same
+\rr{} appeared in three documents at once, which is three chances for them to
+diverge --- and they had.
+
+The build-time sync is the mobile version of that rule. It is worth a sentence
+because it is the sort of thing that decays the moment someone is in a hurry and
+hard-codes a number into a screen.}
+}%
+
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{Three engineering results worth reporting}
+  \begin{block}{GAMA does not run on a phone --- so the app reaches it two ways}
+    \textbf{A map that carries the data, and needs nothing.} The 5\,587 cells
+    and the 363 points travel inside the APK; the traffic multiplier is
+    recomputed on the device. \up{No network, no server, works in the street.}
+    \vspace{.3em}
+
+    \textbf{And the model itself, when you want the rest.} GAMA runs
+    \textbf{headless on a laptop} --- \texttt{gama-headless.sh -socket 6868}, same
+    wifi --- and the app is a client. \wn{Drawing a display is not embedding it.}
+    \src{github.com/Colauz/noise-modelling-hanoi}
+  \end{block}
+  \begin{block}{The same correction, found a second time}
+    \centering
+    $L(k) = 10\log_{10}\!\big(k\,(E - E_\mathrm{res}) + E_\mathrm{res}\big)$
+    \quad\wn{not}\quad
+    $10\log_{10}(kE) = L + 10\log_{10}k$
+    \par\smallskip\raggedright
+    Taking $E_\mathrm{res}$ to be the kernel's constant --- $-99.6\dB$, i.e.\
+    nothing --- scaled the total after all: at $k=0.2$, $-7.0\dB$ against the
+    model's $-3.7$. \textbf{Exactly the pedestrianisation error this project had
+    already corrected}, rebuilt on another platform.
+  \end{block}
+  \begin{block}{KoboToolbox renames your form at deployment}
+\textbf{404 for a form the server had never heard of}: Kobo discards the
+    XLSForm's \texttt{id\_string} on deploy and substitutes its own. The app now
+    reads \texttt{/formList} first. \textbf{None of it is visible from the
+    phone.}
+  \end{block}
+\end{frame}
+\note{All three are the kind of thing that costs a day and is invisible in a
+results table, which is exactly why they are on a slide.
+
+On the first block, make the distinction concrete, because it is the one people
+get wrong afterwards. The MAP needs nothing: the grid and the 363 points are
+inside the APK, tier 1 is recomputed on the device, and it works in the street
+with no signal at all. The SERVER is only for the rest of the model, and it is a
+laptop on the same wifi running gama-headless. Point at the repository for how to
+start it --- the command is in simulation/gama/README.md and the protocol in
+mobile/ARCHITECTURE.md.
+
+The middle one is the one to dwell on. The same error --- scaling total energy by
+a traffic multiplier, which double-counts the background --- was made twice, in
+Python in July and in Kotlin in August, by people who already knew about it. That
+is worth saying plainly: knowing a mistake is not the same as being immune to it,
+and the only thing that caught it the second time was a test asserting an
+invariant that has to hold.
+
+On the first block, be precise about the wording: the app DRAWS GAMA's own
+display and drives it over a socket. It does not embed GAMA, and anyone who
+knows the platform will hear the difference.}
+}%
+
+
+% ----------------------------------------------------------------
+\begin{frame}{What the app measures --- and what it refuses to claim}
+  \begin{alertblock}{The app's level is a \emph{different quantity} from the campaign's}
+    This handset's microphone, not a trimmed Decibel X reading. It goes in
+    \textbf{its own field}, with the device and the audio source the platform
+    granted. \textbf{The two never share a column.}
+  \end{alertblock}
+  \vspace{.2em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Verified end to end, live}
+      \begin{itemize}
+        \item Fix, 25\,s measurement, instance written, \up{submission accepted
+              by \texttt{kc.kobotoolbox.org}}
+        \item A position outside the three areas is \textbf{refused, not
+              answered}
+        \item 36 unit tests; weighting pinned to the IEC table
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{Not verified --- and it is the important one}
+        \textbf{The level has never been checked against a sound source.} An
+        emulator records silence. Until it is compared to a meter, \textbf{the
+        absolute figure means nothing} --- equally true, per
+        \texttt{docs/metrology.md}, of the campaign's own numbers.
+      \end{alertblock}
+      \aside{First task on a real handset, alongside Decibel X on the three
+      campaign phones.}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{Do not oversell the app. It is a well-tested piece of software whose central
+number is unvalidated, and saying that plainly is the same discipline as the rest of
+the project.
+
+If consent comes up: CONSENT\_VERSION is raised whenever what is collected changes,
+so consent is asked again rather than inherited from an agreement given to different
+facts. Declining leaves the map and the results usable --- they send nothing.
+
+The microphone offset in Settings is one number that stands for the whole of a
+handset's absolute calibration. Its default is a plausible constant for a consumer
+phone, not a measurement, and the app says so on the screen.
+
+If asked about public distribution: an anonymous OpenRosa endpoint accepts whatever
+is posted to it, and the free plan caps submissions. That is phase 6, and it is not
+solved. Do not distribute an APK before it is.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Driving GAMA from the phone --- how it is wired}
+  \begin{columns}[T]
+    \begin{column}{0.66\textwidth}
+      \begin{block}{One socket, and the phone runs nothing}
+        No Android port --- but a \textbf{WebSocket API}:
+        \texttt{gama-headless.sh -socket 6868}. The app is a client
+        (\texttt{load}, \texttt{play}, \texttt{step}, \texttt{ask},
+        \texttt{stop}): a remote control and a screen.
+      \end{block}
+      \begin{alertblock}{Two things only driving it teaches you}
+        A \texttt{type: gui} experiment \textbf{kills the socket} on load, and
+        \texttt{step} without \texttt{sync} advances nothing while
+        \textbf{every indicator reads zero}.
+      \end{alertblock}
+      \begin{exampleblock}{It redraws the model's display, it does not invent one}
+        Every layer and colour comes from the \texttt{aspect} blocks of
+        \texttt{hanoi\_noise.gaml}, \textbf{in declaration order --- which in
+        GAMA is the stacking}.
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.34\textwidth}
+      \centering
+      \scalebox{0.54}{\phoneGama}\\[.2em]
+      \src{ARCHITECTURE.md \S5.2}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{The honest framing, and the one to use: the phone is a REMOTE CONTROL and a
+screen. GAMA runs where it always ran.
+
+What that buys is the half of the model the exported grid cannot hold --- the
+mitigation scenarios, the construction sites, the fleet by hour --- because those
+are agent behaviour, not a field you can precompute into a CSV.
+
+The two lessons are worth a sentence each because they are invisible from any
+documentation: an experiment with a display kills the socket on load, and step
+without sync advances nothing while reporting success. Both cost a day.
+
+Verified end to end from the phone: 62.97 dB with no mitigation, 60.53 under
+pedestrianisation --- the same figures the model gives when driven directly.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{Before this app goes to strangers --- three blockers}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{1 --- Who holds the data}
+        Submissions land in \textbf{a} KoboToolbox account, and whoever owns it
+        holds the positions and timestamps of strangers, and answers for them. It
+        must be \textbf{institutional}: a personal account leaves with its owner.
+        \vspace{.3em}
+
+        \up{Not a code change} --- the account is a build flag. This is a
+        \textbf{decision}, and it is not ours.
+      \end{alertblock}
+      \src{mobile/README.md \; $\cdot$ \; docs/handover.md \S7}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{2 --- Consent is not ethics review}
+        The consent screen exists and is versioned. But \textbf{a public campaign
+        is a new collection campaign}, and \texttt{handover.md} \S7 already makes
+        an ethics committee its precondition. The video collection went ahead
+        without review, and the repository says so.
+        \wn{Do not repeat that at a larger scale.}
+      \end{alertblock}
+      \vspace{.2em}
+      \begin{block}{3 --- Where does the GAMA server live}
+        Today: whichever laptop runs \texttt{gama-headless.sh}, which must be on
+        and reachable. Beyond a demo it needs hosting \emph{and} \textbf{TLS} ---
+        a release build accepts \texttt{wss://} only.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{These are the three things that stop an APK being handed out, and none of
+them is a bug. Say that explicitly: the software is finished on its side.
+
+Blocker 1 is the one to press the supervisor on, because only a supervisor can
+settle it. The account name is deliberately a build flag rather than a constant in
+the source, precisely so that moving it does not require a new release --- but
+somebody still has to name it, and until they do there is nowhere to send data.
+
+Blocker 3 catches people out: the map, the measurement and the outbox need no
+network at all; it is only the GAMA screen that needs a server. If the wifi is
+uncertain on the day, rehearse the demo without step 3.}
+}%
+
+
+% ============================================================================
+\section{Next: Clermont-Ferrand}
+% ============================================================================
+
+\begin{frame}{Clermont-Ferrand --- what it does and does not change}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Still no reference instrument}
+        \textbf{There will be no sound level meter at Clermont either.} The
+        calibration gap does not close, and nothing said here should suggest it
+        will: the app's level stays relative, and the half-day next to a class 2
+        meter remains \emph{unbooked}, not \emph{done}.
+      \end{alertblock}
+      \vspace{.3em}
+      \begin{exampleblock}{So what \emph{is} the work}
+        \textbf{Maintenance and deployment}, not new instrumentation. Keep the
+        application alive, then get it collecting in a second city.
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \textbf{What the second city is actually for}
+      \begin{itemize}
+        \item \up{One instrument, two cities.} The \textbf{same APK} in Hanoi and
+              Clermont. That is the point: the instrument stops being a confound,
+              which is the one thing the Uganda transfer could never fix.
+        \item \up{Two fabrics as different as we could pick.} Two-wheelers against
+              cars and a tram; dense organic against European planned; flat delta
+              against volcanic relief.
+        \item \wn{A fourth typology, at last.} Three sites bounded everything
+              here. A second city is the only thing that moves that number.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vfill
+  \src{docs/handover.md} \; \aside{\S6, debt \#2, P0-3}
+\end{frame}
+\note{Correct the expectation before anyone forms it: there is NO sonometer at
+Clermont. An earlier version of this deck said institutional equipment would close
+the calibration gap. It will not, and promising it and then not delivering is worse
+than never promising it.
+
+So say plainly what the next months are: maintaining the application, and deploying
+it in a second city. That is less glamorous than new physics and it is the honest
+description.
+
+What it buys is nonetheless the strongest experiment available to this work. The
+Uganda transfer failure is over-determined --- instrument, protocol and feature
+conventions all differed at once. One APK in two cities makes the instrument a
+constant, and a transfer failure then means what it says. And it moves the number
+that bounded everything here: three typologies becomes four or five.
+
+If asked about calibration again: the half-day rental is still the answer, it is
+still cheap, and it is still not booked. Say that rather than implying Clermont
+solves it.}
+
+% ----------------------------------------------------------------
+\begin{frame}{The comparative deployment --- and why it is the decisive test}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      {\scriptsize
+      \begin{tabular}{@{}lll@{}}
+        \toprule
+         & \textbf{Hanoi} & \textbf{Clermont-Ferrand} \\
+        \midrule
+        Fleet      & two-wheelers & cars, tram \\
+        Fabric     & dense, organic & European, planned \\
+        Relief     & flat delta & volcanic, hilly \\
+        Monitoring & none & EU END mapping \\
+        \bottomrule
+      \end{tabular}}
+      \vspace{.6em}
+
+      \textbf{Held constant} --- the \textbf{same APK}, form, accuracy gate,
+      \LA{}, OpenStreetMap features and evaluation protocols.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{alertblock}{Why this is stronger than Uganda $\rightarrow$ Hanoi}
+        There, the \textbf{instrument, protocol and feature conventions all
+        differed too}: ``transfer fails'' and ``the datasets are not
+        commensurable'' are not separable. One app in both cities and
+        \textbf{the instrument stops being a confound}.
+      \end{alertblock}
+      \vspace{.3em}
+      \begin{exampleblock}{And a ground truth, finally}
+        Clermont-Ferrand falls under EU END strategic mapping --- the first
+        \textbf{official, instrumented reference map} to compare against.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{This is the strongest slide in the section and worth the time. The Uganda
+transfer failure is a real result but it is an over-determined one --- too many
+things differed at once for the failure to be attributable.
+
+Deploying the same binary in two cities is a genuine experimental design: it turns a
+confounded comparison into a controlled one. That is the argument for continuing this
+work at Clermont rather than starting something else.
+
+The END mapping point is the other half: Hanoi had no ground truth at all, which is
+why we ended up anchoring against a 2005--2007 campaign. France has a statutory one.}
+
+% ----------------------------------------------------------------
+\onlyfull{%
+\begin{frame}{The programme, staged}
+  \scriptsize
+  \begin{tabular}{@{}p{1.9cm}p{6.0cm}p{5.2cm}@{}}
+    \toprule
+    \textbf{Stage} & \textbf{Work} & \textbf{Gate --- what must be true to proceed} \\
+    \midrule
+    \textbf{S1}\newline Maintain &
+      Keep the application deployable: dependencies, Android target, Kobo form
+      ids, the \texttt{gama-server} protocol. \wn{Calibration against a class 1/2
+      meter stays on this list, unbooked.} &
+      The APK still builds and submits, and every level is still reported as
+      relative \\
+    \addlinespace
+    \textbf{S2}\newline Repair &
+      Diagnose the 27 June discontinuity and refit with the phase. Validate
+      the detector. Carry the CIs everywhere. &
+      The Hanoi dataset is defensible as published, or its defects are quantified \\
+    \addlinespace
+    \textbf{S3}\newline Physics &
+      CNOSSOS-EU via NoiseModelling $+$ a learned residual, benchmarked
+      against the delivered kernel on the same three splits. &
+      Real propagation beats two distances and a constant --- or it does not, and
+      that is reportable too \\
+    \addlinespace
+    \textbf{S4}\newline Deploy &
+      Clermont-Ferrand campaign, same APK. Backend for scale (phase 6): quota,
+      moderation, deduplication. &
+      A second dataset, commensurable with the first by construction \\
+    \addlinespace
+    \textbf{S5}\newline Compare &
+      Transfer both ways. Validate against EU END mapping. Publish the two-city
+      methodological study. &
+      --- \\
+    \bottomrule
+  \end{tabular}
+  \vspace{.4em}
+
+  \aside{Sequenced by dependency, not by calendar. Framing and funding at Clermont-Ferrand are unconfirmed.}
+\end{frame}
+\note{Every stage has a gate, and the gates are falsifiable. That is deliberate: a
+roadmap without exit conditions is a wish list.
+
+S3's gate is the one to point at --- it is written so that a negative answer is still
+a result. If CNOSSOS-EU does not beat three constants on this data, that is a genuinely
+interesting finding about how much physics you can use at this sample size, and it
+gets published either way.
+
+Be honest that S4 depends on things nobody has confirmed yet: supervision, framing,
+and whether the backend gets built. Do not present it as scheduled.}
+}%
+
+
+% ----------------------------------------------------------------
+\begin{frame}{The two things a reviewer will press on}
+  \begin{alertblock}{1 --- No absolute reference. Was half a day really out of reach?}
+    Three handsets calibrated against \emph{each other} and against nothing.
+    \texttt{docs/metrology.md} owns this squarely --- but an acoustics reviewer
+    will not ask whether we \emph{knew}; they will ask whether \textbf{one
+    side-by-side reading against a class 2 meter} was genuinely unobtainable.
+    \vspace{.3em}
+
+    It is the right question, and the honest answer is that a \textbf{half-day
+    rental} would settle it. \up{One reading turns ``calibrated in relative
+    terms'' into ``calibrated''}, and every level inherits it. The cheapest item
+    anywhere in this work.
+  \end{alertblock}
+  \vspace{.2em}
+  \begin{alertblock}{2 --- Three sites are three typologies, and that binds harder than the \rr{}}
+    Our own text says it: the number of \textbf{independent morphological
+    configurations} is close to \textbf{three}, whatever the number of points.
+    $n = 363$ does not buy $n = 363$ worth of generalisation.
+    \vspace{.3em}
+
+    The hard limit is the design, not the \rr{}. \textbf{A fourth and fifth
+    contrasting fabric would do more than any modelling change.}
+  \end{alertblock}
+\end{frame}
+\note{Both of these came from a reader outside the team, and both are better
+raised by us than by a reviewer.
+
+On the first: do not get defensive. We did not have an instrument and we said so
+throughout --- but ``we said so'' is a weaker position than ``we spent one
+afternoon and fixed it''. The rental is a real, small, specific action, and
+offering it is what turns a limitation into a plan. If asked why it was not done:
+the campaign was closed before this was raised, and it cannot be applied
+retrospectively to those 363 points --- which is exactly why it should be done
+before the next one.
+
+On the second: this is the deeper of the two and it does not go away with more
+data. Three sites is three draws from the space of urban fabrics. The leave-one-
+site-out column already measures the consequence, and that is the honest number
+to quote when someone asks how far this generalises.}
+
+% ============================================================================
+\section{Conclusion}
+% ============================================================================
+
+\begin{frame}{What this work established}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{exampleblock}{Findings}
+        \begin{enumerate}
+          \item At $n=363$ over three sites, \textbf{three physical parameters beat
+                every learned model} we built. Capacity does not pay.
+          \item \textbf{Cross-city transfer fails} --- \rr{} $<0$, with matched
+                features.
+          \item The video chain \textbf{could not be made to work}; that is an
+                instrument result, not an acoustic one.
+          \item A cross-calibrated smartphone protocol supports \textbf{contrasts},
+                never levels.
+        \end{enumerate}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Practices that made those findings trustworthy}
+        \begin{itemize}
+          \item The buffer matches the feature radius --- always
+          \item Baselines and an ablation on \emph{the same} splits
+          \item The delivered model is chosen \textbf{by code}
+          \item Every number has \textbf{exactly one home}
+          \item Retracted work is archived \textbf{with its reason}
+          \item Nothing is predicted outside the sampled envelope
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vfill
+  \begin{center}
+    \small The deliverable is a \textbf{protocol, an instrument and an honest
+    error bar} --- not a noise map of Hanoi.
+  \end{center}
+\end{frame}
+\note{Close on the right-hand column if the room is technical. Those six practices
+are transferable to any spatial ML project, and they are the part of this work most
+likely to be reused by someone who never measures a decibel.
+
+The last line is the thesis of the whole talk. Say it slowly.}
+
+% ----------------------------------------------------------------
+% The closing slide is deliberately NOT [standout]. Metropolis sets a standout
+% frame in reversed colours, and on that near-black ground the institutional
+% marks -- which are dark blue on transparent -- disappeared, while the grey
+% fallback text went almost unreadable. It is also the one slide that stays up
+% while people ask questions, so it is the last slide that should be dark.
+\begin{frame}[plain]
+  \begin{minipage}[b][\paperheight]{\textwidth}
+    \vspace*{14mm}
+    \centering
+
+    {\Huge\bfseries\color{accent} Thank you}\\[.9em]
+    {\color{rule}\rule{28mm}{.6pt}}\\[1.4em]
+
+    {\large\texttt{github.com/Colauz/noise-modelling-hanoi}}\\[1.2em]
+
+    Everything on these slides rebuilds from the repository:\\[.45em]
+    {\ttfamily make features \quad make models \quad make results \quad make report}\\[.9em]
+    \aside{the deck's own figures: \texttt{scripts/12\_presentation\_figures.py}}
+
+    \vfill
+    {\color{rule}\hrule height .4pt}
+    \vspace*{6mm}
+    \logoband
+    \vspace*{9mm}
+  \end{minipage}
+\end{frame}
+\note{Offer the repository rather than a summary. The four make targets are the
+claim: this rebuilds from two published CSVs, with no raw Kobo export and no 6 GB of
+video.
+
+Open questions to expect: the affiliation placeholder, the video retention decision,
+and who owns the Kobo account for a public deployment. All three are in
+docs/handover.md \S6 and \S7 and none of them is ours to settle.}
+
+% ============================================================================
+\appendix
+% ============================================================================
+
+\begin{frame}{Backup --- every formula this talk rests on}
+  \scriptsize
+  \renewcommand{\arraystretch}{1.75}
+  \begin{tabular}{@{}p{3.1cm}p{10.4cm}@{}}
+    \toprule
+    \textbf{What} & \textbf{Definition} \\
+    \midrule
+    The measured quantity &
+      $L_{A,25\mathrm{s}} = 10\log_{10}\!\left(\dfrac{1}{T}\displaystyle\int_{0}^{T}
+       \dfrac{p_A^{2}(t)}{p_0^{2}}\,\mathrm{d}t\right)$,\quad
+       $T\approx25$\,s,\; $p_0 = 20\,\mu$Pa \\
+    A-weighting, IEC 61672 &
+      $A(f) = 20\log_{10}\!\dfrac{12194^{2}f^{4}}
+        {(f^{2}+20.6^{2})\sqrt{(f^{2}+107.7^{2})(f^{2}+737.9^{2})}\,(f^{2}+12194^{2})}
+        + 2.00$ \\
+    Levels never average &
+      $L_{\Sigma} = 10\log_{10}\sum_{i} 10^{L_i/10}$
+      \quad\aside{decibels add in energy --- which is why everything below works on $E$} \\
+    \midrule
+    \textbf{The delivered model} &
+      $E = \dfrac{A_\mathrm{hw}}{\max(d_\mathrm{hw},D_0)}
+         + \dfrac{A_\mathrm{res}}{\max(d_\mathrm{res},D_0)} + B$,\quad
+        $L = 10\log_{10}E$,\quad $A_\mathrm{hw},A_\mathrm{res},B>0$ \\
+    Why $1/d$, not $1/d^{2}$ &
+      A street is a \textbf{line} of sources, not a point: $-3\dB$ per doubling
+      of distance, not $-6$ \\
+    The traffic scenario &
+      $L(k) = 10\log_{10}\!\big(k\,(E-E_\mathrm{res}) + E_\mathrm{res}\big)$
+      \quad\wn{not}\quad $L + 10\log_{10}k$ \\
+    \midrule
+    Reference protocol &
+      For each point $i$, train on $\{j : d(i,j) > r\}$ with $r = 300$\,m
+      $=$ \textbf{the feature aggregation radius} \\
+    The ceiling on $R^{2}$ &
+      $\Delta L \sim \mathcal{N}(0,2\sigma^{2}) \Rightarrow
+       \sigma = \tfrac{\sqrt{\pi}}{2}\,\mathbb{E}|\Delta L|$,\quad
+       $R^{2}_{\max} = 1 - \sigma^{2}/s^{2}$ \\
+    \bottomrule
+  \end{tabular}
+\end{frame}
+\note{This slide exists to be jumped to, not read. It is here because three
+different questions --- ``what exactly did you measure'', ``why a distance law''
+and ``how can 0.25 be near a ceiling'' --- are all answered by writing the
+arithmetic down.
+
+The two lines to point at if you only get one chance. First, decibels add in
+energy: every mistake this project made in the simulation came from forgetting
+that and operating on levels. Second, the buffer radius EQUALS the feature radius
+--- that identity is the whole methodological result, and the retracted 0.45 came
+from breaking it.
+
+The A-weighting expression is the IEC table the app's unit test pins against, not
+a curve fitted by us.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Backup --- every model, with the interval that qualifies it}
+  \fig[.55]{forest-bloo}{models/metrics.json --- 2\,000 resamples, bootstrapped by block}
+  \vspace{-.4em}
+  \begin{alertblock}{This is audit finding 3, drawn}
+    \texttt{physical} and \texttt{dist\_road} overlap almost entirely. ``The
+    physical kernel beats log-distance'' is a \textbf{coin flip} at this sample
+    size. Other protocols: \texttt{models/model\_comparison.md}.
+  \end{alertblock}
+\end{frame}
+\note{This is the slide to jump to when someone challenges the ranking. The honest
+reading is that only dist\_road and physical have intervals excluding zero, and they
+overlap each other --- which is finding 3 of the audit.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Backup --- the absolute-bias interval}
+  \small
+  \begin{tabular}{@{}p{4.3cm}p{2.3cm}p{1.7cm}p{1.7cm}p{2.2cm}@{}}
+    \toprule
+    \textbf{Anchor} & \textbf{Instrument} & \textbf{Quantity} & \textbf{Raw gap} & \textbf{Corrected} \\
+    \midrule
+    Gelb \& Apparicio 2019, HCMC & dosimeters $+$ GPS & $L_\mathrm{Aeq,1min}$ & $+9.3$ & $+7.3$ \\
+    Phan et al.\ 2010, Hanoi & RION NL-21/22 & $L_\mathrm{den}$ & $+7.0$ & $+3.0$ \\
+    Phan et al.\ 2010, Hanoi & RION NL-21/22 & $L_\mathrm{night}$ & $-3.0$ & $-3.0$ \\
+    \textcolor{muted}{IOHE, 12 arteries (press)} & \textcolor{muted}{undocumented} & \textcolor{muted}{daytime mean} & \textcolor{muted}{$+8.6$} & \textcolor{muted}{$+7.6$} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{.6em}
+
+  \begin{block}{Conclusion}
+    Plausible absolute bias: \wn{$+3.0$ to $+7.3\dB$} (peer-reviewed sources,
+    night excluded --- $n=10$ is too thin). \textbf{Corrected gap} $=$ raw gap
+    minus the difference the quantity alone explains: it approximates the
+    residual instrumental bias, and \textbf{is reported and never applied}.
+  \end{block}
+  \src{results/tables/literature\_anchoring.md \; $\cdot$ \; scripts/06\_anchor\_literature.py}
+\end{frame}
+\note{The grey row is greyed on purpose: secondary source, undocumented protocol.
+It is contextual orientation, never a primary reference, and it is excluded from the
+interval.
+
+Note the sign. Every usable anchor is positive, meaning our phones probably read
+LOW relative to instrumented campaigns --- which is the opposite of the usual
+assumption about consumer microphones.}
+
+% ----------------------------------------------------------------
+\begin{frame}{Backup --- what is published, and what is not}
+  \scriptsize
+  \begin{tabular}{@{}p{4.2cm}p{2.4cm}p{2.6cm}p{3.4cm}@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Size} & \textbf{Published} & \textbf{Why / licence} \\
+    \midrule
+    Field measurements & 363 pts, 3 sites & \up{yes} & CC-BY-4.0 \\
+    Vehicle counts from video & 147 videos & \up{yes} & CC-BY-4.0 \\
+    Survey forms (XLSForm) & 2 forms & \up{yes} & CC-BY-4.0 \\
+    Traffic videos & 147, 6.0\,GB & \down{no} & faces and plates \\
+    Raw Kobo exports & --- & \down{no} & collector identities \\
+    OpenStreetMap extract & 49\,146 buildings & \down{no} & regenerable; ODbL \\
+    Sunbird Uganda 61K & 61\,k clips & \down{no} & gated upstream \\
+    \bottomrule
+  \end{tabular}
+  \vspace{.6em}
+
+  \begin{alertblock}{Stated plainly in the repository}
+    No ethics review was requested for the video collection, and none is
+    claimed. Only non-identifying aggregates are released. The retention
+    decision is still \textbf{open}, and is a supervisor decision.
+  \end{alertblock}
+  \src{docs/data-sources.md \; $\cdot$ \; LICENSE, LICENSE-DATA}
+\end{frame}
+\note{If the ethics question comes, this is the slide. The answer is that we did not
+seek review, we say so, and we release only aggregates --- rather than claiming a
+process we did not follow.
+
+The retention decision is genuinely open and belongs to the supervisor. Do not
+improvise an answer for it.}
 
 \end{document}
