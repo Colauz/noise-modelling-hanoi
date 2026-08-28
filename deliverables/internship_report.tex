@@ -978,6 +978,37 @@ The design is a noise-measurement campaign in Hanoi with two arms --- a
 with a Vietnamese institution. It is recorded here as specified; none of it has
 been executed, and no number in §4 depends on it.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{campaign-frame.pdf}
+  \caption{The sampling frame, and the size of the step. \textbf{Nothing on
+  this map is a site}: the 160 sites have not been drawn, and 160 invented
+  coordinates would commit the team to a sample nobody selected. What is drawn
+  is the frame --- Hanoi's 51 urban \emph{phuong} under the July~2025 reform,
+  407\,km$^2$ --- against the 1.7\,km$^2$ the campaign has actually covered, a
+  factor of 236. Boundaries are OpenStreetMap
+  (\pth{data/processed/hanoi\_wards.geojson}, fetched by
+  \pth{scripts/fetch\_hanoi\_wards.py}); areas are computed in UTM~48\,N, not
+  from degrees. \pth{scripts/12\_presentation\_figures.py}.}
+  \label{fig:frame}
+\end{figure}
+
+\begin{caveat}{Drawing the frame found a problem in it}
+Placing the three measured areas on the ward boundaries was meant to be
+illustration, and returned a finding instead. \textbf{Ocean Park is not in a
+\emph{phuong}.} All 184 of its measurements --- half this campaign --- fall
+inside \emph{Xa Gia Lam}, a rural commune, which the frame as specified above
+excludes. Hoan Kiem and Vinh Tuy are inside it; Ocean Park is not.
+
+Nothing in §4 changes: the site is real and the measurements are valid. What
+changes is the plan. Either the frame widens to admit the peri-urban
+\emph{xa} --- in which case ``51 urban \emph{phuong}'' is the wrong description
+of it, and the stratum for new peri-urban development has no obvious home ---
+or the frame stands and the one area this project knows best contributes
+nothing to the design of the next campaign. That is a decision, and it belongs
+to whoever fixes the protocol, not to this report.
+\end{caveat}
+
 \paragraph{Mapping arm --- 160 sites, 1\,920 sessions.} 160 sites are drawn in
 \textbf{8 strata of 20 sites} each: major axes and ring roads; secondary
 streets; the old quarter and its narrow streets; residential alleys
@@ -1136,13 +1167,15 @@ strong as future work and wrong as a promise attached to this result.
 \pth{campaign.pdf}, \pth{ranking-inversion.pdf}, \pth{forest-bloo.pdf},
 \pth{ceiling.pdf}, \pth{map-grid.pdf}, \pth{discontinuity.pdf},
 \pth{feature-importance.pdf}, \pth{hanoi-sites.pdf}, \pth{exceedance.pdf},
-\pth{class-levels.pdf}
+\pth{class-levels.pdf}, \pth{campaign-frame.pdf}
   & \pth{scripts/12\_presentation\_figures.py}, reading
     \pth{models/metrics.json}, \pth{data/processed/measurements.csv} and
     \pth{results/maps/hanoi\_noise\_map.csv}; \pth{hanoi-sites.pdf} additionally
     reads the road shapefiles under \pth{simulation/gama/inputs/} and
     \pth{exceedance.pdf} reads
-    \pth{results/tables/hanoi\_exceedances.csv}. Re-run on 28 August 2026. The
+    \pth{results/tables/hanoi\_exceedances.csv}, and \pth{campaign-frame.pdf}
+    reads \pth{data/processed/hanoi\_wards.geojson}. Re-run on 28 August 2026.
+    The
     only change against the committed versions is the map's colour ramp: the
     old one ran green -- yellow-green -- lime -- yellow and its three middle
     bands, which cover most of the mapped area, sat at the same lightness and
@@ -1153,6 +1186,15 @@ Application screens (Figure~\ref{fig:appscreens}) & \pth{appscreens.tex}, drawn
   from \pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}. Not device
   captures --- see the caption. \\
 \pth{validation\_simulation.png} & \pth{scripts/08\_validate\_simulation.py} \\
+\pth{data/processed/hanoi\_wards.geojson} & \pth{scripts/fetch\_hanoi\_wards.py},
+  one Overpass query against OpenStreetMap, fetched 28 August 2026 and
+  committed. 126 units: 51 \emph{phuong}, 75 \emph{xa}. It is the only script
+  in the project that touches the network, which is why it is unnumbered and
+  outside the pipeline. \\
+Frame area, measured area, the 236$\times$ ratio, and which areas fall inside
+  the frame & computed in \pth{fig\_campaign\_frame} from
+  \pth{hanoi\_wards.geojson} and \pth{measurements.csv}, reprojected to
+  UTM~48\,N \\
 Model table (§4.2) & \pth{models/metrics.json} via \pth{models/model\_comparison.md} \\
 Transfer table (§4.3) & \pth{scripts/experiments/uganda\_transfer.py}, re-run 24 August 2026 \\
 Site table, exceedances, hour peak, night counts & recomputed from

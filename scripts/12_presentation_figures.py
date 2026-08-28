@@ -861,6 +861,163 @@ def fig_class_levels(df: pd.DataFrame) -> None:
     )
     save(fig, "class-levels")
 
+# ---------------------------------------------------------------------------
+# 11. The frame the planned campaign draws from
+# ---------------------------------------------------------------------------
+def fig_campaign_frame(df: pd.DataFrame) -> None:
+    """Hanoi's 51 urban wards, the three areas measured so far, and the gap.
+
+    NOTHING ON THIS MAP IS A SITE. The 160 sites of the planned campaign have
+    not been drawn, and inventing 160 coordinates to fill a map would commit
+    the team to a sample nobody selected. What can be drawn honestly is the
+    FRAME -- the 51 phuong the draw will be made across -- and what has
+    actually been measured inside it, which is the comparison the plan turns
+    on.
+
+    Boundaries: data/processed/hanoi_wards.geojson, from OpenStreetMap under
+    the July 2025 reform (scripts/fetch_hanoi_wards.py). Areas are computed in
+    UTM 48 N, not from degrees.
+    """
+    import geopandas as gpd
+
+    wards = gpd.read_file(ROOT / "data" / "processed" / "hanoi_wards.geojson")
+    phuong = wards[wards["kind"] == "phuong"]
+    xa = wards[wards["kind"] == "xa"]
+
+    pts = gpd.GeoDataFrame(
+        df, geometry=gpd.points_from_xy(df["longitude"], df["latitude"]),
+        crs="EPSG:4326",
+    )
+    hulls = pts.dissolve("site").convex_hull
+    measured_km2 = float(hulls.to_crs(32648).area.sum()) / 1e6
+    frame_km2 = float(phuong.to_crs(32648).area.sum()) / 1e6
+
+    # Which of the three areas actually falls inside the frame? Asked rather
+    # than assumed, and the answer is not the one the plan assumes -- see the
+    # annotation below.
+    located = gpd.sjoin(pts, wards, predicate="within", how="left")
+    inside = {
+        site: bool((sub["kind"] == "phuong").all())
+        for site, sub in located.groupby("site")
+    }
+    outside_n = int(sum(len(df[df["site"] == s]) for s, ok in inside.items()
+                        if not ok))
+
+    # Stacked, not side by side: the frame is 1.7 times wider than it is tall
+    # and the scale-up rows carry long labels, so putting them in a column
+    # beside the map either squashes the map or runs the labels over it.
+    map_h = 7.8 / 1.71
+    fig = plt.figure(figsize=(7.8, map_h + 2.5))
+    gs = fig.add_gridspec(2, 1, height_ratios=[map_h, 2.0], hspace=0.30)
+
+    # -- the frame ----------------------------------------------------------
+    ax = fig.add_subplot(gs[0, 0])
+    xa.plot(ax=ax, facecolor="#F7F7F5", edgecolor="white", linewidth=0.3,
+            zorder=1)
+    phuong.plot(ax=ax, facecolor=ACCENT, alpha=0.15, edgecolor=ACCENT,
+                linewidth=0.4, zorder=2)
+
+    for site in hulls.index:
+        g = df[df["site"] == site]
+        ok = inside[site]
+        ax.plot(g["longitude"].mean(), g["latitude"].mean(),
+                "o" if ok else "D", ms=7 if ok else 6.5,
+                color=BAD, markerfacecolor=BAD if ok else "white",
+                markeredgecolor=BAD if not ok else "white",
+                markeredgewidth=1.4 if not ok else 1.0, zorder=5)
+
+    for site, ok in inside.items():
+        if ok:
+            continue
+        g = df[df["site"] == site]
+        unit = sorted(set(located[located["site"] == site]["name"].dropna()))[0]
+        ax.annotate(
+            f"{site} sits in {unit},\na rural commune — "
+            f"{len(g)} of the {len(df)} measurements\n"
+            "are OUTSIDE the frame drawn from",
+            xy=(g["longitude"].mean(), g["latitude"].mean()),
+            xytext=(-12, -46), textcoords="offset points",
+            ha="right", va="top", fontsize=7, color=BAD, zorder=6,
+            linespacing=1.4,
+            arrowprops=dict(arrowstyle="-", color=BAD, lw=0.7,
+                            shrinkA=0, shrinkB=5),
+        )
+
+    ax.plot([], [], "o", ms=6, color=BAD, markeredgecolor="white",
+            markeredgewidth=1.0,
+            label=f"measured, inside the frame — {len(df) - outside_n} points")
+    ax.plot([], [], "D", ms=6, color="white", markeredgecolor=BAD,
+            markeredgewidth=1.4,
+            label=f"measured, OUTSIDE the frame — {outside_n} points")
+    ax.plot([], [], "s", ms=8, color=ACCENT, alpha=0.4,
+            label=f"the frame — {len(phuong)} urban $phuong$, "
+                  f"{frame_km2:.0f} km$^2$")
+    ax.plot([], [], "s", ms=8, color="#EDEDEA",
+            label=f"{len(xa)} rural $xa$ — outside the frame")
+
+    x0, y0, x1, y1 = phuong.total_bounds
+    px, py = (x1 - x0) * 0.03, (y1 - y0) * 0.05
+    ax.set_xlim(x0 - px, x1 + px)
+    ax.set_ylim(y0 - py, y1 + py)
+    ax.legend(loc="lower left", fontsize=7, labelspacing=0.5, borderpad=0.5,
+              frameon=True, framealpha=0.95, facecolor="white",
+              edgecolor=RULE)
+    ax.set_aspect(1 / np.cos(np.radians(float(df["latitude"].mean()))))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for sp in ax.spines.values():
+        sp.set_color(RULE)
+    ax.set_title(
+        "Where the 160 sites will be drawn from — not where they are. "
+        "No site has been selected.",
+        fontsize=9, color=INK, loc="left", pad=8,
+    )
+
+    # -- the scale-up, on the numbers --------------------------------------
+    ax2 = fig.add_subplot(gs[1, 0])
+    night_now = int(((df["hour"] >= 21) | (df["hour"] < 6)).sum())
+    rows = [
+        ("Area covered  (km$^2$)", measured_km2, frame_km2),
+        ("Measurement sessions", len(df), 160 * 4 * 3),
+        ("Night sessions", night_now, 160 * 1 * 3),
+        ("Distinct sites", 3, 160),
+    ]
+    ys = np.arange(len(rows))[::-1]
+    h = 0.34
+    for y, (label, now, plan) in zip(ys, rows):
+        ax2.barh(y + h / 2, now, height=h, color=MUTED, alpha=0.85)
+        ax2.barh(y - h / 2, plan, height=h, color=ACCENT, alpha=0.85)
+        for value, offset in ((now, h / 2), (plan, -h / 2)):
+            text = (f"{value:.1f}" if 0 < value < 10 and value % 1
+                    else f"{value:,.0f}".replace(",", " "))
+            ax2.text(value * 1.18, y + offset, text, va="center", ha="left",
+                     fontsize=7.5, color=INK)
+
+    ax2.set_xscale("log")
+    ax2.set_yticks(ys)
+    ax2.set_yticklabels([r[0] for r in rows], fontsize=8, color=INK)
+    ax2.set_xlim(0.9, 2.2e4)
+    ax2.set_ylim(-0.6, len(rows) - 0.4)
+    ax2.set_xticks([1, 10, 100, 1000, 10000])
+    ax2.set_xticklabels(["1", "10", "100", "1 000", "10 000"])
+    ax2.grid(axis="x", color=RULE, lw=0.5, alpha=0.6)
+    ax2.set_axisbelow(True)
+    ax2.spines["left"].set_visible(False)
+    ax2.tick_params(axis="y", length=0)
+    ax2.legend(
+        handles=[Patch(color=MUTED, alpha=0.85, label="this campaign"),
+                 Patch(color=ACCENT, alpha=0.85, label="planned campaign")],
+        loc="lower right", fontsize=7.5, ncol=2,
+    )
+    ax2.set_title(
+        f"Log scale. On area alone the step up is a factor of "
+        f"{frame_km2 / measured_km2:.0f}; on night measurements, "
+        f"{160 * 3 / night_now:.0f}.",
+        fontsize=9, color=INK, loc="left", pad=8,
+    )
+
+    save(fig, "campaign-frame")
+
 def main() -> None:
     style()
     m = metrics()
@@ -876,6 +1033,7 @@ def main() -> None:
     fig_sites_map(df)
     fig_exceedance()
     fig_class_levels(df)
+    fig_campaign_frame(df)
 
 
 if __name__ == "__main__":

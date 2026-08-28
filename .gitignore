@@ -116,3 +116,9 @@ deliverables/**/*.blg
 deliverables/**/*.fls
 deliverables/**/*.fdb_latexmk
 deliverables/**/*.synctex.gz
+
+# The 126 administrative units of Hanoi under the July 2025 reform -- 51 phuong
+# and 75 xa -- from OpenStreetMap, simplified to ~11 m. Committed because
+# scripts/fetch_hanoi_wards.py is the only thing in this project that touches
+# the network, and no figure should depend on Overpass being up.
+!data/processed/hanoi_wards.geojson
