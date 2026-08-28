@@ -462,6 +462,24 @@ under \pth{docs/archive/}: the Bach Khoa map (\pth{bach-khoa/}), the July deck
 
 \subsection{The campaign}
 
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\textwidth]{hanoi-sites.pdf}
+  \caption{Where the 363 measurements actually are. \textbf{Top:} all three
+  areas in one frame, on the street network each was measured in, coloured by
+  the level measured there. \textbf{Bottom:} each area cut to the same
+  1.8$\times$1.8\,km box, so the three densities can be compared by eye ---
+  panels scaled to their own data would make the sparsest site look the busiest.
+  The blank space in the top panel is the argument of this report in one
+  picture: the campaign is three islands roughly 11\,km apart, and the model of
+  §\ref{sec:ceiling} is asked to generalise across everything between them,
+  which was never measured. There is no basemap and no tile server here ---
+  roads are the OSMnx extracts the GAMA simulation already runs on
+  (\pth{simulation/gama/inputs/}), so nothing on this figure comes from outside
+  the repository. \pth{scripts/12\_presentation\_figures.py}.}
+  \label{fig:sites}
+\end{figure}
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=.95\textwidth]{campaign.pdf}
@@ -491,6 +509,40 @@ All                              & 363 & 66.7 & 68.0 & 47.0 & 88.0 & 37.4\,\% \\
 descriptive statistic and not as a compliance rate. Per-site exceedances from
 \pth{results/tables/hanoi\_exceedances.csv}. Mean level peaks at hour~18
 (71.7\dB).\normalsize
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exceedance.pdf}
+  \caption{The same exceedances, drawn, with the sample size printed inside
+  every bar --- because the night bars are the ones a reader will quote and the
+  ones the campaign cannot support. \emph{Every} night measurement at Hoan Kiem
+  is over the limit, and there are six of them; Vinh Tuy has none at all. Ten
+  night measurements out of 363 is the whole night evidence of this campaign.
+  Read from \pth{results/tables/hanoi\_exceedances.csv}.}
+  \label{fig:exceedance}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{class-levels.pdf}
+  \caption{Level against the source class the operator selected on the form ---
+  the one variable in the dataset that is a human judgement rather than a sensor
+  reading. It behaves: the ordering it produces is the ordering the physics
+  predicts, karaoke and construction at the top, declared silence at the bottom,
+  with no reordering needed. It also shows how unbalanced the campaign is ---
+  \emph{transportation noise} and \emph{silence} carry three quarters of it.
+  Recomputed from \pth{data/processed/measurements.csv}.}
+  \label{fig:classlevels}
+\end{figure}
+
+\noindent Three things in Figure~\ref{fig:sites} bear on everything that
+follows. The three areas are roughly 11\,km apart and nothing between them was
+measured, which is the envelope the grid-extent test
+(\pth{tests/test\_grid\_extent.py}) exists to enforce. Within each area the
+coverage follows the street network rather than a grid, so the sample is
+road-biased by construction --- 189 of 363 measurements are roadside, from
+\pth{dist\_to\_road} --- and a model fitted on it inherits that bias. And the
+areas are not equal: Ocean Park carries half the campaign.
 
 \subsection{Result 1 --- a three-parameter physical law beats every learned model}
 
@@ -1071,14 +1123,23 @@ strong as future work and wrong as a promise attached to this result.
 \midrule
 \pth{campaign.pdf}, \pth{ranking-inversion.pdf}, \pth{forest-bloo.pdf},
 \pth{ceiling.pdf}, \pth{map-grid.pdf}, \pth{discontinuity.pdf},
-\pth{feature-importance.pdf}
+\pth{feature-importance.pdf}, \pth{hanoi-sites.pdf}, \pth{exceedance.pdf},
+\pth{class-levels.pdf}
   & \pth{scripts/12\_presentation\_figures.py}, reading
     \pth{models/metrics.json}, \pth{data/processed/measurements.csv} and
-    \pth{results/maps/hanoi\_noise\_map.csv}. Re-run on 28 August 2026. The
+    \pth{results/maps/hanoi\_noise\_map.csv}; \pth{hanoi-sites.pdf} additionally
+    reads the road shapefiles under \pth{simulation/gama/inputs/} and
+    \pth{exceedance.pdf} reads
+    \pth{results/tables/hanoi\_exceedances.csv}. Re-run on 28 August 2026. The
     only change against the committed versions is the map's colour ramp: the
     old one ran green -- yellow-green -- lime -- yellow and its three middle
     bands, which cover most of the mapped area, sat at the same lightness and
-    read as one band. The ramp is now ordered by lightness. No number moved. \\
+    read as one band. The ramp is now ordered by lightness, and every label
+    that was set in green is now set in ink --- green is a line colour in these
+    figures, never a font colour. No number moved. \\
+Application screens (Figure~\ref{fig:appscreens}) & \pth{appscreens.tex}, drawn
+  from \pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}. Not device
+  captures --- see the caption. \\
 \pth{validation\_simulation.png} & \pth{scripts/08\_validate\_simulation.py} \\
 Model table (§4.2) & \pth{models/metrics.json} via \pth{models/model\_comparison.md} \\
 Transfer table (§4.3) & \pth{scripts/experiments/uganda\_transfer.py}, re-run 24 August 2026 \\

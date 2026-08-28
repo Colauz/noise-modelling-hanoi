@@ -41,6 +41,10 @@ OUT = ROOT / "presentation" / "figures"
 INK = "#1A1A1A"
 ACCENT = "#1F5C8B"
 GOOD = "#2E7D32"
+# Green is a LINE colour here, never a font colour. Set as type it reads as a
+# highlighter even at this darkness -- against black body text on white paper
+# it looks like something the reader is meant to click. Every label that used
+# to be green is INK; the line beside it still carries the meaning.
 BAD = "#C62828"
 WARN = "#EF6C00"
 MUTED = "#6E6E6E"
@@ -166,7 +170,7 @@ def fig_ranking_inversion(m: dict) -> None:
         ax.annotate(
             f"{label}   {ends[key]:+.3f}",
             xy=(2.05, y), xytext=(0, 0), textcoords="offset points",
-            va="center", ha="left", fontsize=8, color=colour,
+            va="center", ha="left", fontsize=8, color=INK,
             fontweight="bold" if key == "physical" else "normal",
         )
 
@@ -233,7 +237,7 @@ def fig_forest_bloo(m: dict) -> None:
                 markeredgecolor="white", markeredgewidth=0.8, zorder=3)
         ax.annotate(f"{e['r2']:+.3f}", xy=(hi, i), xytext=(5, 0),
                     textcoords="offset points", va="center", fontsize=7.5,
-                    color=colour)
+                    color=INK)
 
     ax.axvline(0, color=RULE, lw=0.8)
     ax.set_yticks(range(len(order)))
@@ -244,7 +248,7 @@ def fig_forest_bloo(m: dict) -> None:
     for tick, key in zip(ax.get_yticklabels(), order):
         if key == m["meta"]["delivered_model"]:
             tick.set_fontweight("bold")
-            tick.set_color(GOOD)
+            tick.set_color(INK)
     ax.set_xlabel("$R^2$ under buffered leave-one-out, 95 % interval bootstrapped by block")
     ax.set_xlim(-0.85, 0.62)
     ax.spines["left"].set_visible(False)
@@ -485,7 +489,7 @@ def fig_ceiling(df: pd.DataFrame, m: dict) -> None:
 
     ax.annotate(f"delivered model  {delivered:.3f}", xy=(len(rows) - 0.7, delivered),
                 xytext=(6, 0), textcoords="offset points", va="center",
-                fontsize=8.5, color=GOOD, fontweight="bold")
+                fontsize=8.5, color=INK, fontweight="bold")
 
     ax.set_xticks(xs)
     ax.set_xticklabels(
@@ -576,6 +580,287 @@ def fig_map(m: dict) -> None:
     save(fig, "map-grid")
 
 
+# ---------------------------------------------------------------------------
+# 8. Where the 363 measurements actually are
+# ---------------------------------------------------------------------------
+def fig_sites_map(df: pd.DataFrame) -> None:
+    """Every measurement, on the map, over the street network it was taken in.
+
+    Drawing it at two scales is the honest way round: at city scale the campaign
+    is three small islands with kilometres of unmeasured Hanoi between them, and
+    that gap is the limit §4 keeps running into. The three detail panels are cut
+    to the SAME box in kilometres, so their densities can be compared by eye --
+    panels scaled to their own data would make the sparsest site look the
+    busiest.
+
+    Roads come from simulation/gama/inputs/*.shp, the OSMnx extracts the
+    simulation already runs on. There is no basemap and no tile server here, so
+    nothing on this figure comes from outside the repository -- which is also
+    why the space between the three areas is blank: it was never extracted,
+    because it was never measured.
+    """
+    import geopandas as gpd
+
+    lat0 = float(df["latitude"].mean())
+    kx = 111.320 * np.cos(np.radians(lat0))   # km per degree of longitude
+    ky = 110.540                              # km per degree of latitude
+
+    sites = ["Ocean Park", "Hoan Kiem lake", "Vinh Tuy area"]
+    stems = {"Ocean Park": "oceanpark_roads", "Hoan Kiem lake": "hoankiem_roads",
+             "Vinh Tuy area": "vinhtuy_roads"}
+    roads = {}
+    for site, stem in stems.items():
+        path = ROOT / "simulation" / "gama" / "inputs" / f"{stem}.shp"
+        roads[site] = gpd.read_file(path) if path.exists() else None
+
+    cmap = matplotlib.colors.ListedColormap([c for _, _, c, _ in BANDS])
+    norm = matplotlib.colors.BoundaryNorm(
+        [40] + [hi for _, hi, _, _ in BANDS[:-1]] + [110], cmap.N
+    )
+
+    def draw_roads(ax, gdf, lw):
+        if gdf is None:
+            return
+        for geom in gdf.geometry:
+            parts = geom.geoms if geom.geom_type == "MultiLineString" else [geom]
+            for part in parts:
+                x, y = part.xy
+                ax.plot(np.asarray(x), np.asarray(y), color=RULE, lw=lw,
+                        zorder=1, solid_capstyle="round")
+
+    def scalebar(ax, km, label, fx, fy):
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+        dx = km / kx
+        bx = x0 + (x1 - x0) * fx
+        by = y0 + (y1 - y0) * fy
+        ax.plot([bx, bx + dx], [by, by], color=INK, lw=1.6,
+                solid_capstyle="butt", zorder=6)
+        ax.text(bx + dx / 2, by + (y1 - y0) * 0.025, label, ha="center",
+                va="bottom", fontsize=6.5, color=INK, zorder=6)
+
+    def frame(ax):
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for sp in ax.spines.values():
+            sp.set_visible(True)
+            sp.set_color(RULE)
+
+    # The overview keeps true proportions, so the figure has to be laid out
+    # around the data's own aspect rather than the other way round.
+    pad = 0.10
+    w_deg = (df["longitude"].max() - df["longitude"].min()) * (1 + 2 * pad)
+    h_deg = (df["latitude"].max() - df["latitude"].min()) * (1 + 2 * pad)
+    over_aspect = (w_deg * kx) / (h_deg * ky)
+
+    fig_w = 7.8
+    over_h = fig_w / over_aspect
+    detail_h = fig_w / 3 * 0.92 + 0.30
+    fig = plt.figure(figsize=(fig_w, over_h + detail_h + 0.55))
+    gs = fig.add_gridspec(2, 3, height_ratios=[over_h, detail_h],
+                          hspace=0.16, wspace=0.10)
+
+    # -- overview -----------------------------------------------------------
+    ax = fig.add_subplot(gs[0, :])
+    for site in sites:
+        draw_roads(ax, roads[site], 0.35)
+    ax.scatter(df["longitude"], df["latitude"], c=df["noise_dB"], cmap=cmap,
+               norm=norm, s=7, linewidths=0.25, edgecolors="white", zorder=4)
+    ax.set_xlim(df["longitude"].min() - w_deg * pad / (1 + 2 * pad),
+                df["longitude"].max() + w_deg * pad / (1 + 2 * pad))
+    ax.set_ylim(df["latitude"].min() - h_deg * pad / (1 + 2 * pad),
+                df["latitude"].max() + h_deg * pad / (1 + 2 * pad))
+    ax.set_aspect(1 / np.cos(np.radians(lat0)))
+
+    # A label goes above its cluster unless the cluster already sits near the
+    # top of the frame, where it would collide with the title.
+    ytop = ax.get_ylim()[1]
+    for site in sites:
+        g = df[df["site"] == site]
+        above = (ytop - g["latitude"].max()) > h_deg * 0.14
+        y = (g["latitude"].max() + h_deg * 0.035) if above \
+            else (g["latitude"].min() - h_deg * 0.035)
+        ax.annotate(
+            f"{site}\n$n$ = {len(g)}",
+            xy=(g["longitude"].mean(), y),
+            ha="center", va="bottom" if above else "top", fontsize=8,
+            color=INK, linespacing=1.3, fontweight="bold", zorder=5,
+        )
+    frame(ax)
+    scalebar(ax, 2.0, "2 km", 0.03, 0.06)
+
+    span_km = (df["longitude"].max() - df["longitude"].min()) * kx
+    ax.set_title(
+        f"All {len(df)} measurements. The three areas span {span_km:.0f} km "
+        "of Hanoi;\nnothing between them was measured.",
+        fontsize=8.5, color=INK, loc="left", pad=7, linespacing=1.4,
+    )
+
+    # -- three detail panels, cut to one common box ------------------------
+    half_km = 0.90
+    for col, site in enumerate(sites):
+        axd = fig.add_subplot(gs[1, col])
+        g = df[df["site"] == site]
+        cx, cy = g["longitude"].mean(), g["latitude"].mean()
+        draw_roads(axd, roads[site], 0.5)
+        axd.scatter(g["longitude"], g["latitude"], c=g["noise_dB"], cmap=cmap,
+                    norm=norm, s=16, linewidths=0.4, edgecolors="white",
+                    zorder=4)
+        axd.set_xlim(cx - half_km / kx, cx + half_km / kx)
+        axd.set_ylim(cy - half_km / ky, cy + half_km / ky)
+        axd.set_aspect(1 / np.cos(np.radians(lat0)))
+        frame(axd)
+        axd.set_title(
+            f"{site}   $n$ = {len(g)}" if col != 1 else
+            f"{site}   $n$ = {len(g)}\n"
+            f"{2 * half_km:.1f} × {2 * half_km:.1f} km — same box, same scale "
+            "in all three",
+            fontsize=8, color=INK, pad=5, linespacing=1.5,
+        )
+        scalebar(axd, 0.5, "500 m", 0.06, 0.06)
+
+    fig.legend(
+        handles=[Patch(color=c, label=lab) for _, _, c, lab in BANDS],
+        loc="lower center", ncol=7, fontsize=7.5, handlelength=1.1,
+        columnspacing=1.0, bbox_to_anchor=(0.5, -0.025),
+        title=r"measured $L_{A,25\mathrm{s}}$  (dB)",
+        title_fontsize=7.5,
+    )
+    fig.legends[0].get_title().set_color(MUTED)
+    save(fig, "hanoi-sites")
+
+
+# ---------------------------------------------------------------------------
+# 9. Exceedance of the national limit, and how thin the night is
+# ---------------------------------------------------------------------------
+def fig_exceedance() -> None:
+    """QCVN 26:2010 exceedance by site and period, read from the results table.
+
+    The night bars are drawn at the same weight as the day bars and then
+    contradicted by their own sample size, printed on each bar. Ten night
+    measurements out of 363 is the whole night evidence of this campaign; a
+    reader who takes "100 % of nights exceed" away from this figure without
+    taking "n = 6" with it has read it wrong, so both are on the bar.
+    """
+    t = pd.read_csv(ROOT / "results" / "tables" / "hanoi_exceedances.csv")
+    sites = list(t["site"].unique())
+    periods = ["day", "night"]
+    colours = {"day": ACCENT, "night": INK}
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.8, 2.9), width_ratios=[1.25, 1])
+    width = 0.36
+    xs = np.arange(len(sites))
+
+    for k, period in enumerate(periods):
+        vals, ns = [], []
+        for site in sites:
+            row = t[(t["site"] == site) & (t["period"] == period)]
+            vals.append(float(row["pct_depassement"].iloc[0]) if len(row) else np.nan)
+            ns.append(int(row["n"].iloc[0]) if len(row) else 0)
+        pos = xs + (k - 0.5) * width
+        ax1.bar(pos, vals, width=width, color=colours[period], alpha=0.9,
+                label=period)
+        for x, v, n in zip(pos, vals, ns):
+            ax1.text(x, v + 2.5, f"{v:.0f} %", ha="center", va="bottom",
+                     fontsize=7.5, color=INK, fontweight="bold")
+            ax1.text(x, 2.5, f"n = {n}", ha="center", va="bottom", fontsize=6.8,
+                     color="white" if v > 14 else MUTED)
+
+    ax1.set_xticks(xs)
+    ax1.set_xticklabels(sites, fontsize=8, color=INK)
+    ax1.set_ylabel("measurements over the limit  (%)")
+    ax1.set_ylim(0, 118)
+    ax1.set_yticks([0, 25, 50, 75, 100])
+    ax1.grid(axis="y", color=RULE, lw=0.5, alpha=0.6)
+    ax1.set_axisbelow(True)
+    ax1.legend(loc="upper left", ncol=2, bbox_to_anchor=(0, 1.14))
+    ax1.set_title("Share over QCVN 26:2010 — 70 dB(A) by day, 55 by night",
+                  fontsize=9, color=INK, loc="left", pad=20)
+
+    # -- the severity beside the share -------------------------------------
+    for k, period in enumerate(periods):
+        vals, ns = [], []
+        for site in sites:
+            row = t[(t["site"] == site) & (t["period"] == period)]
+            vals.append(float(row["severite_moy_dB"].iloc[0]) if len(row) else np.nan)
+            ns.append(int(row["n"].iloc[0]) if len(row) else 0)
+        pos = xs + (k - 0.5) * width
+        ax2.bar(pos, vals, width=width, color=colours[period], alpha=0.9)
+        for x, v in zip(pos, vals):
+            ax2.text(x, v + 0.35, f"+{v:.1f}", ha="center", va="bottom",
+                     fontsize=7.5, color=INK, fontweight="bold")
+
+    ax2.set_xticks(xs)
+    ax2.set_xticklabels(sites, fontsize=8, color=INK)
+    ax2.set_ylabel("mean overshoot  (dB)")
+    ax2.set_ylim(0, max(t["severite_moy_dB"]) * 1.30)
+    ax2.grid(axis="y", color=RULE, lw=0.5, alpha=0.6)
+    ax2.set_axisbelow(True)
+    ax2.set_title("By how much, when it is over", fontsize=9, color=INK,
+                  loc="left", pad=20)
+
+    fig.text(
+        0.5, -0.10,
+        "Descriptive only. QCVN 26:2010 regulates a 1 h $L_{Aeq}$; this campaign "
+        "measured 25 s $L_{A,25\\mathrm{s}}$, so these bars are placed beside the "
+        "limit, not compared to it (docs/metrology.md).",
+        ha="center", fontsize=7, color=MUTED,
+    )
+    save(fig, "exceedance")
+
+
+# ---------------------------------------------------------------------------
+# 10. What the operator said the noise was
+# ---------------------------------------------------------------------------
+def fig_class_levels(df: pd.DataFrame) -> None:
+    """Level by the source class the operator recorded on the form.
+
+    This is the one variable in the dataset that is a human judgement rather
+    than a sensor reading, and it is worth a figure because it behaves: the
+    ordering it produces is the ordering the physics predicts. It is also the
+    clearest picture of how unbalanced the campaign is — two classes carry
+    three quarters of it and eight classes have single digits.
+    """
+    counts = df["class"].value_counts()
+    keep = counts[counts >= 5].index.tolist()
+    order = (df[df["class"].isin(keep)].groupby("class")["noise_dB"].median()
+             .sort_values().index.tolist())
+
+    fig, ax = plt.subplots(figsize=(7.8, 3.2))
+    for i, cls in enumerate(order):
+        v = df[df["class"] == cls]["noise_dB"]
+        q1, med, q3 = v.quantile([0.25, 0.5, 0.75])
+        ax.plot([q1, q3], [i, i], color=ACCENT, lw=3.0, solid_capstyle="round",
+                alpha=0.55, zorder=2)
+        ax.plot([v.min(), v.max()], [i, i], color=ACCENT, lw=0.7, alpha=0.5,
+                zorder=1)
+        ax.plot([med], [i], "o", ms=5.5, color="white", markeredgecolor=ACCENT,
+                markeredgewidth=1.6, zorder=3)
+        ax.text(v.max() + 1.2, i, f"$n$ = {len(v)}", va="center", ha="left",
+                fontsize=7.5, color=MUTED)
+
+    dropped = int(counts[counts < 5].sum())
+    ax.set_yticks(range(len(order)))
+    ax.set_yticklabels(order, fontsize=8, color=INK)
+    ax.set_xlabel(r"$L_{A,25\mathrm{s}}$  (dB)")
+    ax.set_xlim(df["noise_dB"].min() - 2, df["noise_dB"].max() + 9)
+    ax.grid(axis="x", color=RULE, lw=0.5, alpha=0.6)
+    ax.set_axisbelow(True)
+    ax.set_title(
+        "Level by the source class the operator recorded — median, "
+        "interquartile range and full range",
+        fontsize=9, color=INK, loc="left", pad=8,
+    )
+    ax.text(
+        0, -0.30,
+        f"Classes with fewer than 5 measurements are not drawn "
+        f"({dropped} measurements across "
+        f"{int((counts < 5).sum())} classes). The class is the operator's "
+        "judgement on the form, not a measured quantity.",
+        transform=ax.transAxes, fontsize=7, color=MUTED,
+    )
+    save(fig, "class-levels")
+
 def main() -> None:
     style()
     m = metrics()
@@ -588,6 +873,9 @@ def main() -> None:
     fig_feature_importance(m)
     fig_ceiling(df, m)
     fig_map(m)
+    fig_sites_map(df)
+    fig_exceedance()
+    fig_class_levels(df)
 
 
 if __name__ == "__main__":
