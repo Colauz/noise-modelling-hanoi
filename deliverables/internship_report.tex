@@ -477,19 +477,49 @@ under \pth{docs/archive/}: the Bach Khoa map (\pth{bach-khoa/}), the July deck
 \begin{figure}[p]
   \centering
   \includegraphics[width=\textwidth]{hanoi-sites.pdf}
-  \caption{Where the 363 measurements actually are. \textbf{Top:} all three
-  areas in one frame, on the street network each was measured in, coloured by
-  the level measured there. \textbf{Bottom:} each area cut to the same
-  1.8$\times$1.8\,km box, so the three densities can be compared by eye ---
-  panels scaled to their own data would make the sparsest site look the busiest.
-  The blank space in the top panel is the argument of this report in one
-  picture: the campaign is three islands roughly 11\,km apart, and the model of
-  §\ref{sec:ceiling} is asked to generalise across everything between them,
-  which was never measured. There is no basemap and no tile server here ---
-  roads are the OSMnx extracts the GAMA simulation already runs on
-  (\pth{simulation/gama/inputs/}), so nothing on this figure comes from outside
-  the repository. \pth{scripts/12\_presentation\_figures.py}.}
+  \caption{Where the 363 measurements are, and which of them carry video.
+  \textbf{Top left:} Hanoi whole, with the locator box for the panel beside it.
+  \textbf{Top right:} the urban core --- the sampling frame of
+  §\ref{sec:campaign} in blue, the 92 named new urban developments as triangles,
+  and the three measured areas. \textbf{Bottom:} each area cut to the same
+  1.8$\times$1.8\,km box, so the three densities can be compared by eye; panels
+  scaled to their own data would make the sparsest site look the busiest.
+  \emph{The campaign runs two instruments and only one of them ran everywhere.}
+  \textbf{142 of the 363 measurements have a traffic video matched to them and
+  221 do not}, and the shortfall is not spread evenly: Ocean Park is the largest
+  site and the thinnest covered, at 23\,\% against 60\,\% at Hoan Kiem. The
+  matched pairs are the pipeline's own
+  (\pth{data/processed/vehicle\_counts.csv}), not recomputed here. Roads are the
+  OSMnx extracts the GAMA simulation runs on; boundaries are
+  \pth{hanoi\_wards.geojson}. \pth{scripts/12\_presentation\_figures.py}.}
   \label{fig:sites}
+\end{figure}
+
+\begin{figure}[p]
+  \centering
+  \begin{tabular}{@{}c@{\hspace{2pt}}c@{}}
+    \includegraphics[width=.485\textwidth]{stills/TC_20260714_172600_t15.jpg} &
+    \includegraphics[width=.485\textwidth]{stills/TC_20260713_174900_t12.jpg} \\[.25em]
+    \footnotesize Hoan Kiem, 14 July 17:26 --- old quarter &
+    \footnotesize Vinh Tuy, 13 July 17:49 --- transport corridor \\[.7em]
+    \multicolumn{2}{c}{\includegraphics[width=.62\textwidth]{stills/TC_20260713_081300_t20.jpg}}\\[.25em]
+    \multicolumn{2}{c}{\footnotesize Ocean Park, 13 July 08:13 --- a new town
+      still under construction} \\
+  \end{tabular}
+  \caption{Three of the 147 traffic videos, one per typology, with the
+  detector's boxes drawn on. \textbf{Every frame is redacted before it is
+  written to disk} and no raw frame is kept: each is passed through the same
+  \pth{yolov8n} the counting pipeline uses, every \emph{person} box is dilated
+  and mosaicked, and every vehicle is blurred whole and mosaicked over its
+  lower half where a plate sits (\pth{scripts/make\_video\_stills.py}). The
+  footage carries identifiable faces and readable plates, it is not
+  distributed, and this repository is public. The redaction is a machine pass
+  and is stated as one: a person the detector misses is a person the mosaic
+  misses, which is why every still here was also looked at by a human before it
+  was included. The blurred patch in the top right corner of each frame is the
+  capture app's burned-in caption, removed for the reason given in
+  §\ref{sec:videocaveat}.}
+  \label{fig:stills}
 \end{figure}
 
 \begin{figure}[htbp]
@@ -547,14 +577,35 @@ descriptive statistic and not as a compliance rate. Per-site exceedances from
   \label{fig:classlevels}
 \end{figure}
 
-\noindent Three things in Figure~\ref{fig:sites} bear on everything that
+\noindent Four things in Figure~\ref{fig:sites} bear on everything that
 follows. The three areas are roughly 11\,km apart and nothing between them was
 measured, which is the envelope the grid-extent test
 (\pth{tests/test\_grid\_extent.py}) exists to enforce. Within each area the
 coverage follows the street network rather than a grid, so the sample is
 road-biased by construction --- 189 of 363 measurements are roadside, from
-\pth{dist\_to\_road} --- and a model fitted on it inherits that bias. And the
-areas are not equal: Ocean Park carries half the campaign.
+\pth{dist\_to\_road} --- and a model fitted on it inherits that bias. The areas
+are not equal: Ocean Park carries half the campaign. And \textbf{the video
+covers 39\,\% of it}, which is the ceiling on anything result~3
+(§\ref{sec:result3}) could ever have shown: the traffic term was fitted where
+the traffic was actually counted, and that is 142 points, not 363.
+
+\begin{caveat}{The capture app's burned-in location is wrong, and it matters
+for the next campaign}\label{sec:videocaveat}
+The videos carry a date and a place name burned into the corner by the capture
+application. The date is right. \textbf{The place name is not.} It is cached
+from the last geocode the app made, so all 42 recordings taken in Vinh Tuy on
+13 July are captioned \emph{Ocean Park Gia Lam} --- 8\,km away --- and the 14
+July recordings in Hoan Kiem carry no place line at all. The GPS tag in the
+file metadata is correct throughout and agrees with the measurement
+coordinates; it is what \pth{scripts/index\_videos.py} reads and what places
+every video on Figure~\ref{fig:sites}.
+
+Nothing here was sited from the caption, so nothing in §4 is affected. It is
+recorded because the planned campaign puts a camera in the hands of 60
+volunteers: if they use this app, every video will carry a confident and
+sometimes wrong location, and whoever processes them afterwards will have no
+reason to doubt it. Read the GPS tag, never the caption.
+\end{caveat}
 
 \subsection{Result 1 --- a three-parameter physical law beats every learned model}
 
@@ -690,7 +741,7 @@ non-deterministic component we have not isolated. The manuscript must quote one
 run and name it.
 \end{caveat}
 
-\subsection{Result 3 --- vehicle counts from video carry no recoverable acoustic signal}
+\subsection{Result 3 --- vehicle counts from video carry no recoverable acoustic signal}\label{sec:result3}
 
 147 videos were matched to measurements (median offset 15\,s, p90 56\,s, max
 161\,s). A non-negative least-squares regression in \emph{energy},
@@ -993,29 +1044,39 @@ been executed, and no number in §4 depends on it.
   \label{fig:frame}
 \end{figure}
 
-\begin{caveat}{Drawing the frame found a problem in it}
+\begin{caveat}{Drawing the frame found a problem in it, and the frame was
+widened}
 Placing the three measured areas on the ward boundaries was meant to be
-illustration, and returned a finding instead. \textbf{Ocean Park is not in a
-\emph{phuong}.} All 184 of its measurements --- half this campaign --- fall
-inside \emph{Xa Gia Lam}, a rural commune, which the frame as specified above
-excludes. Hoan Kiem and Vinh Tuy are inside it; Ocean Park is not.
+illustration, and returned a finding instead. Under the frame as first
+specified --- the 51 urban \emph{phuong} --- \textbf{Ocean Park was not in it}.
+All 184 of its measurements, half this campaign, fall inside \emph{Xa Gia Lam},
+which is administratively a rural commune and in fact a new town of tower
+blocks, a mall and a construction site (Figure~\ref{fig:stills}, bottom).
 
-Nothing in §4 changes: the site is real and the measurements are valid. What
-changes is the plan. Either the frame widens to admit the peri-urban
-\emph{xa} --- in which case ``51 urban \emph{phuong}'' is the wrong description
-of it, and the stratum for new peri-urban development has no obvious home ---
-or the frame stands and the one area this project knows best contributes
-nothing to the design of the next campaign. That is a decision, and it belongs
-to whoever fixes the protocol, not to this report.
+\textbf{The frame has been widened, and the criterion is what is built rather
+than what it is called.} A unit is in the frame if it is a \emph{phuong}, or if
+it contains a named new urban development --- \emph{khu do thi} and the
+developer names that do not use the term. That is computed from
+OpenStreetMap, not listed by hand: 92 such developments across Hanoi, 89 of
+them inside an administrative unit, admitting \textbf{9 \emph{xa}} alongside
+the 51 \emph{phuong}. The frame is \textbf{60 units and 636\,km$^2$} rather
+than 51 and 407, and Ocean Park is inside it, as are An Khanh, Hoai Duc, Thanh
+Tri, Dong Anh and the rest of the new-town belt. A noise study of a growing
+city that sampled only the units the map still calls urban would have missed
+the growth.
 \end{caveat}
 
 \paragraph{Mapping arm --- 160 sites, 1\,920 sessions.} 160 sites are drawn in
 \textbf{8 strata of 20 sites} each: major axes and ring roads; secondary
 streets; the old quarter and its narrow streets; residential alleys
 (\emph{ngo}); markets; sensitive receivers (schools and hospitals); quiet zones
-(lakes and parks); and construction and industrial sites. The draw is made
-across the \textbf{51 urban \emph{phuong}} (wards) of Hanoi under the
-administrative division in force since July~2025.
+(lakes and parks); and construction and industrial sites --- to which the
+widening of the frame adds a ninth in all but name, since the new towns now
+inside it are a typology of their own: wide new roads, low current density and
+live construction, which is what Ocean Park already showed. The draw is made
+across the \textbf{60 units} of the frame (Figure~\ref{fig:frame}): the 51
+urban \emph{phuong} of Hanoi under the division in force since July~2025, plus
+the 9 \emph{xa} that contain a new urban development.
 % Written without diacritics --- phuong = phường, ngo = ngõ --- because the T1
 % encoding this document builds under has no horn accent, and the README
 % documents a plain pdflatex build.
@@ -1047,6 +1108,35 @@ ground and more than 2\,m from any reflecting façade}. \textbf{No measurement i
 rain, and none in wind above 5\,m\,s$^{-1}$.} Alongside each session, the
 operator records \textbf{two-wheeler and car flow and a horn count}, and
 \textbf{$L_{A10}$ and $L_{A\max}$ are computed in addition to $L_{Aeq}$}.
+
+\paragraph{The video arm, and why it is not optional this time.} Volunteers
+record a \textbf{traffic video at the same time as the level}, so that flow is
+measured rather than estimated. This campaign already did that and did it
+unevenly --- 142 of 363 measurements carry video, 23\,\% of them at Ocean Park
+(Figure~\ref{fig:sites}) --- and result~3 was fitted on that thin, uneven half.
+Three things follow for the plan, and all three are cheap:
+
+\begin{itemize}
+  \item \textbf{Fix the video share and state it up front.} Whether every
+        session carries video or a defined sub-sample does, it must be a
+        decision rather than a by-product of who remembered. A stratum with
+        20\,\% video coverage cannot carry a traffic term.
+  \item \textbf{Record at the resolution the detector will be run at.} The
+        counting pipeline currently runs at \pth{imgsz=640} and finds 30\,\%
+        fewer vehicles than the same frames at 1280 (§6.2 above,
+        §\ref{sec:sciwork}). Fix the inference resolution before the campaign,
+        not after.
+  \item \textbf{Trust the GPS tag, never the burned-in caption}
+        (§\ref{sec:videocaveat}). With 60 volunteers this stops being a
+        curiosity and becomes a systematic mis-siting of the video record.
+\end{itemize}
+
+The footage is personal data the moment it exists: it carries faces and plates,
+and 6\,GB of it already has no custodian (§7.1.1). Any campaign that multiplies
+it by ten needs the retention decision made \emph{first}, and a redaction step
+in the pipeline rather than at publication time --- the one in
+\pth{scripts/make\_video\_stills.py} is a start and is only good enough for
+three hand-checked stills.
 
 \paragraph{Reference and governance.} Results are read against \textbf{QCVN
 26:2010/BTNMT}: 70\dB(A) from 06:00 to 21:00 and 55\dB(A) from 21:00 to 06:00 in
@@ -1089,12 +1179,24 @@ Dates are the repository's where it has them.
         repeated at larger scale.
 \end{enumerate}
 
-\subsection{Scientific work, in value-per-effort order}
+\subsection{Scientific work, in value-per-effort order}\label{sec:sciwork}
 
 \begin{enumerate}
   \item \textbf{Validate the YOLO detector} on \(\sim\)10 videos, double-counted
         manually --- about one day. It is the input uncertainty of every
-        downstream number and it unblocks the modal shares.
+        downstream number and it unblocks the modal shares. There is now a
+        reason to think the uncertainty is large and one-sided:
+        \pth{02\_count\_vehicles.py} runs inference at
+        \pth{imgsz=640} on 1280$\times$720 footage, and re-running the same
+        frames at \pth{imgsz=1280} with the confidence threshold held at 0.30
+        finds \textbf{30\,\% more vehicles} --- 78 against 60 across a
+        12-frame sample, more in 8 of the 12. Twelve frames is a hint, not a
+        measurement, and the sign is what matters: the counts result~3 was
+        fitted against are more likely to be undercounts than overcounts, and
+        an instrument that undercounts by a variable amount is exactly what
+        would flatten a real relationship into the zero coefficients of
+        §\ref{sec:result3}. Vary the resolution first; it costs an afternoon
+        and it may reframe the whole negative result.
   \item \textbf{Diagnose the 27~June discontinuity} and refit with a phase term
         --- and commit the code that computes the controlled effect.
   \item \textbf{Reframe negative result 3} as an instrument failure in
@@ -1186,11 +1288,29 @@ Application screens (Figure~\ref{fig:appscreens}) & \pth{appscreens.tex}, drawn
   from \pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}. Not device
   captures --- see the caption. \\
 \pth{validation\_simulation.png} & \pth{scripts/08\_validate\_simulation.py} \\
-\pth{data/processed/hanoi\_wards.geojson} & \pth{scripts/fetch\_hanoi\_wards.py},
-  one Overpass query against OpenStreetMap, fetched 28 August 2026 and
-  committed. 126 units: 51 \emph{phuong}, 75 \emph{xa}. It is the only script
-  in the project that touches the network, which is why it is unnumbered and
-  outside the pipeline. \\
+\pth{hanoi\_wards.geojson}, \pth{hanoi\_new\_developments.geojson} &
+  \pth{scripts/fetch\_hanoi\_wards.py}, two Overpass queries against
+  OpenStreetMap, fetched 28 August 2026 and committed. 126 administrative units
+  (51 \emph{phuong}, 75 \emph{xa}) and 92 named new urban developments. It is
+  the only script in the project that touches the network, which is why it is
+  unnumbered and outside the pipeline. \\
+\pth{data/processed/video\_index.csv} & \pth{scripts/index\_videos.py}, reading
+  the QuickTime GPS and creation-time tags of the 147 files in
+  \pth{data/raw/videos/}. 118 carry a coordinate. No image data. Unnumbered:
+  a clone has no footage to run it on. \\
+Figure~\ref{fig:stills}, the three stills & \pth{scripts/make\_video\_stills.py}
+  --- redaction by \pth{yolov8n}, then checked by eye. No raw frame is written
+  to disk. \\
+Which measurements carry video (142 of 363) & joined in
+  \pth{fig\_sites\_map} on \pth{matched\_timestamp} in
+  \pth{data/processed/vehicle\_counts.csv}, the pipeline's own match \\
+The frame: 60 units, 636\,km$^2$ & \pth{frame\_units} in
+  \pth{scripts/12\_presentation\_figures.py} --- every \emph{phuong}, plus every
+  \emph{xa} containing a development from
+  \pth{hanoi\_new\_developments.geojson} \\
+The 30\,\% detector-resolution gap (§\ref{sec:sciwork}) & 12 frames sampled at
+  \pth{random\_state=7}, \pth{yolov8n} at \pth{imgsz} 640 against 1280,
+  \pth{conf} held at 0.30. A hint at this sample size, not a measurement. \\
 Frame area, measured area, the 236$\times$ ratio, and which areas fall inside
   the frame & computed in \pth{fig\_campaign\_frame} from
   \pth{hanoi\_wards.geojson} and \pth{measurements.csv}, reprojected to

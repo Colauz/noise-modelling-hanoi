@@ -583,27 +583,70 @@ def fig_map(m: dict) -> None:
 # ---------------------------------------------------------------------------
 # 8. Where the 363 measurements actually are
 # ---------------------------------------------------------------------------
-def fig_sites_map(df: pd.DataFrame) -> None:
-    """Every measurement, on the map, over the street network it was taken in.
+def frame_units(wards, developments):
+    """The sampling frame: every phuong, plus every xa holding a new town.
 
-    Drawing it at two scales is the honest way round: at city scale the campaign
-    is three small islands with kilometres of unmeasured Hanoi between them, and
-    that gap is the limit §4 keeps running into. The three detail panels are cut
-    to the SAME box in kilometres, so their densities can be compared by eye --
-    panels scaled to their own data would make the sparsest site look the
-    busiest.
+    The administrative label is not the question the campaign is asking. Hanoi
+    keeps calling a commune a xa long after it has been built over -- Ocean
+    Park sits in Xa Gia Lam, and half this project's measurements were taken
+    there. A frame of "the 51 urban phuong" would exclude it, and with it every
+    other new town on the periphery, which is precisely the typology a noise
+    study of a growing city cannot leave out.
 
-    Roads come from simulation/gama/inputs/*.shp, the OSMnx extracts the
-    simulation already runs on. There is no basemap and no tile server here, so
-    nothing on this figure comes from outside the repository -- which is also
-    why the space between the three areas is blank: it was never extracted,
-    because it was never measured.
+    So the test is what is built, not what it is called: a unit is in the frame
+    if it is a phuong, or if it contains a named new urban development
+    (`khu do thi` and the developer names that do not use the term). Computed
+    from the data, not listed by hand -- add a development to OSM and the frame
+    picks it up.
     """
     import geopandas as gpd
 
+    located = gpd.sjoin(developments, wards, predicate="within", how="left")
+    with_dev = set(located["name_right"].dropna())
+    keep = (wards["kind"] == "phuong") | (wards["name"].isin(with_dev))
+    return wards[keep], wards[~keep]
+
+
+def video_coverage(df: pd.DataFrame) -> pd.Series:
+    """True where a measurement has a traffic video matched to it.
+
+    The match is the pipeline's own, from data/processed/vehicle_counts.csv --
+    not recomputed here, because a second definition of "matched" is a second
+    home for the number.
+    """
+    counts = pd.read_csv(ROOT / "data" / "processed" / "vehicle_counts.csv",
+                         parse_dates=["matched_timestamp"])
+    return df["timestamp"].isin(set(counts["matched_timestamp"].dropna()))
+
+
+def fig_sites_map(df: pd.DataFrame) -> None:
+    """All of Hanoi, the frame, and which measurements carry video.
+
+    Two things are drawn that the earlier version of this figure did not have.
+    The whole city rather than a bounding box around three sites, so the frame
+    and the gap in it can both be seen; and the audio/video split, because the
+    campaign records two instruments and only one of them ran everywhere. Of
+    the 363 measurements, 142 have a matched traffic video and 221 do not, and
+    the difference is not evenly spread: Ocean Park, the largest site, is the
+    thinnest covered.
+
+    Detail panels are cut to the SAME box in kilometres so their densities can
+    be compared by eye.
+    """
+    import geopandas as gpd
+
+    wards = gpd.read_file(ROOT / "data" / "processed" / "hanoi_wards.geojson")
+    devs = gpd.read_file(ROOT / "data" / "processed"
+                         / "hanoi_new_developments.geojson")
+    inside, outside = frame_units(wards, devs)
+
+    df = df.copy()
+    df["has_video"] = video_coverage(df)
+    n_video = int(df["has_video"].sum())
+
     lat0 = float(df["latitude"].mean())
-    kx = 111.320 * np.cos(np.radians(lat0))   # km per degree of longitude
-    ky = 110.540                              # km per degree of latitude
+    kx = 111.320 * np.cos(np.radians(lat0))
+    aspect = 1 / np.cos(np.radians(lat0))
 
     sites = ["Ocean Park", "Hoan Kiem lake", "Vinh Tuy area"]
     stems = {"Ocean Park": "oceanpark_roads", "Hoan Kiem lake": "hoankiem_roads",
@@ -612,11 +655,6 @@ def fig_sites_map(df: pd.DataFrame) -> None:
     for site, stem in stems.items():
         path = ROOT / "simulation" / "gama" / "inputs" / f"{stem}.shp"
         roads[site] = gpd.read_file(path) if path.exists() else None
-
-    cmap = matplotlib.colors.ListedColormap([c for _, _, c, _ in BANDS])
-    norm = matplotlib.colors.BoundaryNorm(
-        [40] + [hi for _, hi, _, _ in BANDS[:-1]] + [110], cmap.N
-    )
 
     def draw_roads(ax, gdf, lw):
         if gdf is None:
@@ -632,103 +670,147 @@ def fig_sites_map(df: pd.DataFrame) -> None:
         x0, x1 = ax.get_xlim()
         y0, y1 = ax.get_ylim()
         dx = km / kx
-        bx = x0 + (x1 - x0) * fx
-        by = y0 + (y1 - y0) * fy
+        bx, by = x0 + (x1 - x0) * fx, y0 + (y1 - y0) * fy
         ax.plot([bx, bx + dx], [by, by], color=INK, lw=1.6,
-                solid_capstyle="butt", zorder=6)
-        ax.text(bx + dx / 2, by + (y1 - y0) * 0.025, label, ha="center",
-                va="bottom", fontsize=6.5, color=INK, zorder=6)
+                solid_capstyle="butt", zorder=7)
+        ax.text(bx + dx / 2, by + (y1 - y0) * 0.022, label, ha="center",
+                va="bottom", fontsize=6.5, color=INK, zorder=7)
 
-    def frame(ax):
+    def frame_off(ax):
         ax.set_xticks([])
         ax.set_yticks([])
+        # The stylesheet hides the top and right spines, which is right for a
+        # chart and wrong for a map: a map wants a closed neat line.
         for sp in ax.spines.values():
             sp.set_visible(True)
             sp.set_color(RULE)
 
-    # The overview keeps true proportions, so the figure has to be laid out
-    # around the data's own aspect rather than the other way round.
-    pad = 0.10
-    w_deg = (df["longitude"].max() - df["longitude"].min()) * (1 + 2 * pad)
-    h_deg = (df["latitude"].max() - df["latitude"].min()) * (1 + 2 * pad)
-    over_aspect = (w_deg * kx) / (h_deg * ky)
+    # Hanoi province is taller than it is wide, so a full-width overview
+    # leaves half the panel empty and puts the three measured areas -- which
+    # are 11 km apart in a city 70 km across -- inside one blob with three
+    # labels fighting over it. The overview keeps its own proportions on the
+    # left; a zoom on the urban core takes the space that would have been
+    # white, and carries the labels.
+    fig = plt.figure(figsize=(7.8, 6.9))
+    gs = fig.add_gridspec(2, 3, height_ratios=[4.3, 2.4], hspace=0.22,
+                          wspace=0.10)
+    gs_top = gs[0, :].subgridspec(1, 2, width_ratios=[1, 1.45], wspace=0.06)
 
-    fig_w = 7.8
-    over_h = fig_w / over_aspect
-    detail_h = fig_w / 3 * 0.92 + 0.30
-    fig = plt.figure(figsize=(fig_w, over_h + detail_h + 0.55))
-    gs = fig.add_gridspec(2, 3, height_ratios=[over_h, detail_h],
-                          hspace=0.16, wspace=0.10)
+    # ---- all of Hanoi ----------------------------------------------------
+    ax = fig.add_subplot(gs_top[0, 0])
+    outside.plot(ax=ax, facecolor="#F6F6F4", edgecolor="white", linewidth=0.3,
+                 zorder=1)
+    inside.plot(ax=ax, facecolor=ACCENT, alpha=0.14, edgecolor=ACCENT,
+                linewidth=0.4, zorder=2)
+    ax.scatter(devs.geometry.x, devs.geometry.y, s=9, marker="^",
+               facecolor="white", edgecolor=WARN, linewidths=0.7, zorder=4)
 
-    # -- overview -----------------------------------------------------------
-    ax = fig.add_subplot(gs[0, :])
-    for site in sites:
-        draw_roads(ax, roads[site], 0.35)
-    ax.scatter(df["longitude"], df["latitude"], c=df["noise_dB"], cmap=cmap,
-               norm=norm, s=7, linewidths=0.25, edgecolors="white", zorder=4)
-    ax.set_xlim(df["longitude"].min() - w_deg * pad / (1 + 2 * pad),
-                df["longitude"].max() + w_deg * pad / (1 + 2 * pad))
-    ax.set_ylim(df["latitude"].min() - h_deg * pad / (1 + 2 * pad),
-                df["latitude"].max() + h_deg * pad / (1 + 2 * pad))
-    ax.set_aspect(1 / np.cos(np.radians(lat0)))
+    # At province scale the three areas are one dot; the box marks where the
+    # zoom beside it comes from.
+    zx0, zx1 = df["longitude"].min() - 0.075, df["longitude"].max() + 0.075
+    zy0, zy1 = df["latitude"].min() - 0.055, df["latitude"].max() + 0.055
+    ax.plot([zx0, zx1, zx1, zx0, zx0], [zy0, zy0, zy1, zy1, zy0],
+            color=BAD, lw=1.0, zorder=7)
 
-    # A label goes above its cluster unless the cluster already sits near the
-    # top of the frame, where it would collide with the title.
-    ytop = ax.get_ylim()[1]
-    for site in sites:
+    ax.set_aspect(aspect)
+    frame_off(ax)
+    scalebar(ax, 20, "20 km", 0.05, 0.04)
+    ax.set_title("Hanoi, whole", fontsize=8.5, color=INK, loc="left", pad=6)
+
+    # ---- the urban core, where everything is -----------------------------
+    axc = fig.add_subplot(gs_top[0, 1])
+    outside.plot(ax=axc, facecolor="#F6F6F4", edgecolor="white",
+                 linewidth=0.3, zorder=1)
+    inside.plot(ax=axc, facecolor=ACCENT, alpha=0.14, edgecolor=ACCENT,
+                linewidth=0.4, zorder=2)
+    axc.scatter(devs.geometry.x, devs.geometry.y, s=14, marker="^",
+                facecolor="white", edgecolor=WARN, linewidths=0.8, zorder=4)
+
+    for site, dy in zip(sites, (1, -1, -1)):
         g = df[df["site"] == site]
-        above = (ytop - g["latitude"].max()) > h_deg * 0.14
-        y = (g["latitude"].max() + h_deg * 0.035) if above \
-            else (g["latitude"].min() - h_deg * 0.035)
-        ax.annotate(
-            f"{site}\n$n$ = {len(g)}",
-            xy=(g["longitude"].mean(), y),
-            ha="center", va="bottom" if above else "top", fontsize=8,
-            color=INK, linespacing=1.3, fontweight="bold", zorder=5,
+        got = int(g["has_video"].sum())
+        axc.plot(g["longitude"].mean(), g["latitude"].mean(), "o", ms=7,
+                 color=BAD, markeredgecolor="white", markeredgewidth=1.1,
+                 zorder=6)
+        axc.annotate(
+            f"{site}\n{len(g)} pts · {got} with video",
+            xy=(g["longitude"].mean(), g["latitude"].mean()),
+            xytext=(0, 13 * dy), textcoords="offset points", ha="center",
+            va="bottom" if dy > 0 else "top", fontsize=7.5, color=INK,
+            fontweight="bold", linespacing=1.3, zorder=7,
         )
-    frame(ax)
-    scalebar(ax, 2.0, "2 km", 0.03, 0.06)
 
-    span_km = (df["longitude"].max() - df["longitude"].min()) * kx
-    ax.set_title(
-        f"All {len(df)} measurements. The three areas span {span_km:.0f} km "
-        "of Hanoi;\nnothing between them was measured.",
-        fontsize=8.5, color=INK, loc="left", pad=7, linespacing=1.4,
+    axc.plot([], [], "o", ms=7, color=BAD, markeredgecolor="white",
+             markeredgewidth=1.1, label="measured — 3 areas, 363 points")
+    axc.plot([], [], "^", ms=6, color="white", markeredgecolor=WARN,
+             markeredgewidth=0.9,
+             label=f"{len(devs)} named new urban developments")
+    axc.plot([], [], "s", ms=8, color=ACCENT, alpha=0.4,
+             label=f"the frame — {len(inside)} units: "
+                   f"{int((inside['kind'] == 'phuong').sum())} phuong + "
+                   f"{int((inside['kind'] == 'xa').sum())} xa with a new town")
+    axc.plot([], [], "s", ms=8, color="#EDEDEA",
+             label=f"{len(outside)} rural units — outside the frame")
+    axc.legend(loc="upper right", fontsize=6.8, labelspacing=0.45,
+               borderpad=0.45, frameon=True, framealpha=0.95,
+               facecolor="white", edgecolor=RULE)
+
+    axc.set_xlim(zx0, zx1)
+    axc.set_ylim(zy0, zy1)
+    axc.set_aspect(aspect)
+    frame_off(axc)
+    for sp in axc.spines.values():
+        sp.set_color(BAD)
+    scalebar(axc, 5, "5 km", 0.04, 0.05)
+    axc.set_title(
+        "The urban core. The frame follows what is built, not what it is "
+        "called — Ocean Park is inside it.",
+        fontsize=8.5, color=INK, loc="left", pad=6,
     )
 
-    # -- three detail panels, cut to one common box ------------------------
+    # ---- three detail panels, one box ------------------------------------
     half_km = 0.90
+    ky = 110.540
     for col, site in enumerate(sites):
         axd = fig.add_subplot(gs[1, col])
         g = df[df["site"] == site]
         cx, cy = g["longitude"].mean(), g["latitude"].mean()
         draw_roads(axd, roads[site], 0.5)
-        axd.scatter(g["longitude"], g["latitude"], c=g["noise_dB"], cmap=cmap,
-                    norm=norm, s=16, linewidths=0.4, edgecolors="white",
+
+        no_vid = g[~g["has_video"]]
+        vid = g[g["has_video"]]
+        axd.scatter(no_vid["longitude"], no_vid["latitude"], s=15,
+                    facecolor="white", edgecolor=MUTED, linewidths=0.7,
+                    zorder=3)
+        axd.scatter(vid["longitude"], vid["latitude"], s=17, marker="o",
+                    facecolor=ACCENT, edgecolor="white", linewidths=0.5,
                     zorder=4)
+
         axd.set_xlim(cx - half_km / kx, cx + half_km / kx)
         axd.set_ylim(cy - half_km / ky, cy + half_km / ky)
-        axd.set_aspect(1 / np.cos(np.radians(lat0)))
-        frame(axd)
-        axd.set_title(
-            f"{site}   $n$ = {len(g)}" if col != 1 else
-            f"{site}   $n$ = {len(g)}\n"
-            f"{2 * half_km:.1f} × {2 * half_km:.1f} km — same box, same scale "
-            "in all three",
-            fontsize=8, color=INK, pad=5, linespacing=1.5,
-        )
+        axd.set_aspect(aspect)
+        frame_off(axd)
+        share = 100 * len(vid) / len(g)
+        axd.set_title(f"{site}\n{len(vid)} of {len(g)} with video "
+                      f"({share:.0f} %)",
+                      fontsize=8, color=INK, pad=5, linespacing=1.45)
         scalebar(axd, 0.5, "500 m", 0.06, 0.06)
 
-    fig.legend(
-        handles=[Patch(color=c, label=lab) for _, _, c, lab in BANDS],
-        loc="lower center", ncol=7, fontsize=7.5, handlelength=1.1,
-        columnspacing=1.0, bbox_to_anchor=(0.5, -0.025),
-        title=r"measured $L_{A,25\mathrm{s}}$  (dB)",
-        title_fontsize=7.5,
-    )
+    handles = [
+        Line2D([], [], marker="o", ls="none", markerfacecolor=ACCENT,
+               markeredgecolor="white", ms=6,
+               label=f"audio + traffic video — {n_video} points"),
+        Line2D([], [], marker="o", ls="none", markerfacecolor="white",
+               markeredgecolor=MUTED, ms=6,
+               label=f"audio only — {len(df) - n_video} points"),
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=2, fontsize=8,
+               bbox_to_anchor=(0.5, -0.012),
+               title="Detail panels: 1.8 × 1.8 km, the same box and scale in "
+                     "all three",
+               title_fontsize=7.5)
     fig.legends[0].get_title().set_color(MUTED)
     save(fig, "hanoi-sites")
-
 
 # ---------------------------------------------------------------------------
 # 9. Exceedance of the national limit, and how thin the night is
@@ -881,8 +963,9 @@ def fig_campaign_frame(df: pd.DataFrame) -> None:
     import geopandas as gpd
 
     wards = gpd.read_file(ROOT / "data" / "processed" / "hanoi_wards.geojson")
-    phuong = wards[wards["kind"] == "phuong"]
-    xa = wards[wards["kind"] == "xa"]
+    devs = gpd.read_file(ROOT / "data" / "processed"
+                         / "hanoi_new_developments.geojson")
+    phuong, xa = frame_units(wards, devs)   # in-frame, out-of-frame
 
     pts = gpd.GeoDataFrame(
         df, geometry=gpd.points_from_xy(df["longitude"], df["latitude"]),
@@ -892,12 +975,15 @@ def fig_campaign_frame(df: pd.DataFrame) -> None:
     measured_km2 = float(hulls.to_crs(32648).area.sum()) / 1e6
     frame_km2 = float(phuong.to_crs(32648).area.sum()) / 1e6
 
-    # Which of the three areas actually falls inside the frame? Asked rather
-    # than assumed, and the answer is not the one the plan assumes -- see the
-    # annotation below.
+    # Which of the three areas falls inside the frame? Asked rather than
+    # assumed. Under the FIRST frame -- the 51 urban phuong -- Ocean Park did
+    # not, and half the campaign fell outside it. Under the frame as widened
+    # (frame_units: what is built, not what it is called) all three are in, and
+    # the assertion below is what keeps that true if the boundaries move.
+    in_frame_names = set(phuong["name"])
     located = gpd.sjoin(pts, wards, predicate="within", how="left")
     inside = {
-        site: bool((sub["kind"] == "phuong").all())
+        site: bool(sub["name"].isin(in_frame_names).all())
         for site, sub in located.groupby("site")
     }
     outside_n = int(sum(len(df[df["site"] == s]) for s, ok in inside.items()
@@ -945,15 +1031,17 @@ def fig_campaign_frame(df: pd.DataFrame) -> None:
 
     ax.plot([], [], "o", ms=6, color=BAD, markeredgecolor="white",
             markeredgewidth=1.0,
-            label=f"measured, inside the frame — {len(df) - outside_n} points")
-    ax.plot([], [], "D", ms=6, color="white", markeredgecolor=BAD,
-            markeredgewidth=1.4,
-            label=f"measured, OUTSIDE the frame — {outside_n} points")
+            label=f"measured — {len(df) - outside_n} points, all inside the frame"
+            if not outside_n else
+            f"measured, inside the frame — {len(df) - outside_n} points")
+    if outside_n:
+        ax.plot([], [], "D", ms=6, color="white", markeredgecolor=BAD,
+                markeredgewidth=1.4,
+                label=f"measured, OUTSIDE the frame — {outside_n} points")
     ax.plot([], [], "s", ms=8, color=ACCENT, alpha=0.4,
-            label=f"the frame — {len(phuong)} urban $phuong$, "
-                  f"{frame_km2:.0f} km$^2$")
+            label=f"the frame — {len(phuong)} units, {frame_km2:.0f} km$^2$")
     ax.plot([], [], "s", ms=8, color="#EDEDEA",
-            label=f"{len(xa)} rural $xa$ — outside the frame")
+            label=f"{len(xa)} rural units — outside the frame")
 
     x0, y0, x1, y1 = phuong.total_bounds
     px, py = (x1 - x0) * 0.03, (y1 - y0) * 0.05
@@ -971,6 +1059,10 @@ def fig_campaign_frame(df: pd.DataFrame) -> None:
         "Where the 160 sites will be drawn from — not where they are. "
         "No site has been selected.",
         fontsize=9, color=INK, loc="left", pad=8,
+    )
+    assert not outside_n, (
+        "a measured area falls outside the sampling frame; the figure's "
+        "annotation branch was removed when the frame was widened"
     )
 
     # -- the scale-up, on the numbers --------------------------------------

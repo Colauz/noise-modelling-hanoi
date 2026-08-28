@@ -24,12 +24,14 @@ planned campaign draws from, and 75 xa, which are rural and outside it.
 from __future__ import annotations
 
 import json
+import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "processed" / "hanoi_wards.geojson"
+OUT_DEV = ROOT / "data" / "processed" / "hanoi_new_developments.geojson"
 
 # Relation 1903516 is Thanh pho Ha Noi at admin_level=4. Overpass addresses a
 # relation as an area by adding 3600000000 to its id.
@@ -48,15 +50,61 @@ out geom;
 # the size. Degrees; 1e-4 is about 11 m.
 SIMPLIFY_TOL = 2e-4
 
+# The second query. `khu do thi` is the Vietnamese term for a planned new urban
+# area, and it is what the developments this campaign has to cover are called
+# on the ground and in OSM -- Ocean Park is one. Matching the term plus the
+# handful of developer names that do not use it is what lets the sampling frame
+# be defined by what is built rather than by which administrative label a
+# commune still carries. Hanoi's periphery is full of places that are urban in
+# every respect except that the map still calls them a xa.
+DEV_QUERY = f"""
+[out:json][timeout:300];
+area({HANOI_AREA})->.hanoi;
+(
+  way(area.hanoi)["landuse"="residential"]["name"];
+  relation(area.hanoi)["landuse"="residential"]["name"];
+  way(area.hanoi)["place"~"^(suburb|neighbourhood|quarter)$"]["name"];
+  relation(area.hanoi)["place"~"^(suburb|neighbourhood|quarter)$"]["name"];
+);
+out tags center;
+"""
 
-def fetch() -> dict:
+DEV_PATTERN = re.compile(
+    r"khu đô thị|khu do thi|vinhomes|ocean park|ecopark|gamuda|ciputra|"
+    r"splendora|smart city|times? city|royal city|new city|garden city|"
+    r"starlake|an khánh|thanh hà",
+    re.IGNORECASE,
+)
+
+
+def fetch(query: str = QUERY) -> dict:
     request = urllib.request.Request(
         "https://overpass-api.de/api/interpreter",
-        data=urllib.parse.urlencode({"data": QUERY}).encode(),
+        data=urllib.parse.urlencode({"data": query}).encode(),
         headers={"User-Agent": "noise-modelling-hanoi (research, contact via repo)"},
     )
     with urllib.request.urlopen(request, timeout=300) as response:
         return json.loads(response.read())
+
+
+def developments(payload: dict) -> dict:
+    """Named new urban areas, as points. Centres are enough: the figure marks
+    where a development is, and the frame test is which unit contains it."""
+    features = []
+    for element in payload["elements"]:
+        name = element.get("tags", {}).get("name", "")
+        centre = element.get("center")
+        if not centre or not DEV_PATTERN.search(name):
+            continue
+        features.append(
+            {
+                "type": "Feature",
+                "properties": {"name": name, "osm_id": element["id"]},
+                "geometry": {"type": "Point",
+                             "coordinates": [centre["lon"], centre["lat"]]},
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
 
 
 def to_geojson(payload: dict) -> dict:
@@ -108,6 +156,11 @@ def main() -> None:
     print(f"{OUT.relative_to(ROOT)}: {len(collection['features'])} units "
           f"({kinds.count('phuong')} phuong, {kinds.count('xa')} xa), "
           f"{OUT.stat().st_size // 1024} KB")
+
+    dev = developments(fetch(DEV_QUERY))
+    OUT_DEV.write_text(json.dumps(dev, separators=(",", ":")))
+    print(f"{OUT_DEV.relative_to(ROOT)}: {len(dev['features'])} named new "
+          f"urban developments, {OUT_DEV.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":

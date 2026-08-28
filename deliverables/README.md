@@ -5,10 +5,11 @@ End-of-internship package by Laurian Jamin and Lucas Zborowski, drafted
 
 | File | What |
 |---|---|
-| `internship_report.pdf` | The full progress report, 24 pages, 12 figures. Source: `internship_report.tex` |
+| `internship_report.pdf` | The full progress report, 26 pages, 13 figures. Source: `internship_report.tex` |
 | `overleaf/` | Self-contained 4-page short paper. Zip it and upload |
 | `email_draft.md` | Transmittal e-mail, with the addresses left as placeholders. **Not versioned** — it names real people and is git-ignored; it exists only in a local working copy |
 | `figures/` | The figures the report uses, copied from the repository's own generators |
+| `figures/stills/` | Three redacted video stills. **Read the note below before these go anywhere** |
 | `appscreens.tex` | The application's five screens, drawn in TikZ from the Compose source. Shared verbatim with `presentation/appscreens.tex` |
 | `refs.bib` | `docs/references.bib` with the internal `note = {...}` status annotations stripped |
 
@@ -52,23 +53,68 @@ exceedance table with the sample size inside every bar, because the night bars
 are the ones a reader will quote and the ones the campaign cannot support.
 `class-levels.pdf` puts level against the source class the operator recorded.
 
-`campaign-frame.pdf` (§6.2) maps the frame the *planned* campaign draws from —
-Hanoi's 51 urban *phường* under the July 2025 reform — against the 1.7 km² this
-campaign actually covered. **Nothing on it is a site.** The 160 sites have not
-been drawn, and 160 invented coordinates would commit the team to a sample
-nobody selected, so the map shows the frame and the step, not a fake draw.
+`campaign-frame.pdf` (§6.2) maps the frame the *planned* campaign draws from
+against the 1.7 km² this campaign actually covered. **Nothing on it is a
+site.** The 160 sites have not been drawn, and 160 invented coordinates would
+commit the team to a sample nobody selected, so the map shows the frame and the
+step, not a fake draw.
 
-Drawing it turned up something. **Ocean Park is not in a *phường*** — all 184
-of its measurements, half this campaign, fall inside *Xã Gia Lâm*, a rural
-commune the frame as specified excludes. Nothing in the results changes; the
-plan does. Either the frame widens to admit the peri-urban *xã*, or the one
-area the project knows best contributes nothing to the design of the next
-campaign. The report states it as a decision for whoever fixes the protocol.
+`hanoi-sites.pdf` is the complete map: Hanoi whole, the urban core with the
+frame and the 92 new urban developments, and three same-scale detail panels.
+Its point is the split — **142 of the 363 measurements carry a traffic video
+and 221 do not**, and the shortfall is uneven: 23 % at Ocean Park against 60 %
+at Hoan Kiem. That 39 % is the ceiling on anything result 3 could have shown.
 
-The ward boundaries are committed as `data/processed/hanoi_wards.geojson`.
-`scripts/fetch_hanoi_wards.py` regenerates them from OpenStreetMap and is the
-only script in the project that touches the network — which is why it is
-unnumbered and outside the pipeline, and why no figure calls it.
+### The frame, and why it was widened
+
+Under the first frame — Hanoi's 51 urban *phường* — **Ocean Park was outside
+it**. All 184 of its measurements fall in *Xã Gia Lâm*, administratively a
+rural commune and in fact a new town of towers, a mall and a building site.
+
+The frame now tests **what is built, not what it is called**: a unit is in if
+it is a *phường*, or if it contains a named new urban development (*khu đô
+thị*, plus the developer names that skip the term). Computed from OSM, not
+listed by hand — 92 developments, admitting 9 *xã* alongside the 51 *phường*.
+**60 units, 636 km².** Add a development to OSM and the frame picks it up.
+
+Boundaries and developments are committed as
+`data/processed/hanoi_wards.geojson` and `hanoi_new_developments.geojson`.
+`scripts/fetch_hanoi_wards.py` regenerates both and is the only script in the
+project that touches the network — hence unnumbered, outside the pipeline, and
+called by no figure.
+
+## The video stills — read this before publishing them
+
+`figures/stills/` holds three frames from `data/raw/videos/`, one per typology.
+That footage carries **identifiable faces and readable licence plates**, it is
+not distributed, and this repository is **public**.
+
+`scripts/make_video_stills.py` never writes a raw frame. Each is passed through
+the same `yolov8n` the counting pipeline uses: every `person` box is dilated
+and mosaicked, every vehicle is blurred whole and mosaicked over its lower half
+where a plate sits, and the capture app's burned-in caption is destroyed before
+detection so it can be neither read nor detected.
+
+**This is a machine pass, not a guarantee.** A person the detector misses is a
+person the mosaic misses — at the default 640 px inference it missed two
+pedestrians on a pavement, which is why the script runs at 1280 px and
+`conf=0.06`. All three stills here were also checked by eye. Any *new* still
+must be too.
+
+### Two things the videos turned up
+
+**The burned-in caption is wrong.** The capture app caches its last geocode, so
+all 42 recordings taken in Vĩnh Tuy on 13 July are captioned *Ocean Park Gia
+Lâm*, 8 km away, and the 14 July Hoàn Kiếm recordings carry no place line. The
+GPS tag in the file metadata is right throughout. Read the tag, never the
+caption — and tell the 60 volunteers the same.
+
+**The detector is probably undercounting.** `02_count_vehicles.py` runs at
+`imgsz=640` on 1280×720 footage. Re-running the same frames at `imgsz=1280`
+with confidence held at 0.30 finds **30 % more vehicles** (78 against 60, 12
+frames, more in 8 of 12). Twelve frames is a hint, not a measurement, but the
+sign matters: an instrument that undercounts by a variable amount is exactly
+what flattens a real relationship into result 3's zero coefficients.
 
 The script was re-run on 28 August 2026. The one change against the previously
 committed figures is the noise map's colour ramp. The old one ran

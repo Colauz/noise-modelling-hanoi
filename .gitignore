@@ -122,3 +122,5 @@ deliverables/**/*.synctex.gz
 # scripts/fetch_hanoi_wards.py is the only thing in this project that touches
 # the network, and no figure should depend on Overpass being up.
 !data/processed/hanoi_wards.geojson
+!data/processed/hanoi_new_developments.geojson
+!data/processed/video_index.csv
