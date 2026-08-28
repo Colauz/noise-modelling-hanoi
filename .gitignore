@@ -128,3 +128,7 @@ deliverables/**/*.synctex.gz
 !data/processed/hanoi_wards.geojson
 !data/processed/hanoi_new_developments.geojson
 !data/processed/video_index.csv
+
+# The short paper zip: a one-command repack of overleaf/, documented in
+# deliverables/README.md. Versioning it would duplicate 750 kB already tracked.
+deliverables/hanoi-short-paper.zip
