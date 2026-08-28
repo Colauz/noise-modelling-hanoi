@@ -67,8 +67,7 @@ three cross-validation protocols of increasing severity, with a
 learned model we built, including a physics-plus-residual hybrid we had
 ourselves recommended: the ranking of seven models \emph{inverts} between a
 permissive spatial split and two strict ones. \textbf{(ii)} Cross-city transfer
-from a 61\,000-point Ugandan corpus fails, not by an offset, but by carrying
-no usable information at all, while one locally fitted distance term reaches
+from a 61\,000-point Ugandan corpus fails, and not by an offset: it carries no usable information at all, while one locally fitted distance term reaches
 $R^2 = 0.240$. \textbf{(iii)} Vehicle counts extracted from 147 matched traffic
 videos yield exactly zero emission coefficients for motorcycles and cars, as
 density and as line-crossing flow alike. We deliver the surviving model as a
@@ -85,8 +84,7 @@ verified against.
 
 Vietnam has no national strategic noise mapping programme and no statutory noise
 action plan \citep{nguyen2025law}, and class~1 or class~2 sound level meters and
-commercial propagation software sit outside most local research budgets. This is
-exactly the setting in which low-cost participatory noise mapping is proposed. It
+commercial propagation software sit outside most local research budgets. This is the setting in which low-cost participatory noise mapping is proposed. It
 is also a setting in which the claims such a method can support are rarely
 tested.
 
@@ -222,7 +220,7 @@ what a map is for.
 physics-plus-learned-residual architecture ourselves as the constructive answer
 to our own negative results. Built and evaluated on identical folds, the residual
 gains $\Delta R^2 = +0.140$ under block-CV and loses $-0.123$ and $-0.187$ under
-the two strict protocols. Constraining its capacity recovers part of the loss, and the direction of that trade is the diagnosis: what the unconstrained residual
+the two strict protocols. Constraining its capacity recovers part of the loss, and the direction of that trade shows why: what the unconstrained residual
 learns is the spatial arrangement of our points, not physics the core is missing.
 The residual is computed at every run and deliberately not applied.
 
@@ -336,8 +334,7 @@ contribution, and it is a negative one applied constructively.
 
 \textbf{Emitter agents were rejected.} Motorcycle and car agents need real
 per-street flows, fleet composition, speeds and signal cycles. We have none of
-these for Hanoi, Result~3 is precisely the failure of our attempt to recover
-them, so an emitter simulation would be neither calibratable against data nor
+these for Hanoi, Result~3 is the failure of our attempt to recover them, so an emitter simulation would be neither calibratable against data nor
 verifiable against anything.
 
 \textbf{Receiver agents were adopted.} Agents move through the area and
@@ -349,8 +346,7 @@ daily exposure, is what a map alone cannot give.
 Against 360 matched measurement points the simulated field has mean error
 $-1.24$\dB, MAE 5.30\dB{} and RMSE 6.49\dB. It reproduces the spatial and
 temporal ordering and does not reproduce the spread, which is expected: features
-aggregated over 300\,m cannot resolve a facade/courtyard contrast. One correction
-is worth recording, because it is easy to get wrong, the traffic multiplier
+aggregated over 300\,m cannot resolve a facade/courtyard contrast. One correction matters here, because it is easy to get wrong: the traffic multiplier
 must scale the \emph{traffic share} of the energy and never the background;
 applied to total energy it double-counts the background and inflated the apparent
 benefit of pedestrianisation from 3.5\dB{} to 7.0\dB.
