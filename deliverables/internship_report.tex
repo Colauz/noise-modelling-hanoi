@@ -1,13 +1,13 @@
 % ============================================================================
-%  End-of-internship progress report -- Hanoi urban noise
+% End-of-internship progress report -- Hanoi urban noise
 %
-%  Build:  latexmk -pdf internship_report.tex
+% Build: latexmk -pdf internship_report.tex
 %
-%  Every quantitative claim in this file is traceable to an artefact in the
-%  repository, named at the point of use. Figures are copied from
-%  deliverables/figures/, itself produced by scripts/12_presentation_figures.py
-%  and scripts/08_validate_simulation.py. The application screens are the
-%  vector mock-ups of appscreens.tex, drawn from the Compose source.
+% Every quantitative claim in this file is traceable to an artefact in the
+% repository, named at the point of use. Figures are copied from
+% deliverables/figures/, itself produced by scripts/12_presentation_figures.py
+% and scripts/08_validate_simulation.py. The application screens are the
+% vector mock-ups of appscreens.tex, drawn from the Compose source.
 % ============================================================================
 \documentclass[11pt,a4paper]{article}
 
@@ -33,7 +33,7 @@
 
 \graphicspath{{figures/}}
 
-\definecolor{ink}   {HTML}{1A1A1A}
+\definecolor{ink} {HTML}{1A1A1A}
 \definecolor{accent}{HTML}{1F5C8B}
 \definecolor{warnc} {HTML}{8A4B08}
 \definecolor{grayc} {HTML}{6E6E6E}
@@ -45,14 +45,14 @@
 % pure neon green (0,1,0). Citations are set in ink: they belong to the
 % sentence, not to the navigation.
 \hypersetup{colorlinks=true,
-            linkcolor=accent,      % \ref, \pageref, the table of contents
-            urlcolor=accent,       % \url and \href
-            citecolor=ink,         % \citep and \citet -- reads as text
-            filecolor=accent,
-            menucolor=accent,
-            runcolor=accent,
-            pdftitle={Hanoi urban noise -- end-of-internship progress report},
-            pdfauthor={Laurian Jamin and Lucas Zborowski}}
+ linkcolor=accent, % \ref, \pageref, the table of contents
+ urlcolor=accent, % \url and \href
+ citecolor=ink, % \citep and \citet -- reads as text
+ filecolor=accent,
+ menucolor=accent,
+ runcolor=accent,
+ pdftitle={Hanoi urban noise -- end-of-internship progress report},
+ pdfauthor={Laurian Jamin and Lucas Zborowski}}
 
 \captionsetup{font=small, labelfont={bf,color=accent}, width=.94\textwidth}
 \setlist{itemsep=.25em, topsep=.35em, parsep=0pt}
@@ -70,10 +70,10 @@
 
 % A boxed caveat, used only for a limit on what may be concluded.
 \newenvironment{caveat}[1]
-  {\par\medskip\noindent\begin{minipage}{\linewidth}%
-   \color{warnc}\rule{2pt}{\baselineskip}\hspace{.6em}\textbf{#1}\par\vspace{.2em}
-   \hspace*{1.4em}\begin{minipage}{\dimexpr\linewidth-1.4em\relax}\small\itshape}
-  {\end{minipage}\end{minipage}\par\medskip}
+ {\par\medskip\noindent\begin{minipage}{\linewidth}%
+ \color{warnc}\rule{2pt}{\baselineskip}\hspace{.6em}\textbf{#1}\par\vspace{.2em}
+ \hspace*{1.4em}\begin{minipage}{\dimexpr\linewidth-1.4em\relax}\small\itshape}
+ {\end{minipage}\end{minipage}\par\medskip}
 
 % Vector mock-ups of the application's screens, drawn in TikZ from the Compose
 % source. Shared verbatim with presentation/appscreens.tex.
@@ -83,40 +83,40 @@
 
 % ============================================================================
 \begin{titlepage}
-  \centering
-  \vspace*{2cm}
-  {\Huge\bfseries Urban noise modelling in Hanoi\par}
-  \vspace{.7em}
-  {\Large\color{grayc} End-of-internship progress report\par}
-  \vspace{2em}
-  {\large Laurian Jamin \quad\textnormal{\color{grayc}and}\quad Lucas Zborowski\par}
-  \vspace{.4em}
-  {\normalsize ISIMA, Clermont-Ferrand, France\\
-   Research interns, COSMOS Lab, VinUniversity, Hanoi\par}
-  \vspace{1.6em}
-  {\normalsize Internship period: June--August 2026\par}
-  \vspace{2.2cm}
+ \centering
+ \vspace*{2cm}
+ {\Huge\bfseries Urban noise modelling in Hanoi\par}
+ \vspace{.7em}
+ {\Large\color{grayc} End-of-internship progress report\par}
+ \vspace{2em}
+ {\large Laurian Jamin \quad\textnormal{\color{grayc}and}\quad Lucas Zborowski\par}
+ \vspace{.4em}
+ {\normalsize ISIMA, Clermont-Ferrand, France\\
+ Research interns, COSMOS Lab, VinUniversity, Hanoi\par}
+ \vspace{1.6em}
+ {\normalsize Internship period: June--August 2026\par}
+ \vspace{2.2cm}
 
-  \begin{minipage}{.88\textwidth}
-    \small
-    This report is submitted jointly by both authors, who carried out the work
-    together and share responsibility for all of it.\\[.4em]
-    \textbf{Supervised by} Doanh Nguyen-Ngoc, VinUniversity.\\
-    \textbf{With} Nguyen Thanh Quang, VinUniversity, who will run the
-    distribution of the field application inside VinUniversity
-    (§\ref{sec:handover}).
-  \end{minipage}
+ \begin{minipage}{.88\textwidth}
+ \small
+ This report is submitted jointly by both authors, who carried out the work
+ together and share responsibility for all of it.\\[.4em]
+ \textbf{Supervised by} Doanh Nguyen-Ngoc, VinUniversity.\\
+ \textbf{With} Nguyen Thanh Quang, VinUniversity, who will run the
+ distribution of the field application inside VinUniversity
+ (§\ref{sec:handover}).
+ \end{minipage}
 
-  \vfill
-  \begin{minipage}{.88\textwidth}
-    \footnotesize\color{grayc}
-    Every number in this report is quoted from an artefact in the repository and
-    the artefact is named where the number appears. No figure here was drawn for
-    this report: all come from the project's own generating scripts
-    (Appendix~A), and the application screens are drawn from its Compose source.
-    \par\vspace{.6em}
-    Compiled 28 August 2026.
-  \end{minipage}
+ \vfill
+ \begin{minipage}{.88\textwidth}
+ \footnotesize\color{grayc}
+ Every number in this report is quoted from an artefact in the repository and
+ the artefact is named where the number appears. No figure here was drawn for
+ this report: all come from the project's own generating scripts
+ (Appendix~A), and the application screens are drawn from its Compose source.
+ \par\vspace{.6em}
+ Compiled 28 August 2026.
+ \end{minipage}
 \end{titlepage}
 
 \tableofcontents
@@ -164,12 +164,12 @@ the contribution.
 \subsection{Research questions, as they now stand}
 
 \begin{enumerate}[label=\textbf{RQ\arabic*.}, leftmargin=3.2em]
-  \item Can urban morphology from OpenStreetMap predict measured noise at an
-        \emph{unmeasured} location in Hanoi?
-  \item Does a model trained in one city \emph{transfer} to another?
-  \item Does vehicle \emph{flow extracted from video} explain measured levels?
-  \item What can a smartphone protocol claim, given that it has \emph{no
-        absolute reference}?
+ \item Can urban morphology from OpenStreetMap predict measured noise at an
+ \emph{unmeasured} location in Hanoi?
+ \item Does a model trained in one city \emph{transfer} to another?
+ \item Does vehicle \emph{flow extracted from video} explain measured levels?
+ \item What can a smartphone protocol claim, given that it has \emph{no
+ absolute reference}?
 \end{enumerate}
 
 \noindent\textbf{Explicitly out of scope:} night-time noise (10 of 363
@@ -245,35 +245,29 @@ Reconstructed from \pth{git log} (150 commits, 1 June to 21 August 2026).
 \toprule
 \textbf{Period} & \textbf{What happened} \\
 \midrule
-1--12 June & Repository opened (\pth{1e80861}); Sunbird pipeline reproduced;
-  large surrogate and convention-invariant v2 features trained
-  (\pth{11648a4}, \pth{553d0c5}); Barcelona diagnostic; field forms v2 and the
-  construction register written (\pth{ca953ef}, \pth{f578852}); GAMA plan
-  drafted (\pth{e743e28}). \\
+1--12 June & Repository opened; Sunbird pipeline reproduced;
+ large surrogate and convention-invariant v2 features trained; Barcelona diagnostic; field forms v2 and the
+ construction register written; GAMA plan
+ drafted. \\
 10 June -- 22 July & \textbf{Field campaign.} Carried mainly by the two interns, with
-  occasional support from a research assistant; three consumer handsets, ODK
-  Collect against a KoboToolbox server, three contrasted typologies. Pipeline re-run as the sample grew: 107 points (\pth{21b79e5}),
-  181 (\pth{2701b50}), 215 (\pth{508fb50}), 220 (\pth{923708f}). Transfer
-  abandoned in favour of direct local training on 30 June (\pth{42091a0}). \\
+ occasional support from a research assistant; three consumer handsets, ODK
+ Collect against a KoboToolbox server, three contrasted typologies. Pipeline re-run as the sample grew, from 107 points to 220. Transfer
+ abandoned in favour of direct local training on 30 June. \\
 15--31 July & Repository restructured, YOLO vehicle counting, weather analysis,
-  seven-page report (\pth{21d00a5}); first deck and GAMA model (\pth{c5108d6}).
-  This is the version that carried the $R^2 = 0.45$. \\
+ seven-page report; first deck and GAMA model.
+ This is the version that carried the $R^2 = 0.45$. \\
 5 August & \textbf{Audit and pivot.} Nine corrections applied the same day; V2
-  built: physical kernel, object tracking, dashboard, updated GAMA
-  (\pth{687e387}). \\
+ built: physical kernel, object tracking, dashboard, updated GAMA. \\
 6 August & Measured flow restricted to a 150\,m corridor around measurement
-  points (\pth{b86e252}, \pth{180649e}). \\
-11--12 August & \textbf{Restructuring for handover:} target layout
-  (\pth{5c6899e}), installable \pth{noise\_hanoi} package (\pth{0509262}),
-  Makefile and first tests (\pth{c370318}), pickled Uganda models replaced by
-  text boosters (\pth{bfcf828}), licences and \pth{CITATION.cff}
-  (\pth{3553eef}), handover (\pth{88d7fe5}), methodology (\pth{2924898}),
-  full French$\to$English pass across scripts, notebooks, GAMA and docs. \\
-20--21 August & \textbf{Android field application} (\pth{8ecb66b} and the
-  \pth{feat/mobile-app} branch); Uganda transfer made reproducible
-  (\pth{564db25}); presentation brief (\pth{7d9f94a}); report typeset in
-  LaTeX (\pth{62e423a}); presentation figures, decks and speaker scripts
-  (\pth{eb9c349} \ldots \pth{0e99d0f}). \\
+ points. \\
+11--12 August & \textbf{Restructuring for handover:} target layout, installable \pth{noise\_hanoi} package,
+ Makefile and first tests, pickled Uganda models replaced by
+ text boosters, licences and \pth{CITATION.cff}, handover, methodology,
+ full French$\to$English pass across scripts, notebooks, GAMA and docs. \\
+20--21 August & \textbf{Android field application} ( and the
+ \pth{feat/mobile-app} branch); Uganda transfer made reproducible; presentation brief; report typeset in
+ LaTeX; presentation figures, decks and speaker scripts
+ ( \ldots). \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -301,17 +295,17 @@ A-weighted, SLOW-weighted level over a 20--30\,s stationary observation, and
 never simply ``dB'', and never \pth{L\_Aeq}, \pth{L\_den} or \pth{L\_night}.
 
 \begin{itemize}
-  \item \textbf{Differences are supported}: between places, hours and typologies,
-        because a bias common to the three devices cancels in a difference.
-  \item \textbf{Absolute levels are not certified.} They are reported with a
-        bounded bias interval (+3.0 to +7.3\dB, \pth{results/report/numbers.tex}),
-        estimated by anchoring against instrumented literature and
-        \emph{never applied} to the data.
-  \item \textbf{A WHO $L_\mathrm{den}$/$L_\mathrm{night}$ comparison present in
-        earlier versions was withdrawn in full}: it compared a 25\,s sample to an
-        annual long-term indicator.
-  \item Exceedances are reported as ``the proportion of short-sample measurements
-        exceeding the QCVN daytime threshold value'', a descriptive statistic, and never as a rate of regulatory non-compliance.
+ \item \textbf{Differences are supported}: between places, hours and typologies,
+ because a bias common to the three devices cancels in a difference.
+ \item \textbf{Absolute levels are not certified.} They are reported with a
+ bounded bias interval (+3.0 to +7.3\dB, \pth{results/report/numbers.tex}),
+ estimated by anchoring against instrumented literature and
+ \emph{never applied} to the data.
+ \item \textbf{A WHO $L_\mathrm{den}$/$L_\mathrm{night}$ comparison present in
+ earlier versions was withdrawn in full}: it compared a 25\,s sample to an
+ annual long-term indicator.
+ \item Exceedances are reported as ``the proportion of short-sample measurements
+ exceeding the QCVN daytime threshold value'', a descriptive statistic, and never as a rate of regulatory non-compliance.
 \end{itemize}
 
 \subsection{The processing chain}
@@ -346,13 +340,13 @@ This is the part of the work we are most confident in. Every model is scored und
 three splits of increasing severity, on \emph{identical folds}:
 
 \begin{enumerate}
-  \item \textbf{600\,m spatial block cross-validation}, 17 blocks, the
-        permissive protocol;
-  \item \textbf{buffered leave-one-out with a 300\,m exclusion}, the
-        \emph{reference} protocol, because its exclusion radius equals the
-        feature aggregation radius;
-  \item \textbf{leave-one-site-out}, each typology predicted from the other
-        two.
+ \item \textbf{600\,m spatial block cross-validation}, 17 blocks, the
+ permissive protocol;
+ \item \textbf{buffered leave-one-out with a 300\,m exclusion}, the
+ \emph{reference} protocol, because its exclusion radius equals the
+ feature aggregation radius;
+ \item \textbf{leave-one-site-out}, each typology predicted from the other
+ two.
 \end{enumerate}
 
 95\,\% confidence intervals come from a 2\,000-replicate block bootstrap. Eight
@@ -408,25 +402,25 @@ $\times$0.2 to $\times$3 traffic. The GAMA screen drives the real model over
 directly (62.97\dB{} unmitigated, 60.53\dB{} under pedestrianisation).
 
 \begin{figure}[htbp]
-  \centering
-  \setlength{\tabcolsep}{2pt}
-  \begin{tabular}{@{}ccccc@{}}
-    \scalebox{0.55}{\phoneHome} & \scalebox{0.55}{\phoneMeasure} &
-    \scalebox{0.55}{\phoneMap}  & \scalebox{0.55}{\phoneGama} &
-    \scalebox{0.55}{\phoneResults} \\[.3em]
-    \footnotesize Home & \footnotesize Measure & \footnotesize Map &
-    \footnotesize GAMA & \footnotesize Results \\
-  \end{tabular}
-  \caption{The five screens of the field application. These are vector
-    reconstructions, not device captures: every string, colour and control is
-    read from the Compose source
-    (\pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}), screen by screen, \pth{HomeScreen.kt}, \pth{FormScreen.kt}, \pth{MapScreen.kt},
-    \pth{GamaScreen.kt}, \pth{ResultsScreen.kt}, and the map's colour bands
-    are \pth{levelColour()} from \pth{Theme.kt}. Drawing them rather than
-    screenshotting them is deliberate: nobody has yet run the application on a
-    handset in front of a calibrated source, and a screenshot would imply
-    otherwise. \pth{appscreens.tex}.}
-  \label{fig:appscreens}
+ \centering
+ \setlength{\tabcolsep}{2pt}
+ \begin{tabular}{@{}ccccc@{}}
+ \scalebox{0.55}{\phoneHome} & \scalebox{0.55}{\phoneMeasure} &
+ \scalebox{0.55}{\phoneMap} & \scalebox{0.55}{\phoneGama} &
+ \scalebox{0.55}{\phoneResults} \\[.3em]
+ \footnotesize Home & \footnotesize Measure & \footnotesize Map &
+ \footnotesize GAMA & \footnotesize Results \\
+ \end{tabular}
+ \caption{The five screens of the field application. These are vector
+ reconstructions, not device captures: every string, colour and control is
+ read from the Compose source
+ (\pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}), screen by screen, \pth{HomeScreen.kt}, \pth{FormScreen.kt}, \pth{MapScreen.kt},
+ \pth{GamaScreen.kt}, \pth{ResultsScreen.kt}, and the map's colour bands
+ are \pth{levelColour} from \pth{Theme.kt}. Drawing them rather than
+ screenshotting them is deliberate: nobody has yet run the application on a
+ handset in front of a calibrated source, and a screenshot would imply
+ otherwise. \pth{appscreens.tex}.}
+ \label{fig:appscreens}
 \end{figure}
 
 \begin{caveat}{The application is an instrument, not a finding}
@@ -442,16 +436,16 @@ Three rules were adopted after the audit and are enforced by executable checks
 rather than by review (\pth{docs/handover.md} §0):
 
 \begin{itemize}
-  \item \textbf{No metric is copied by hand.} \pth{models/metrics.json} is the
-        single home of every published number; the report, the dashboard, the
-        app and the manuscript read it. \pth{10\_build\_report.py} refuses to run
-        without it.
-  \item \textbf{No prediction outside the sampled envelope}, \pth{tests/test\_grid\_extent.py} fails if the grid leaves the three
-        sites plus 400\,m.
-  \item \textbf{The cross-validation buffer must not be smaller than the feature
-        radius}, \pth{tests/test\_cv\_protocols.py} asserts
-        \pth{BLOO\_RADIUS\_M >= FEATURE\_RADIUS\_M} and that a 110\,m buffer
-        would still leak.
+ \item \textbf{No metric is copied by hand.} \pth{models/metrics.json} is the
+ single home of every published number; the report, the dashboard, the
+ app and the manuscript read it. \pth{10\_build\_report.py} refuses to run
+ without it.
+ \item \textbf{No prediction outside the sampled envelope}, \pth{tests/test\_grid\_extent.py} fails if the grid leaves the three
+ sites plus 400\,m.
+ \item \textbf{The cross-validation buffer must not be smaller than the feature
+ radius}, \pth{tests/test\_cv\_protocols.py} asserts
+ \pth{BLOO\_RADIUS\_M >= FEATURE\_RADIUS\_M} and that a 110\,m buffer
+ would still leak.
 \end{itemize}
 
 Retracted work is archived with its reason rather than deleted, all
@@ -465,59 +459,59 @@ under \pth{docs/archive/}: the Bach Khoa map (\pth{bach-khoa/}), the July deck
 \subsection{The campaign}
 
 \begin{figure}[p]
-  \centering
-  \includegraphics[width=\textwidth]{hanoi-sites.pdf}
-  \caption{Where the 363 measurements are, and which of them carry video.
-  \textbf{Top left:} Hanoi whole, with the locator box for the panel beside it.
-  \textbf{Top right:} the urban core, the sampling frame of
-  §\ref{sec:campaign} in blue, the 92 named new urban developments as triangles,
-  and the three measured areas. \textbf{Bottom:} each area cut to the same
-  1.8$\times$1.8\,km box, so the three densities can be compared by eye; panels
-  scaled to their own data would make the sparsest site look the busiest.
-  \emph{The campaign runs two instruments and only one of them ran everywhere.}
-  \textbf{142 of the 363 measurements have a traffic video matched to them and
-  221 do not}, and the shortfall is not spread evenly: Ocean Park is the largest
-  site and the thinnest covered, at 23\,\% against 60\,\% at Hoan Kiem. The
-  matched pairs are the pipeline's own
-  (\pth{data/processed/vehicle\_counts.csv}), not recomputed here. Roads are the
-  OSMnx extracts the GAMA simulation runs on; boundaries are
-  \pth{hanoi\_wards.geojson}. \pth{scripts/12\_presentation\_figures.py}.}
-  \label{fig:sites}
+ \centering
+ \includegraphics[width=\textwidth]{hanoi-sites.pdf}
+ \caption{Where the 363 measurements are, and which of them carry video.
+ \textbf{Top left:} Hanoi whole, with the locator box for the panel beside it.
+ \textbf{Top right:} the urban core, the sampling frame of
+ §\ref{sec:campaign} in blue, the 92 named new urban developments as triangles,
+ and the three measured areas. \textbf{Bottom:} each area cut to the same
+ 1.8$\times$1.8\,km box, so the three densities can be compared by eye; panels
+ scaled to their own data would make the sparsest site look the busiest.
+ \emph{The campaign runs two instruments and only one of them ran everywhere.}
+ \textbf{142 of the 363 measurements have a traffic video matched to them and
+ 221 do not}, and the shortfall is not spread evenly: Ocean Park is the largest
+ site and the thinnest covered, at 23\,\% against 60\,\% at Hoan Kiem. The
+ matched pairs are the pipeline's own
+ (\pth{data/processed/vehicle\_counts.csv}), not recomputed here. Roads are the
+ OSMnx extracts the GAMA simulation runs on; boundaries are
+ \pth{hanoi\_wards.geojson}. \pth{scripts/12\_presentation\_figures.py}.}
+ \label{fig:sites}
 \end{figure}
 
 \begin{figure}[p]
-  \centering
-  \begin{tabular}{@{}c@{\hspace{2pt}}c@{}}
-    \includegraphics[width=.485\textwidth]{stills/TC_20260714_172600_t15.jpg} &
-    \includegraphics[width=.485\textwidth]{stills/TC_20260713_174900_t12.jpg} \\[.25em]
-    \footnotesize Hoan Kiem, 14 July 17:26, old quarter &
-    \footnotesize Vinh Tuy, 13 July 17:49, transport corridor \\[.7em]
-    \multicolumn{2}{c}{\includegraphics[width=.62\textwidth]{stills/TC_20260713_081300_t20.jpg}}\\[.25em]
-    \multicolumn{2}{c}{\footnotesize Ocean Park, 13 July 08:13, a new town
-      still under construction} \\
-  \end{tabular}
-  \caption{Three of the 147 traffic videos, one per typology, with the
-  detector's boxes drawn on. \textbf{Every frame is redacted before it is
-  written to disk} and no raw frame is kept: each is passed through the same
-  \pth{yolov8n} the counting pipeline uses, every \emph{person} box is dilated
-  and mosaicked, and every vehicle is blurred whole and mosaicked over its
-  lower half where a plate sits (\pth{scripts/make\_video\_stills.py}). The
-  footage carries identifiable faces and readable plates, it is not
-  distributed, and this repository is public. The redaction is a machine pass
-  and is stated as one: a person the detector misses is a person the mosaic
-  misses, which is why every still here was also looked at by a human before it
-  was included. The blurred patch in the top right corner of each frame is the
-  capture app's burned-in caption, removed for the reason given in
-  §\ref{sec:videocaveat}.}
-  \label{fig:stills}
+ \centering
+ \begin{tabular}{@{}c@{\hspace{2pt}}c@{}}
+ \includegraphics[width=.485\textwidth]{stills/TC_20260714_172600_t15.jpg} &
+ \includegraphics[width=.485\textwidth]{stills/TC_20260713_174900_t12.jpg} \\[.25em]
+ \footnotesize Hoan Kiem, 14 July 17:26, old quarter &
+ \footnotesize Vinh Tuy, 13 July 17:49, transport corridor \\[.7em]
+ \multicolumn{2}{c}{\includegraphics[width=.62\textwidth]{stills/TC_20260713_081300_t20.jpg}}\\[.25em]
+ \multicolumn{2}{c}{\footnotesize Ocean Park, 13 July 08:13, a new town
+ still under construction} \\
+ \end{tabular}
+ \caption{Three of the 147 traffic videos, one per typology, with the
+ detector's boxes drawn on. \textbf{Every frame is redacted before it is
+ written to disk} and no raw frame is kept: each is passed through the same
+ \pth{yolov8n} the counting pipeline uses, every \emph{person} box is dilated
+ and mosaicked, and every vehicle is blurred whole and mosaicked over its
+ lower half where a plate sits (\pth{scripts/make\_video\_stills.py}). The
+ footage carries identifiable faces and readable plates, it is not
+ distributed, and this repository is public. The redaction is a machine pass
+ and is stated as one: a person the detector misses is a person the mosaic
+ misses, which is why every still here was also looked at by a human before it
+ was included. The blurred patch in the top right corner of each frame is the
+ capture app's burned-in caption, removed for the reason given in
+ §\ref{sec:videocaveat}.}
+ \label{fig:stills}
 \end{figure}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.95\textwidth]{campaign.pdf}
-  \caption{The 363 measurements: spatial layout, level distribution and temporal
-  coverage. Produced by \pth{scripts/12\_presentation\_figures.py} from
-  \pth{data/processed/measurements.csv} and \pth{models/metrics.json}.}
+ \centering
+ \includegraphics[width=.95\textwidth]{campaign.pdf}
+ \caption{The 363 measurements: spatial layout, level distribution and temporal
+ coverage. Produced by \pth{scripts/12\_presentation\_figures.py} from
+ \pth{data/processed/measurements.csv} and \pth{models/metrics.json}.}
 \end{figure}
 
 \begin{center}\small
@@ -526,11 +520,11 @@ under \pth{docs/archive/}: the Bach Khoa map (\pth{bach-khoa/}), the July deck
 \textbf{Site} & \textbf{$n$} & \textbf{mean} & \textbf{median} & \textbf{min} &
 \textbf{max} & \textbf{$>$70\dB{} (day)} \\
 \midrule
-Ocean Park (new development)     & 184 & 65.9 & 67.5 & 47.0 & 88.0 & 35.6\,\% \\
-Hoan Kiem lake (old quarter)     &  99 & 69.3 & 70.1 & 55.4 & 80.0 & 50.5\,\% \\
+Ocean Park (new development) & 184 & 65.9 & 67.5 & 47.0 & 88.0 & 35.6\,\% \\
+Hoan Kiem lake (old quarter) & 99 & 69.3 & 70.1 & 55.4 & 80.0 & 50.5\,\% \\
 Vinh Tuy area (transport corridor) & 80 & 65.4 & 65.9 & 52.7 & 76.0 & 26.2\,\% \\
 \midrule
-All                              & 363 & 66.7 & 68.0 & 47.0 & 88.0 & 37.4\,\% \\
+All & 363 & 66.7 & 68.0 & 47.0 & 88.0 & 37.4\,\% \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -543,26 +537,26 @@ descriptive statistic and not as a compliance rate. Per-site exceedances from
 (71.7\dB).\normalsize
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{exceedance.pdf}
-  \caption{The same exceedances, drawn, with the sample size printed inside
-  every bar, because the night bars are the ones a reader will quote and the
-  ones the campaign cannot support. \emph{Every} night measurement at Hoan Kiem
-  is over the limit, and there are six of them; Vinh Tuy has none at all. Ten
-  night measurements out of 363 is the whole night evidence of this campaign.
-  Read from \pth{results/tables/hanoi\_exceedances.csv}.}
-  \label{fig:exceedance}
+ \centering
+ \includegraphics[width=\textwidth]{exceedance.pdf}
+ \caption{The same exceedances, drawn, with the sample size printed inside
+ every bar, because the night bars are the ones a reader will quote and the
+ ones the campaign cannot support. \emph{Every} night measurement at Hoan Kiem
+ is over the limit, and there are six of them; Vinh Tuy has none at all. Ten
+ night measurements out of 363 is the whole night evidence of this campaign.
+ Read from \pth{results/tables/hanoi\_exceedances.csv}.}
+ \label{fig:exceedance}
 \end{figure}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{class-levels.pdf}
-  \caption{Level against the source class the operator selected on the form, the one variable in the dataset that is a human judgement rather than a sensor
-  reading. It behaves: the ordering it produces is the ordering the physics
-  predicts, karaoke and construction at the top, declared silence at the bottom,
-  with no reordering needed. It also shows how unbalanced the campaign is, \emph{transportation noise} and \emph{silence} carry three quarters of it.
-  Recomputed from \pth{data/processed/measurements.csv}.}
-  \label{fig:classlevels}
+ \centering
+ \includegraphics[width=\textwidth]{class-levels.pdf}
+ \caption{Level against the source class the operator selected on the form, the one variable in the dataset that is a human judgement rather than a sensor
+ reading. It behaves: the ordering it produces is the ordering the physics
+ predicts, karaoke and construction at the top, declared silence at the bottom,
+ with no reordering needed. It also shows how unbalanced the campaign is, \emph{transportation noise} and \emph{silence} carry three quarters of it.
+ Recomputed from \pth{data/processed/measurements.csv}.}
+ \label{fig:classlevels}
 \end{figure}
 
 \noindent Four things in Figure~\ref{fig:sites} bear on everything that
@@ -601,7 +595,7 @@ The delivered model treats each road class as an incoherent line source, whose
 intensity falls as $1/d$ rather than $1/d^{2}$:
 \[
 E(x) = \frac{A_{\mathrm{hw}}}{\max(d_{\mathrm{hw}}, d_0)}
-     + \frac{A_{\mathrm{res}}}{\max(d_{\mathrm{res}}, d_0)} + B,
+ + \frac{A_{\mathrm{res}}}{\max(d_{\mathrm{res}}, d_0)} + B,
 \qquad L(x) = 10\log_{10} E(x)
 \]
 with $d_{\mathrm{hw}}$ and $d_{\mathrm{res}}$ the distances to the nearest major
@@ -617,12 +611,12 @@ $B = 1.106\times10^{-10}$, $d_0 = 5$\,m; residual s.d.\ 6.07\dB.
 \textbf{Model} & \textbf{Block-CV 600\,m} & \textbf{Buffered LOO 300\,m} &
 \textbf{Leave-one-site-out} \\
 \midrule
-Mean by (site, hour)                & $-0.008$ & $-0.419$ & $-0.058$ \\
+Mean by (site, hour) & $-0.008$ & $-0.419$ & $-0.058$ \\
 Regression on $\log d_{\text{road}}$ (2 par.) & 0.221 [0.09, 0.29] & 0.200 [0.08, 0.27] & 0.189 [0.06, 0.27] \\
 \textbf{Physical kernel (3 par.), delivered} & 0.255 [0.09, 0.36] & \textbf{0.246 [0.10, 0.34]} & \textbf{0.222 [0.05, 0.33]} \\
-LightGBM v1 (6 features)            & 0.304 [0.10, 0.46] & 0.137 [$-0.10$, 0.33] & 0.029 [$-0.35$, 0.21] \\
-LightGBM v2 (8 features)            & 0.332 [0.11, 0.49] & 0.099 [$-0.13$, 0.25] & $-0.035$ [$-0.40$, 0.16] \\
-Hybrid, physics + ML residual       & \textbf{0.395 [0.18, 0.53]} & 0.123 [$-0.22$, 0.29] & 0.035 [$-0.41$, 0.23] \\
+LightGBM v1 (6 features) & 0.304 [0.10, 0.46] & 0.137 [$-0.10$, 0.33] & 0.029 [$-0.35$, 0.21] \\
+LightGBM v2 (8 features) & 0.332 [0.11, 0.49] & 0.099 [$-0.13$, 0.25] & $-0.035$ [$-0.40$, 0.16] \\
+Hybrid, physics + ML residual & \textbf{0.395 [0.18, 0.53]} & 0.123 [$-0.22$, 0.29] & 0.035 [$-0.41$, 0.23] \\
 Hybrid, capacity-restricted residual & 0.378 [0.20, 0.51] & 0.144 [$-0.15$, 0.35] & 0.106 [$-0.27$, 0.27] \\
 \bottomrule
 \end{tabular}
@@ -640,45 +634,45 @@ capacity fitting spatial autocorrelation rather than physics. Three further
 readings hold:
 
 \begin{itemize}
-  \item \textbf{The 300\,m morphological aggregates have negative marginal
-        value.} Adding built-area ratio, road density and intersection count to
-        distance-to-road \emph{degrades} prediction, by 0.07 $R^2$ under
-        block-CV, 0.16 under buffered LOO and 0.18 under leave-one-site-out.
-  \item \textbf{What remains of the ML model is time, not morphology.} The gap
-        between the full model and the morphology-only ablation under block-CV
-        (0.304 vs 0.153) is carried by the hour features. Under
-        leave-one-site-out the time-only ablation is itself negative
-        ($-0.139$).
-  \item \textbf{The hybrid was built, tested and rejected}, not deferred. Against
-        the bare physical core it gains $\Delta R^2 = +0.140$ under block-CV and
-        loses $-0.123$ and $-0.187$ under the two strict protocols. The learned
-        residual is computed at every run and deliberately not applied
-        (\pth{apply\_residual: false}).
+ \item \textbf{The 300\,m morphological aggregates have negative marginal
+ value.} Adding built-area ratio, road density and intersection count to
+ distance-to-road \emph{degrades} prediction, by 0.07 $R^2$ under
+ block-CV, 0.16 under buffered LOO and 0.18 under leave-one-site-out.
+ \item \textbf{What remains of the ML model is time, not morphology.} The gap
+ between the full model and the morphology-only ablation under block-CV
+ (0.304 vs 0.153) is carried by the hour features. Under
+ leave-one-site-out the time-only ablation is itself negative
+ ($-0.139$).
+ \item \textbf{The hybrid was built, tested and rejected}, not deferred. Against
+ the bare physical core it gains $\Delta R^2 = +0.140$ under block-CV and
+ loses $-0.123$ and $-0.187$ under the two strict protocols. The learned
+ residual is computed at every run and deliberately not applied
+ (\pth{apply\_residual: false}).
 \end{itemize}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.80\textwidth]{feature-importance.pdf}
-  \caption{Gain-based feature importance inside the fitted LightGBM, kept because
-  it explains the ablation: distance to road is the single largest contributor
-  and matches the three area-aggregated descriptors combined.
-  \pth{scripts/12\_presentation\_figures.py}.}
+ \centering
+ \includegraphics[width=.80\textwidth]{feature-importance.pdf}
+ \caption{Gain-based feature importance inside the fitted LightGBM, kept because
+ it explains the ablation: distance to road is the single largest contributor
+ and matches the three area-aggregated descriptors combined.
+ \pth{scripts/12\_presentation\_figures.py}.}
 \end{figure}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.90\textwidth]{ranking-inversion.pdf}
-  \caption{The ranking inversion, drawn. Same models, same folds, three
-  protocols of increasing severity. \pth{scripts/12\_presentation\_figures.py}.}
+ \centering
+ \includegraphics[width=.90\textwidth]{ranking-inversion.pdf}
+ \caption{The ranking inversion, drawn. Same models, same folds, three
+ protocols of increasing severity. \pth{scripts/12\_presentation\_figures.py}.}
 \end{figure}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.90\textwidth]{forest-bloo.pdf}
-  \caption{Every model under the reference protocol with its 95\,\% interval.
-  The physical kernel is the only model whose interval excludes zero under all
-  three protocols, and its interval overlaps that of the two-parameter
-  distance regression almost entirely (§\ref{sec:ci}).}
+ \centering
+ \includegraphics[width=.90\textwidth]{forest-bloo.pdf}
+ \caption{Every model under the reference protocol with its 95\,\% interval.
+ The physical kernel is the only model whose interval excludes zero under all
+ three protocols, and its interval overlaps that of the two-parameter
+ distance regression almost entirely (§\ref{sec:ci}).}
 \end{figure}
 
 \subsection{Result 2, cross-city transfer fails, in three distinct ways}
@@ -694,27 +688,27 @@ Hanoi's own 363 points.
 \textbf{Pretrained model} & \textbf{as delivered} & \shortstack{\textbf{mean diff.}\\\textbf{removed}} &
 \shortstack{\textbf{and rescaled}\\\textbf{($=r^2$)}} & \textbf{$r$} \\
 \midrule
-Uganda 61K (v1)                   & $R^2 = -15.86$ & $-2.14$ & $+0.141$ & $\mathbf{-0.376}$ \\
-Uganda convention-invariant (v2)  & $R^2 = -8.17$  & $-0.95$ & $+0.006$ & $+0.076$ \\
+Uganda 61K (v1) & $R^2 = -15.86$ & $-2.14$ & $+0.141$ & $\mathbf{-0.376}$ \\
+Uganda convention-invariant (v2) & $R^2 = -8.17$ & $-0.95$ & $+0.006$ & $+0.076$ \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{For scale, fitted locally on the same 363 points:}} \\
 $\log(\text{distance to road})$ alone & \multicolumn{4}{l}{$R^2 = +0.240$ (in sample)} \\
-Physical kernel, buffered LOO         & \multicolumn{4}{l}{$R^2 = +0.246$} \\
+Physical kernel, buffered LOO & \multicolumn{4}{l}{$R^2 = +0.246$} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{itemize}
-  \item \textbf{It is not a calibration offset.} The Kampala model predicts about
-        26\dB{} below Hanoi (MAE 26.5\dB, bias $-26.4$\dB), and removing that
-        difference still leaves $R^2$ negative. A recalibrated transfer would not
-        work either.
-  \item \textbf{v1 transfers anti-information.} Its correlation with Hanoi is
-        \emph{negative}: it ranks quiet and loud the wrong way round. The only way
-        to extract anything from it is to flip it.
-  \item \textbf{v2 removes the mapping-convention artefact and leaves nothing.}
-        $r = +0.076$; even granted a free bias and a free slope its ceiling is
-        $R^2 = 0.006$. Not wrong, empty.
+ \item \textbf{It is not a calibration offset.} The Kampala model predicts about
+ 26\dB{} below Hanoi (MAE 26.5\dB, bias $-26.4$\dB), and removing that
+ difference still leaves $R^2$ negative. A recalibrated transfer would not
+ work either.
+ \item \textbf{v1 transfers anti-information.} Its correlation with Hanoi is
+ \emph{negative}: it ranks quiet and loud the wrong way round. The only way
+ to extract anything from it is to flip it.
+ \item \textbf{v2 removes the mapping-convention artefact and leaves nothing.}
+ $r = +0.076$; even granted a free bias and a free slope its ceiling is
+ $R^2 = 0.006$. Not wrong, empty.
 \end{itemize}
 
 \noindent\textbf{One locally fitted distance term carries more than a
@@ -778,8 +772,8 @@ variance no spatial model can explain. Recomputed for this report from
 \textbf{Separation} & \textbf{Pairs} & \textbf{Mean $|$difference$|$} &
 \textbf{Implied $\sigma$} & \textbf{Ceiling on $R^2$} \\
 \midrule
-$<20$\,m & 29  & 4.23\dB & 3.75\dB & 0.72 \\
-$<40$\,m & 87  & 5.44\dB & 4.82\dB & \textbf{0.54} \\
+$<20$\,m & 29 & 4.23\dB & 3.75\dB & 0.72 \\
+$<40$\,m & 87 & 5.44\dB & 4.82\dB & \textbf{0.54} \\
 $<60$\,m & 229 & 6.09\dB & 5.40\dB & 0.43 \\
 \bottomrule
 \end{tabular}
@@ -799,9 +793,9 @@ overestimates pure measurement noise; and 29 pairs is few. It is an order of
 magnitude, not a bound.
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.86\textwidth]{ceiling.pdf}
-  \caption{The ceiling, drawn. \pth{scripts/12\_presentation\_figures.py}.}
+ \centering
+ \includegraphics[width=.86\textwidth]{ceiling.pdf}
+ \caption{The ceiling, drawn. \pth{scripts/12\_presentation\_figures.py}.}
 \end{figure}
 
 \subsection{The published map and the simulation}
@@ -811,21 +805,21 @@ The exported grid is 5\,587 cells at 40\,m over three zones $\times$ 17 hours
 only, the three measured sites plus a 400\,m margin.
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.92\textwidth]{map-grid.pdf}
-  \caption{The published 40\,m grid, redrawn from the CSV rather than
-  screenshotted. QCVN 26:2010 colour bands, used descriptively.}
+ \centering
+ \includegraphics[width=.92\textwidth]{map-grid.pdf}
+ \caption{The published 40\,m grid, redrawn from the CSV rather than
+ screenshotted. QCVN 26:2010 colour bands, used descriptively.}
 \end{figure}
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.80\textwidth]{validation_simulation.png}
-  \caption{Simulated against measured levels, $n = 360$ matched points
-  (\pth{results/tables/validation\_simulation.csv},
-  \pth{scripts/08\_validate\_simulation.py}). Mean error $-1.24$\dB, MAE
-  5.30\dB, RMSE 6.49\dB. The simulation reproduces the spatial and temporal
-  ordering; it does not reproduce the spread, which is expected given that
-  features aggregated over 300\,m cannot resolve the facade/courtyard contrast.}
+ \centering
+ \includegraphics[width=.80\textwidth]{validation_simulation.png}
+ \caption{Simulated against measured levels, $n = 360$ matched points
+ (\pth{results/tables/validation\_simulation.csv},
+ \pth{scripts/08\_validate\_simulation.py}). Mean error $-1.24$\dB, MAE
+ 5.30\dB, RMSE 6.49\dB. The simulation reproduces the spatial and temporal
+ ordering; it does not reproduce the spread, which is expected given that
+ features aggregated over 300\,m cannot resolve the facade/courtyard contrast.}
 \end{figure}
 
 \begin{caveat}{This validation was itself a lesson}
@@ -879,12 +873,12 @@ $-5.09$\dB. On the same date the share of integer-valued readings falls from
 instrument or form rather than of the city getting quieter.
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=.90\textwidth]{discontinuity.pdf}
-  \caption{The level distribution around 27 June 2026. The break date is not
-  chosen by the figure: it is the date the form version changes. Produced by
-  \pth{scripts/12\_presentation\_figures.py} from
-  \pth{data/processed/measurements.csv}.}
+ \centering
+ \includegraphics[width=.90\textwidth]{discontinuity.pdf}
+ \caption{The level distribution around 27 June 2026. The break date is not
+ chosen by the figure: it is the date the form version changes. Produced by
+ \pth{scripts/12\_presentation\_figures.py} from
+ \pth{data/processed/measurements.csv}.}
 \end{figure}
 
 The deck reports a controlled effect of $-5.14$\dB{} (SE 0.55,
@@ -919,23 +913,23 @@ protocols.} Every summary table in the manuscript must carry the intervals.
 \subsection{Other known weaknesses}
 
 \begin{itemize}
-  \item \textbf{The vehicle detector has never been validated} against manual
-        counts. Precision, recall and MAPE per class are unknown, and
-        two-wheeler under-detection is expected but unquantified. \emph{Modal
-        shares must not be published until it is.} One day of manual counting on
-        ten videos turns an open-ended limitation into a quantified uncertainty.
-  \item \textbf{The Uganda chain (notebooks 01--06) is not reproducible} on a
-        fresh machine: it expects \pth{data/processed/uganda/*}, which exists
-        nowhere. The transfer \emph{experiment} is now reproducible from the
-        versioned boosters, but the pretraining is not.
-  \item \textbf{Night is not sampled.} 10 measurements fall outside 06:00--21:00
-        and there are none between 22:00 and 03:00.
-  \item \textbf{15\,\% of \pth{construction\_nearby} is inferred} from the noise
-        class rather than observed, and the published CSV does not flag observed
-        against derived values.
-  \item \textbf{Technical debt}: \pth{04\_evaluate\_models.py} is 598 lines
-        holding three CV protocols, the bootstrap and six model definitions, the most valuable code in the project is the least testable;
-        \pth{07\_export\_gama\_inputs.py} is 414 lines doing five jobs.
+ \item \textbf{The vehicle detector has never been validated} against manual
+ counts. Precision, recall and MAPE per class are unknown, and
+ two-wheeler under-detection is expected but unquantified. \emph{Modal
+ shares must not be published until it is.} One day of manual counting on
+ ten videos turns an open-ended limitation into a quantified uncertainty.
+ \item \textbf{The Uganda chain (notebooks 01--06) is not reproducible} on a
+ fresh machine: it expects \pth{data/processed/uganda/*}, which exists
+ nowhere. The transfer \emph{experiment} is now reproducible from the
+ versioned boosters, but the pretraining is not.
+ \item \textbf{Night is not sampled.} 10 measurements fall outside 06:00--21:00
+ and there are none between 22:00 and 03:00.
+ \item \textbf{15\,\% of \pth{construction\_nearby} is inferred} from the noise
+ class rather than observed, and the published CSV does not flag observed
+ against derived values.
+ \item \textbf{Technical debt}: \pth{04\_evaluate\_models.py} is 598 lines
+ holding three CV protocols, the bootstrap and six model definitions, the most valuable code in the project is the least testable;
+ \pth{07\_export\_gama\_inputs.py} is 414 lines doing five jobs.
 \end{itemize}
 
 \subsection{Inconsistencies found while writing this report}
@@ -944,27 +938,27 @@ Small, but each one contradicts the project's own single-source rule, and each i
 a five-minute fix:
 
 \begin{enumerate}
-  \item \textbf{The test suite does not currently pass.} In
-        \pth{tests/test\_pipeline\_end\_to\_end.py},\\
-        \pth{test\_every\_pipeline\_step\_is\_present}
-        asserts scripts \pth{01}--\pth{11}, and script \pth{12} was added on
-        21~August (\pth{eb9c349}). Actual state on 24 August 2026:
-        \textbf{41 passed, 1 failed, 1 deselected}.
-  \item \textbf{The README badge says ``34 tests''}; the suite collects 42.
-  \item \textbf{The README's night claim is wrong in both halves.} It says ``10
-        measurements after 21:00, none 00:00--05:00''. In fact one measurement is
-        at hour~21 and nine are at hours 4--5. The count of 10 is right; the
-        window is not.
-  \item \textbf{One exceedance figure lives in two places and they disagree}:
-        \pth{docs/literature-review.md} says 38.6\,\%,
-        \pth{results/report/numbers.tex} says 37.4\,\%. The data gives 37.4\,\%
-        for daytime samples above 70\dB.
-  \item \textbf{The transfer numbers in the presentation brief do not match
-        today's rerun} (§4.3).
-  \item \textbf{The August data-audit findings are not in \pth{docs/}.} The deck
-        cites \pth{docs/audit/} for the 27~June discontinuity; that directory
-        contains the 5~August scientific audit and the restructuring documents,
-        not this one.
+ \item \textbf{The test suite does not currently pass.} In
+ \pth{tests/test\_pipeline\_end\_to\_end.py},\\
+ \pth{test\_every\_pipeline\_step\_is\_present}
+ asserts scripts \pth{01}--\pth{11}, and script \pth{12} was added on
+ 21~August. Actual state on 24 August 2026:
+ \textbf{41 passed, 1 failed, 1 deselected}.
+ \item \textbf{The README badge says ``34 tests''}; the suite collects 42.
+ \item \textbf{The README's night claim is wrong in both halves.} It says ``10
+ measurements after 21:00, none 00:00--05:00''. In fact one measurement is
+ at hour~21 and nine are at hours 4--5. The count of 10 is right; the
+ window is not.
+ \item \textbf{One exceedance figure lives in two places and they disagree}:
+ \pth{docs/literature-review.md} says 38.6\,\%,
+ \pth{results/report/numbers.tex} says 37.4\,\%. The data gives 37.4\,\%
+ for daytime samples above 70\dB.
+ \item \textbf{The transfer numbers in the presentation brief do not match
+ today's rerun} (§4.3).
+ \item \textbf{The August data-audit findings are not in \pth{docs/}.} The deck
+ cites \pth{docs/audit/} for the 27~June discontinuity; that directory
+ contains the 5~August scientific audit and the restructuring documents,
+ not this one.
 \end{enumerate}
 
 % ============================================================================
@@ -989,15 +983,15 @@ Three things must be true before the APK is passed on, and only the first is
 technical:
 
 \begin{itemize}
-  \item \textbf{The KoboToolbox account behind the outbox must be
-        institutional}, not a student's. Whoever owns it holds participants' GPS
-        positions and timestamps. This is item~\ref{item:kobo} of §\ref{sec:blocking}, and it blocks
-        distribution, not just publication.
-  \item \textbf{A VinUniversity ethics review must exist} before any collection
-        beyond the team itself. The video collection of June--July went without
-        one; the repository says so, and that must not be repeated at a scale
-        with volunteers and GPS traces.
-  \item \textbf{The consent screen must state what the application uploads}: the audio clip, the coordinates, the timestamp, and what it does not.
+ \item \textbf{The KoboToolbox account behind the outbox must be
+ institutional}, not a student's. Whoever owns it holds participants' GPS
+ positions and timestamps. This is item~\ref{item:kobo} of §\ref{sec:blocking}, and it blocks
+ distribution, not just publication.
+ \item \textbf{A VinUniversity ethics review must exist} before any collection
+ beyond the team itself. The video collection of June--July went without
+ one; the repository says so, and that must not be repeated at a scale
+ with volunteers and GPS traces.
+ \item \textbf{The consent screen must state what the application uploads}: the audio clip, the coordinates, the timestamp, and what it does not.
 \end{itemize}
 
 The application is honest about its own limits and should stay that way in the
@@ -1015,19 +1009,19 @@ with a Vietnamese institution. It is recorded here as specified; none of it has
 been executed, and no number in §4 depends on it.
 
 \begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{campaign-frame.pdf}
-  \caption{The sampling frame, and the size of the step. \textbf{Nothing on
-  this map is a site}: the 160 sites have not been drawn, and 160 invented
-  coordinates would commit the team to a sample nobody selected. What is drawn
-  is the frame: the 51 urban \emph{phuong} of Hanoi under the July~2025 reform
-  plus the 9 \emph{xa} that contain a new urban development, 60 units and
-  636\,km$^2$, against the 1.7\,km$^2$ the campaign has actually covered, a
-  factor of 369. Boundaries are OpenStreetMap
-  (\pth{data/processed/hanoi\_wards.geojson}, fetched by
-  \pth{scripts/fetch\_hanoi\_wards.py}); areas are computed in UTM~48\,N, not
-  from degrees. \pth{scripts/12\_presentation\_figures.py}.}
-  \label{fig:frame}
+ \centering
+ \includegraphics[width=\textwidth]{campaign-frame.pdf}
+ \caption{The sampling frame, and the size of the step. \textbf{Nothing on
+ this map is a site}: the 160 sites have not been drawn, and 160 invented
+ coordinates would commit the team to a sample nobody selected. What is drawn
+ is the frame: the 51 urban \emph{phuong} of Hanoi under the July~2025 reform
+ plus the 9 \emph{xa} that contain a new urban development, 60 units and
+ 636\,km$^2$, against the 1.7\,km$^2$ the campaign has actually covered, a
+ factor of 369. Boundaries are OpenStreetMap
+ (\pth{data/processed/hanoi\_wards.geojson}, fetched by
+ \pth{scripts/fetch\_hanoi\_wards.py}); areas are computed in UTM~48\,N, not
+ from degrees. \pth{scripts/12\_presentation\_figures.py}.}
+ \label{fig:frame}
 \end{figure}
 
 \begin{caveat}{Drawing the frame found a problem in it, and the frame was
@@ -1103,18 +1097,18 @@ unevenly, 142 of 363 measurements carry video, 23\,\% of them at Ocean Park
 Three things follow for the plan, and all three are cheap:
 
 \begin{itemize}
-  \item \textbf{Fix the video share and state it up front.} Whether every
-        session carries video or a defined sub-sample does, it must be a
-        decision rather than a by-product of who remembered. A stratum with
-        20\,\% video coverage cannot carry a traffic term.
-  \item \textbf{Record at the resolution the detector will be run at.} The
-        counting pipeline currently runs at \pth{imgsz=640} and finds 30\,\%
-        fewer vehicles than the same frames at 1280 (§6.2 above,
-        §\ref{sec:sciwork}). Fix the inference resolution before the campaign,
-        not after.
-  \item \textbf{Trust the GPS tag, never the burned-in caption}
-        (§\ref{sec:videocaveat}). With 60 volunteers this stops being a
-        curiosity and becomes a systematic mis-siting of the video record.
+ \item \textbf{Fix the video share and state it up front.} Whether every
+ session carries video or a defined sub-sample does, it must be a
+ decision rather than a by-product of who remembered. A stratum with
+ 20\,\% video coverage cannot carry a traffic term.
+ \item \textbf{Record at the resolution the detector will be run at.} The
+ counting pipeline currently runs at \pth{imgsz=640} and finds 30\,\%
+ fewer vehicles than the same frames at 1280 (§6.2 above,
+ §\ref{sec:sciwork}). Fix the inference resolution before the campaign,
+ not after.
+ \item \textbf{Trust the GPS tag, never the burned-in caption}
+ (§\ref{sec:videocaveat}). With 60 volunteers this stops being a
+ curiosity and becomes a systematic mis-siting of the video record.
 \end{itemize}
 
 The footage is personal data the moment it exists: it carries faces and plates,
@@ -1153,50 +1147,50 @@ Dates are the repository's where it has them.
 \subsection{Blocking before any public release}\label{sec:blocking}
 
 \begin{enumerate}
-  \item \textbf{Video retention decision}, custodian, storage location,
-        deletion or anonymisation deadline. 6\,GB of unanonymised video showing
-        faces and plates currently sits with no owner and no expiry. This is the
-        most consequential open item in the project. \emph{Holder: supervisor.}
-  \item \label{item:kobo}\textbf{Ownership of the KoboToolbox account} if the
-        app is used for a public campaign, it should be institutional, not a student's, because
-        whoever owns it holds strangers' GPS positions and timestamps. And
-        \textbf{VinUniversity ethics review} before any new collection: the video
-        collection went without one and the repository says so; that must not be
-        repeated at larger scale.
+ \item \textbf{Video retention decision}, custodian, storage location,
+ deletion or anonymisation deadline. 6\,GB of unanonymised video showing
+ faces and plates currently sits with no owner and no expiry. This is the
+ most consequential open item in the project. \emph{Holder: supervisor.}
+ \item \label{item:kobo}\textbf{Ownership of the KoboToolbox account} if the
+ app is used for a public campaign, it should be institutional, not a student's, because
+ whoever owns it holds strangers' GPS positions and timestamps. And
+ \textbf{VinUniversity ethics review} before any new collection: the video
+ collection went without one and the repository says so; that must not be
+ repeated at larger scale.
 \end{enumerate}
 
 \subsection{Scientific work, in value-per-effort order}\label{sec:sciwork}
 
 \begin{enumerate}
-  \item \textbf{Validate the YOLO detector} on \(\sim\)10 videos, double-counted
-        manually, about one day. It is the input uncertainty of every
-        downstream number and it unblocks the modal shares. There is now a
-        reason to think the uncertainty is large and one-sided:
-        \pth{02\_count\_vehicles.py} runs inference at
-        \pth{imgsz=640} on 1280$\times$720 footage, and re-running the same
-        frames at \pth{imgsz=1280} with the confidence threshold held at 0.30
-        finds \textbf{30\,\% more vehicles}, 78 against 60 across a
-        12-frame sample, more in 8 of the 12. Twelve frames is a hint, not a
-        measurement, and the sign is what matters: the counts result~3 was
-        fitted against are more likely to be undercounts than overcounts, and
-        an instrument that undercounts by a variable amount is exactly what
-        would flatten a real relationship into the zero coefficients of
-        §\ref{sec:result3}. Vary the resolution first; it costs an afternoon
-        and it may reframe the whole negative result.
-  \item \textbf{Diagnose the 27~June discontinuity} and refit with a phase term, and commit the code that computes the controlled effect.
-  \item \textbf{Reframe negative result 3} as an instrument failure in
-        \pth{docs/negative-results.md} and in the manuscript.
-  \item \textbf{Carry the confidence intervals into every summary table.}
-  \item \textbf{Implement a real propagation kernel}, CNOSSOS-EU via
-        NoiseModelling \citep{kephalopoulos2014cnossos, bocher2019noisemodelling}.
-        This is the scientifically indicated continuation, not an optional
-        extra: if a two-parameter distance term already beats a six-variable
-        gradient-boosting model, then physical propagation corrected by a locally
-        learned residual is the architecture the data points at. It was out of
-        budget for a three-month internship; implementing it is months, citing
-        what is missing is a page.
-  \item \textbf{Repeat a short campaign with a reference instrument} to anchor
-        the absolute scale. The app's calibration screen exists for exactly this.
+ \item \textbf{Validate the YOLO detector} on \(\sim\)10 videos, double-counted
+ manually, about one day. It is the input uncertainty of every
+ downstream number and it unblocks the modal shares. There is now a
+ reason to think the uncertainty is large and one-sided:
+ \pth{02\_count\_vehicles.py} runs inference at
+ \pth{imgsz=640} on 1280$\times$720 footage, and re-running the same
+ frames at \pth{imgsz=1280} with the confidence threshold held at 0.30
+ finds \textbf{30\,\% more vehicles}, 78 against 60 across a
+ 12-frame sample, more in 8 of the 12. Twelve frames is a hint, not a
+ measurement, and the sign is what matters: the counts result~3 was
+ fitted against are more likely to be undercounts than overcounts, and
+ an instrument that undercounts by a variable amount is exactly what
+ would flatten a real relationship into the zero coefficients of
+ §\ref{sec:result3}. Vary the resolution first; it costs an afternoon
+ and it may reframe the whole negative result.
+ \item \textbf{Diagnose the 27~June discontinuity} and refit with a phase term, and commit the code that computes the controlled effect.
+ \item \textbf{Reframe negative result 3} as an instrument failure in
+ \pth{docs/negative-results.md} and in the manuscript.
+ \item \textbf{Carry the confidence intervals into every summary table.}
+ \item \textbf{Implement a real propagation kernel}, CNOSSOS-EU via
+ NoiseModelling \citep{kephalopoulos2014cnossos, bocher2019noisemodelling}.
+ This is the scientifically indicated continuation, not an optional
+ extra: if a two-parameter distance term already beats a six-variable
+ gradient-boosting model, then physical propagation corrected by a locally
+ learned residual is the architecture the data points at. It was out of
+ budget for a three-month internship; implementing it is months, citing
+ what is missing is a page.
+ \item \textbf{Repeat a short campaign with a reference instrument} to anchor
+ the absolute scale. The app's calibration screen exists for exactly this.
 \end{enumerate}
 
 \subsection{Deliverable track}
@@ -1207,24 +1201,24 @@ Dates are the repository's where it has them.
 \textbf{Deliverable} & \textbf{State} & \textbf{Next action} \\
 \midrule
 Manuscript (Overleaf) & Two sections drafted in the repository first
-  (\pth{metrology.md}, \pth{negative-results.md}); Overleaf is the source of
-  truth & Reframe result 3; add the intervals; add the CNOSSOS future-work
-  paragraph with Figure~2 of \citet{bocher2019noisemodelling}. \\
+ (\pth{metrology.md}, \pth{negative-results.md}); Overleaf is the source of
+ truth & Reframe result 3; add the intervals; add the CNOSSOS future-work
+ paragraph with Figure~2 of \citet{bocher2019noisemodelling}. \\
 Capture / demo with the app & Working end to end; the three-gesture demo is
-  scripted in \pth{docs/presentation-brief.md} §5 & Record it. Steps 1--2
-  (measurement, map) need no network; step 3 (GAMA) needs
-  \pth{gama-headless.sh -socket 6868} reachable on the wifi address, not
-  localhost. \\
+ scripted in \pth{docs/presentation-brief.md} §5 & Record it. Steps 1--2
+ (measurement, map) need no network; step 3 (GAMA) needs
+ \pth{gama-headless.sh -socket 6868} reachable on the wifi address, not
+ localhost. \\
 AAMAS submission or presentation & Intended; the venue, track and deadline are
-  the supervisor's to fix & The agent-based exposure model
-  (\pth{simulation/gama/}) is the natural hook; tier~2 pedestrian agents are the
-  natural addition. \\
+ the supervisor's to fix & The agent-based exposure model
+ (\pth{simulation/gama/}) is the natural hook; tier~2 pedestrian agents are the
+ natural addition. \\
 Decks & 35-slide and 23-slide versions compiled, plus speaker scripts and a
-  formula annex (\pth{presentation/}) & Ready. \\
+ formula annex (\pth{presentation/}) & Ready. \\
 Field application, distributed & APK built and working offline end to end &
-  Hand the signed APK to Nguyen Thanh Quang for distribution inside
-  VinUniversity (§\ref{sec:handover}), then open recruitment for the campaign
-  of §\ref{sec:campaign}. \\
+ Hand the signed APK to Nguyen Thanh Quang for distribution inside
+ VinUniversity (§\ref{sec:handover}), then open recruitment for the campaign
+ of §\ref{sec:campaign}. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1255,63 +1249,63 @@ strong as future work and wrong as a promise attached to this result.
 \pth{ceiling.pdf}, \pth{map-grid.pdf}, \pth{discontinuity.pdf},
 \pth{feature-importance.pdf}, \pth{hanoi-sites.pdf}, \pth{exceedance.pdf},
 \pth{class-levels.pdf}, \pth{campaign-frame.pdf}
-  & \pth{scripts/12\_presentation\_figures.py}, reading
-    \pth{models/metrics.json}, \pth{data/processed/measurements.csv} and
-    \pth{results/maps/hanoi\_noise\_map.csv}; \pth{hanoi-sites.pdf} additionally
-    reads the road shapefiles under \pth{simulation/gama/inputs/} and
-    \pth{exceedance.pdf} reads
-    \pth{results/tables/hanoi\_exceedances.csv}, and \pth{campaign-frame.pdf}
-    reads \pth{data/processed/hanoi\_wards.geojson}. Re-run on 28 August 2026.
-    The
-    only change against the committed versions is the map's colour ramp: the
-    old one ran green -- yellow-green -- lime -- yellow and its three middle
-    bands, which cover most of the mapped area, sat at the same lightness and
-    read as one band. The ramp is now ordered by lightness, and every label
-    that was set in green is now set in ink, green is a line colour in these
-    figures, never a font colour. No number moved. \\
+ & \pth{scripts/12\_presentation\_figures.py}, reading
+ \pth{models/metrics.json}, \pth{data/processed/measurements.csv} and
+ \pth{results/maps/hanoi\_noise\_map.csv}; \pth{hanoi-sites.pdf} additionally
+ reads the road shapefiles under \pth{simulation/gama/inputs/} and
+ \pth{exceedance.pdf} reads
+ \pth{results/tables/hanoi\_exceedances.csv}, and \pth{campaign-frame.pdf}
+ reads \pth{data/processed/hanoi\_wards.geojson}. Re-run on 28 August 2026.
+ The
+ only change against the committed versions is the map's colour ramp: the
+ old one ran green -- yellow-green -- lime -- yellow and its three middle
+ bands, which cover most of the mapped area, sat at the same lightness and
+ read as one band. The ramp is now ordered by lightness, and every label
+ that was set in green is now set in ink, green is a line colour in these
+ figures, never a font colour. No number moved. \\
 Application screens (Figure~\ref{fig:appscreens}) & \pth{appscreens.tex}, drawn
-  from \pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}. Not device
-  captures, see the caption. \\
+ from \pth{mobile/app/src/main/java/org/noisehanoi/mobile/ui/}. Not device
+ captures, see the caption. \\
 \pth{validation\_simulation.png} & \pth{scripts/08\_validate\_simulation.py} \\
 \pth{hanoi\_wards.geojson}, \pth{hanoi\_new\_developments.geojson} &
-  \pth{scripts/fetch\_hanoi\_wards.py}, two Overpass queries against
-  OpenStreetMap, fetched 28 August 2026 and committed. 126 administrative units
-  (51 \emph{phuong}, 75 \emph{xa}) and 92 named new urban developments. It is
-  the only script in the project that touches the network, which is why it is
-  unnumbered and outside the pipeline. \\
+ \pth{scripts/fetch\_hanoi\_wards.py}, two Overpass queries against
+ OpenStreetMap, fetched 28 August 2026 and committed. 126 administrative units
+ (51 \emph{phuong}, 75 \emph{xa}) and 92 named new urban developments. It is
+ the only script in the project that touches the network, which is why it is
+ unnumbered and outside the pipeline. \\
 \pth{data/processed/video\_index.csv} & \pth{scripts/index\_videos.py}, reading
-  the QuickTime GPS and creation-time tags of the 147 files in
-  \pth{data/raw/videos/}. 118 carry a coordinate. No image data. Unnumbered:
-  a clone has no footage to run it on. \\
+ the QuickTime GPS and creation-time tags of the 147 files in
+ \pth{data/raw/videos/}. 118 carry a coordinate. No image data. Unnumbered:
+ a clone has no footage to run it on. \\
 Figure~\ref{fig:stills}, the three stills & \pth{scripts/make\_video\_stills.py}, redaction by \pth{yolov8n}, then checked by eye. No raw frame is written
-  to disk. \\
+ to disk. \\
 Which measurements carry video (142 of 363) & joined in
-  \pth{fig\_sites\_map} on \pth{matched\_timestamp} in
-  \pth{data/processed/vehicle\_counts.csv}, the pipeline's own match \\
+ \pth{fig\_sites\_map} on \pth{matched\_timestamp} in
+ \pth{data/processed/vehicle\_counts.csv}, the pipeline's own match \\
 The frame: 60 units, 636\,km$^2$ & \pth{frame\_units} in
-  \pth{scripts/12\_presentation\_figures.py}, every \emph{phuong}, plus every
-  \emph{xa} containing a development from
-  \pth{hanoi\_new\_developments.geojson} \\
+ \pth{scripts/12\_presentation\_figures.py}, every \emph{phuong}, plus every
+ \emph{xa} containing a development from
+ \pth{hanoi\_new\_developments.geojson} \\
 The 30\,\% detector-resolution gap (§\ref{sec:sciwork}) & 12 frames sampled at
-  \pth{random\_state=7}, \pth{yolov8n} at \pth{imgsz} 640 against 1280,
-  \pth{conf} held at 0.30. A hint at this sample size, not a measurement. \\
+ \pth{random\_state=7}, \pth{yolov8n} at \pth{imgsz} 640 against 1280,
+ \pth{conf} held at 0.30. A hint at this sample size, not a measurement. \\
 Frame area, measured area, the 369$\times$ ratio, and which areas fall inside
-  the frame & computed in \pth{fig\_campaign\_frame} from
-  \pth{hanoi\_wards.geojson} and \pth{measurements.csv}, reprojected to
-  UTM~48\,N \\
+ the frame & computed in \pth{fig\_campaign\_frame} from
+ \pth{hanoi\_wards.geojson} and \pth{measurements.csv}, reprojected to
+ UTM~48\,N \\
 Model table (§4.2) & \pth{models/metrics.json} via \pth{models/model\_comparison.md} \\
 Transfer table (§4.3) & \pth{scripts/experiments/uganda\_transfer.py}, re-run 24 August 2026 \\
 Site table, exceedances, hour peak, night counts & recomputed from
-  \pth{data/processed/measurements.csv} and
-  \pth{results/tables/hanoi\_exceedances.csv} \\
+ \pth{data/processed/measurements.csv} and
+ \pth{results/tables/hanoi\_exceedances.csv} \\
 Ceiling table (§\ref{sec:ceiling}) & recomputed from
-  \pth{data/processed/measurements.csv} \\
+ \pth{data/processed/measurements.csv} \\
 Modal split, match gaps, flow correlations & recomputed from
-  \pth{data/processed/vehicle\_counts.csv} \\
+ \pth{data/processed/vehicle\_counts.csv} \\
 Discontinuity raw gap and integer-reading share & recomputed from
-  \pth{data/processed/measurements.csv} \\
+ \pth{data/processed/measurements.csv} \\
 Simulation validation statistics & recomputed from
-  \pth{results/tables/validation\_simulation.csv} ($n=360$) \\
+ \pth{results/tables/validation\_simulation.csv} ($n=360$) \\
 App statistics & counted in \pth{mobile/app/src/} \\
 Test-suite state & \pth{pytest tests -q}, 28 August 2026 \\
 \bottomrule
