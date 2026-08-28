@@ -49,14 +49,23 @@ RULE = "#D8D8D4"
 # QCVN 26:2010 reading bands. Descriptive only — the same use the published map
 # and the app make of them, and never a compliance statement. See
 # docs/metrology.md: our quantity is not the quantity the standard regulates.
+#
+# The ramp is ordered by lightness, not by hue. The previous one ran
+# green -> yellow-green -> lime -> yellow (#7CB342, #C0CA33, #F9A825) and its
+# three middle bands sat within a few points of the same lightness: printed,
+# and on a projector, 55-60 / 60-65 / 65-70 were one washed-out band. Since
+# those three cover most of the mapped area, the map read as noise. Each band
+# below is now clearly darker than the one under it, so the order survives
+# greyscale printing and the two common red-green deficiencies; the hue break
+# at 60 dB is deliberate and marks where the bands stop being quiet.
 BANDS = [
-    (-np.inf, 55, "#2E7D32", "< 55"),
-    (55, 60, "#7CB342", "55 – 60"),
-    (60, 65, "#C0CA33", "60 – 65"),
-    (65, 70, "#F9A825", "65 – 70"),
-    (70, 75, "#EF6C00", "70 – 75"),
-    (75, 80, "#D84315", "75 – 80"),
-    (80, np.inf, "#B71C1C", "> 80"),
+    (-np.inf, 55, "#14654A", "< 55"),
+    (55, 60, "#4FA07C", "55 – 60"),
+    (60, 65, "#F5D06B", "60 – 65"),
+    (65, 70, "#EE9422", "65 – 70"),
+    (70, 75, "#D6541E", "70 – 75"),
+    (75, 80, "#A31E1E", "75 – 80"),
+    (80, np.inf, "#5E0F14", "> 80"),
 ]
 
 

@@ -104,3 +104,15 @@ mobile/**/*.keystore
 # footage has no custodian -- none of which belongs on a public repository.
 # It stays local, next to the documents it accompanies.
 deliverables/email_draft.md
+
+# LaTeX intermediates under deliverables/. The two PDFs and the two .bbl files
+# ARE versioned: the PDFs are what people are sent, and the .bbl lets the
+# Overleaf folder compile on upload without a bibtex pass.
+deliverables/**/*.aux
+deliverables/**/*.log
+deliverables/**/*.out
+deliverables/**/*.toc
+deliverables/**/*.blg
+deliverables/**/*.fls
+deliverables/**/*.fdb_latexmk
+deliverables/**/*.synctex.gz

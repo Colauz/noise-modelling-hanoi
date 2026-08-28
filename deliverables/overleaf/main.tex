@@ -5,8 +5,8 @@
 %      pdflatex main && bibtex main && pdflatex main && pdflatex main
 %  Ready to zip (main.tex, refs.bib, figures/) and upload to Overleaf.
 %
-%  TARGET VENUE: [TO CONFIRM]. Nothing in the project repository names AAMAS or
-%  any other venue. The layout below is a neutral two-column A4 article; if the
+%  TARGET VENUE: not yet fixed. The layout below is a neutral two-column A4
+%  article; if the
 %  target turns out to be an ACM venue, replace the \documentclass line with
 %  \documentclass[sigconf,anonymous=false]{acmart} and delete the geometry,
 %  fancyhdr and titling settings -- the body text needs no other change.
@@ -38,7 +38,6 @@
 \emergencystretch=2em
 
 \definecolor{warnc}{HTML}{8A4B08}
-\newcommand{\tc}[1]{{\color{warnc}\textbf{[TO CONFIRM: #1]}}}
 \newcommand{\LAt}{$L_{A,25\mathrm{s}}$}
 \newcommand{\dB}{\ensuremath{\,\mathrm{dB}}}
 
@@ -49,7 +48,7 @@ urban noise:\\ three negative results and an agent-based exposure model for Hano
 \author{%
   Laurian Jamin \and Lucas Zborowski\\[.2em]
   {\small ISIMA, Clermont-Ferrand, France ---
-   \tc{host laboratory: CEI or COSMOS Lab}, VinUniversity, Hanoi}\\
+   COSMOS Lab, VinUniversity, Hanoi}\\
   {\small\texttt{laurian@laurian-jamin.fr}}
   \vspace{-1em}}
 \date{}
@@ -379,8 +378,7 @@ separated (physical $0.246\,[0.097, 0.339]$ against $\log d_{\text{road}}$
 $0.200\,[0.077, 0.266]$, Fig.~\ref{fig:forest}); the vehicle detector is
 unvalidated; and a $-5$\dB{} discontinuity in the level distribution on
 27~June~2026, coinciding with a change of form version, is spatially structured
-and has no term in any of our models. \tc{whether the discontinuity is diagnosed
-before submission}.
+and has no term in any of our models; it is not diagnosed here.
 
 % ============================================================================
 \section{Conclusion and future work}
@@ -408,8 +406,10 @@ framework are released at
 Traffic videos and raw survey exports are not distributed, for the reasons stated
 there.
 
-\paragraph{Acknowledgements.} \tc{supervisor's title, host laboratory, and
-whether Nguyen Thanh Quang appears here or in the byline}.
+\paragraph{Acknowledgements.} This work was carried out at COSMOS Lab,
+VinUniversity, Hanoi, under the supervision of Doanh Nguyen-Ngoc. We thank
+Nguyen Thanh Quang (VinUniversity) for his contribution to the field campaign
+and for running the distribution of the field application.
 
 \scriptsize
 \setlength{\bibsep}{2pt plus 1pt}
