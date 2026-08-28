@@ -14,7 +14,7 @@
 %  bands are levelColour() from the same file.
 %
 %  WHAT THESE ARE NOT. They are not device captures. Nobody on the team has run
-%  the app on a handset with a sound source in front of it — that is stated on
+%  the app on a handset with a sound source in front of it, that is stated on
 %  the "what the app refuses to claim" slide and it is why there are no real
 %  screenshots here yet. Replace these with captures the day the app is run on a
 %  real phone: put the PNGs in presentation/screens/ and swap the \phone... call
@@ -24,7 +24,7 @@
 %  resize; the text scales with it.
 % ============================================================================
 
-% ---------------------------------------------------------------- app palette
+%, -, -, -, -, -, -, -, -, -,- app palette
 \definecolor{appink} {HTML}{0B3D5C}   % Theme.kt  Ink   -> primary
 \definecolor{appsky} {HTML}{3E8FB8}   % Theme.kt  Sky   -> secondary
 \definecolor{appsurf}{HTML}{F4F6F8}   % Material 3 surfaceVariant, light scheme
@@ -45,7 +45,7 @@
 \definecolor{lvlCtext}{HTML}{9A5A05}
 \definecolor{lvlDtext}{HTML}{A83A12}
 
-% ---------------------------------------------------------------- primitives
+%, -, -, -, -, -, -, -, -, -,- primitives
 \tikzset{
   phonebody/.style   = {draw=appink!55, line width=.5pt, rounded corners=2.2mm,
                         fill=white},
@@ -70,7 +70,7 @@
                         anchor=center, inner sep=0pt},
 }
 
-% \phoneframe{<body>}{<app bar title>} — chrome shared by all four screens.
+% \phoneframe{<body>}{<app bar title>}, chrome shared by all four screens.
 % Draws the handset, the status bar and the Material 3 top app bar, then places
 % <body> in a scope whose origin is the top-left of the content area.
 \newcommand{\phoneframe}[2]{%
@@ -97,7 +97,7 @@
   \end{tikzpicture}%
 }
 
-% \appcard{<y top>}{<height>}{<inner>} — a Material 3 Card. Inner content is
+% \appcard{<y top>}{<height>}{<inner>}, a Material 3 Card. Inner content is
 % placed from the card's top-left plus the 2 mm padding the app uses.
 \newcommand{\appcard}[4][card]{%
   \draw[#1] (2,#2) rectangle (42,#2-#3);
@@ -151,7 +151,7 @@
   \appcard{-64}{15}{%
     \node[ttl] at (0,0) {GAMA simulation};
     \node[bdy, text width=34mm] at (0,-3)
-      {The model itself, driven from here --- mitigation scenarios, the fleet by
+      {The model itself, driven from here, mitigation scenarios, the fleet by
        hour. Needs a gama-server on the network.};
     \appbutton{0}{-9.4}{21}{Open the simulation}}
 
@@ -348,9 +348,9 @@
     \node[ttl] at (0,0) {The campaign};
     \node[bdy] at (0,-3.2) {363 measurements, 2026-06-10 to};
     \node[bdy] at (0,-6.0) {2026-07-22, 47 to 88 dB.};
-    \node[bdy] at (0,-9.2) {{\textperiodcentered} Ocean Park --- 184 points};
-    \node[bdy] at (0,-11.8) {{\textperiodcentered} Hoan Kiem lake --- 99 points};
-    \node[bdy] at (0,-14.4) {{\textperiodcentered} Vinh Tuy area --- 80 points};}
+    \node[bdy] at (0,-9.2) {{\textperiodcentered} Ocean Park, 184 points};
+    \node[bdy] at (0,-11.8) {{\textperiodcentered} Hoan Kiem lake, 99 points};
+    \node[bdy] at (0,-14.4) {{\textperiodcentered} Vinh Tuy area, 80 points};}
 
   \node[ttl, text width=38mm] at (2,-26)
     {The three negative results are the contribution};

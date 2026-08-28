@@ -47,8 +47,7 @@ urban noise:\\ three negative results and an agent-based exposure model for Hano
 
 \author{%
   Laurian Jamin \and Lucas Zborowski\\[.2em]
-  {\small ISIMA, Clermont-Ferrand, France ---
-   COSMOS Lab, VinUniversity, Hanoi}\\
+  {\small ISIMA, Clermont-Ferrand, France, COSMOS Lab, VinUniversity, Hanoi}\\
   {\small\texttt{laurian@laurian-jamin.fr}}
   \vspace{-1em}}
 \date{}
@@ -68,13 +67,13 @@ three cross-validation protocols of increasing severity, with a
 learned model we built, including a physics-plus-residual hybrid we had
 ourselves recommended: the ranking of seven models \emph{inverts} between a
 permissive spatial split and two strict ones. \textbf{(ii)} Cross-city transfer
-from a 61\,000-point Ugandan corpus fails --- not by an offset, but by carrying
-no usable information at all --- while one locally fitted distance term reaches
+from a 61\,000-point Ugandan corpus fails, not by an offset, but by carrying
+no usable information at all, while one locally fitted distance term reaches
 $R^2 = 0.240$. \textbf{(iii)} Vehicle counts extracted from 147 matched traffic
 videos yield exactly zero emission coefficients for motorcycles and cars, as
 density and as line-crossing flow alike. We deliver the surviving model as a
 40\,m exposure map driving an agent-based simulation in which \emph{receiver}
-agents, not emitter agents, accumulate a noise dose --- a design forced by the
+agents, not emitter agents, accumulate a noise dose, a design forced by the
 absence of any per-street data that emitter agents could be calibrated or
 verified against.
 \end{abstract}
@@ -92,8 +91,7 @@ is also a setting in which the claims such a method can support are rarely
 tested.
 
 We ran a three-month campaign in Hanoi and then evaluated it adversarially. Our
-contribution is not a noise map of Hanoi --- our instrument cannot support one
---- but a set of \textbf{boundary conditions on low-cost urban noise modelling},
+contribution is not a noise map of Hanoi, our instrument cannot support one, but a set of \textbf{boundary conditions on low-cost urban noise modelling},
 each obtained from an experiment designed to succeed.
 
 The agent-based component is where the constraint bites hardest and is, we
@@ -106,8 +104,8 @@ the agents on the \emph{receiving} side of a measured field.
 \section{Data and protocol}
 
 363 measurements were collected across three deliberately contrasted typologies
---- a new peri-urban development (Ocean Park, $n=184$), a historic dense quarter
-(Hoan Kiem lake, $n=99$) and a transport corridor (Vinh Tuy, $n=80$) --- using
+, a new peri-urban development (Ocean Park, $n=184$), a historic dense quarter
+(Hoan Kiem lake, $n=99$) and a transport corridor (Vinh Tuy, $n=80$), using
 ODK~Collect against a KoboToolbox server, with a 10\,m GPS accuracy gate and a
 recorded outdoor distance to the road. 147 timestamped traffic videos were
 recorded alongside (median video-to-measurement offset 15\,s).
@@ -154,8 +152,8 @@ equals the radius over which the morphological features are aggregated. This is
 not a detail. An earlier version of this work reported $R^2 = 0.45$ under a
 grouping on $\sim$110\,m cells, smaller than the 300\,m feature radius; that
 protocol leaked between folds \citep{roberts2017crossvalidation} and the figure
-was withdrawn. The delivered model is now selected \emph{by code} --- best score
-under the reference protocol among candidates fixed in advance --- so that a
+was withdrawn. The delivered model is now selected \emph{by code}, best score
+under the reference protocol among candidates fixed in advance, so that a
 published map cannot silently inherit a model that only wins on a permissive
 split.
 
@@ -202,7 +200,7 @@ Hybrid, restricted        & 0.378 & 0.144 & 0.106 \\
 
 \textbf{Read Table~\ref{tab:models} by column and the ranking reverses}
 (Fig.~\ref{fig:inversion}). Every elaboration we added improves the permissive
-protocol and degrades the strict ones, monotonically --- the signature of
+protocol and degrades the strict ones, monotonically, the signature of
 capacity fitting spatial autocorrelation rather than physics. Three readings
 follow.
 
@@ -224,8 +222,7 @@ what a map is for.
 physics-plus-learned-residual architecture ourselves as the constructive answer
 to our own negative results. Built and evaluated on identical folds, the residual
 gains $\Delta R^2 = +0.140$ under block-CV and loses $-0.123$ and $-0.187$ under
-the two strict protocols. Constraining its capacity recovers part of the loss ---
-and the direction of that trade is the diagnosis: what the unconstrained residual
+the two strict protocols. Constraining its capacity recovers part of the loss, and the direction of that trade is the diagnosis: what the unconstrained residual
 learns is the spatial arrangement of our points, not physics the core is missing.
 The residual is computed at every run and deliberately not applied.
 
@@ -233,7 +230,7 @@ The residual is computed at every run and deliberately not applied.
 40\,m of each other \emph{at the same hour} must be predicted identically by any
 spatial model, so their disagreement is variance no spatial model can explain.
 Over 87 such pairs the mean absolute difference is 5.44\dB, implying
-$\sigma \approx 4.8$\dB{} against a total variance of 51\dB$^2$ --- a ceiling
+$\sigma \approx 4.8$\dB{} against a total variance of 51\dB$^2$, a ceiling
 near $R^2 \approx 0.54$. The delivered model reaches about half of what is
 attainable, not a tenth of it. (Pairs at the same hour may fall on different
 days, so this $\sigma$ carries day-to-day variation: it is an order of magnitude,
@@ -244,7 +241,7 @@ not a bound.)
   \includegraphics[width=.96\columnwidth]{forest-bloo.pdf}
   \caption{Every model under the reference protocol with its 95\,\% interval. The
   physical kernel is the only model whose interval excludes zero under all three
-  protocols --- and it is not separated from the two-parameter distance
+  protocols, and it is not separated from the two-parameter distance
   regression.}
   \label{fig:forest}
 \end{figure}
@@ -281,10 +278,10 @@ Three readings of Table~\ref{tab:transfer}, and the third is the one that
 matters. \textbf{It is not a calibration offset}: the Kampala model predicts
 about 26\dB{} below Hanoi, and removing that difference leaves $R^2$ negative, so
 a recalibrated transfer would not work either. \textbf{v1 transfers
-anti-information}: its correlation with Hanoi is negative --- it ranks quiet and
+anti-information}: its correlation with Hanoi is negative, it ranks quiet and
 loud the wrong way round. \textbf{v2 removes the convention artefact and leaves
 nothing}: $r = +0.076$, and even granted a free bias and a free slope its ceiling
-is $R^2 = 0.006$. Not wrong --- empty.
+is $R^2 = 0.006$. Not wrong, empty.
 
 Against which, one locally fitted distance term on the same 363 points reaches
 $R^2 = 0.240$. \textbf{Local measurement is not a refinement of transfer; it is a
@@ -298,9 +295,9 @@ exchangeable across studies.
 
 Regressing measured acoustic \emph{energy} on vehicle counts,
 $E = E_{\mathrm{bg}(s)} + \sum_c n_c e_c$ with $e_c \ge 0$, returns exactly zero
-for motorcycles and cars. When we traced this to the choice of quantity --- a
+for motorcycles and cars. When we traced this to the choice of quantity, a
 per-frame count is a \emph{stock}, while emission is driven by \emph{flow}, and
-the two decouple exactly in congestion --- we implemented our own recommendation,
+the two decouple exactly in congestion, we implemented our own recommendation,
 re-processing all 147 videos with multi-object tracking and line-crossing counts.
 
 \textbf{Flow does not rescue it.} Pooled, total flow against level gives
@@ -317,7 +314,7 @@ alone buys a coherent traffic statistic and no acoustic calibration.
 
 \noindent\textbf{We state a caveat on our own negative result.} Our detector was
 never validated against manual counts, and it returns a modal split of 57\,\%
-cars against 36\,\% motorcycles --- in Hanoi, where reality is roughly the
+cars against 36\,\% motorcycles, in Hanoi, where reality is roughly the
 inverse. This result should therefore be read as \emph{``the chain could not be
 made to work''} rather than as a finding about acoustics.
 
@@ -339,21 +336,21 @@ contribution, and it is a negative one applied constructively.
 
 \textbf{Emitter agents were rejected.} Motorcycle and car agents need real
 per-street flows, fleet composition, speeds and signal cycles. We have none of
-these for Hanoi --- Result~3 is precisely the failure of our attempt to recover
-them --- so an emitter simulation would be neither calibratable against data nor
+these for Hanoi, Result~3 is precisely the failure of our attempt to recover
+them, so an emitter simulation would be neither calibratable against data nor
 verifiable against anything.
 
 \textbf{Receiver agents were adopted.} Agents move through the area and
 accumulate a \emph{noise dose}: the level of the cell crossed, times the time
 spent in it. The input is a map that was measured and validated; nothing about
-the sources is invented. What emerges at population level --- the distribution of
-daily exposure --- is what a map alone cannot give.
+the sources is invented. What emerges at population level, the distribution of
+daily exposure, is what a map alone cannot give.
 
 Against 360 matched measurement points the simulated field has mean error
 $-1.24$\dB, MAE 5.30\dB{} and RMSE 6.49\dB. It reproduces the spatial and
 temporal ordering and does not reproduce the spread, which is expected: features
 aggregated over 300\,m cannot resolve a facade/courtyard contrast. One correction
-is worth recording, because it is easy to get wrong --- the traffic multiplier
+is worth recording, because it is easy to get wrong, the traffic multiplier
 must scale the \emph{traffic share} of the energy and never the background;
 applied to total energy it double-counts the background and inflated the apparent
 benefit of pedestrianisation from 3.5\dB{} to 7.0\dB.
@@ -366,7 +363,7 @@ Mobile receiver agents with daily journeys (``tier~2'') are specified and
 
 Two limitations are not fixable by code and bound everything above. \textbf{There
 is no absolute reference}: three handsets cross-calibrated against each other and
-against no standard. \textbf{Three sites are three typologies} --- the effective
+against no standard. \textbf{Three sites are three typologies}, the effective
 number of independent morphological configurations is close to three whatever the
 number of points, and three is not a basis for claiming coverage of a city. In
 line with area-of-applicability reasoning \citep{meyer2021aoa} we therefore
@@ -392,9 +389,8 @@ We recommend that a distance-to-source physical baseline be reported as a
 mandatory reference in every morphology-based noise mapping study, under a
 spatial split whose block size exceeds the feature aggregation radius.
 
-The indicated continuation is a real propagation kernel --- CNOSSOS-EU via
-NoiseModelling \citep{kephalopoulos2014cnossos, bocher2019noisemodelling} ---
-which models what a distance law cannot: diffraction around buildings and
+The indicated continuation is a real propagation kernel, CNOSSOS-EU via
+NoiseModelling \citep{kephalopoulos2014cnossos, bocher2019noisemodelling}, which models what a distance law cannot: diffraction around buildings and
 first- and second-order reflections. If a two-parameter distance term already
 beats a six-variable gradient-boosting model, a physical propagation core
 corrected by a locally learned residual is the architecture the data points at.
