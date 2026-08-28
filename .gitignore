@@ -96,3 +96,11 @@ mobile/.idea/
 mobile/**/*.apk
 mobile/**/*.aab
 mobile/**/*.keystore
+
+# --- deliverables/ ----------------------------------------------------------
+# The report, the Overleaf paper and the figures are versioned: they are what
+# gets handed over. The transmittal e-mail is not. It names real people, asks
+# an open question about co-authorship, and records that 6 GB of unanonymised
+# footage has no custodian -- none of which belongs on a public repository.
+# It stays local, next to the documents it accompanies.
+deliverables/email_draft.md
