@@ -76,3 +76,7 @@ mobile/.idea/
 mobile/**/*.apk
 mobile/**/*.aab
 mobile/**/*.keystore
+
+# Personal end-of-year report: drafts, marking guidelines and a colleague's
+# confidential report. Not part of the research record.
+rapport_lucas/
