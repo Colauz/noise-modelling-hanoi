@@ -1,0 +1,116 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bocher et~al.(2019)Bocher, Guillaume, Picaut, Petit, and
+  Fortin]{bocher2019noisemodelling}
+Erwan Bocher, Gwena{\"e}l Guillaume, Judica{\"e}l Picaut, Gwendall Petit, and
+  Nicolas Fortin.
+\newblock {NoiseModelling}: an open source {GIS}-based tool to produce
+  environmental noise maps.
+\newblock \emph{ISPRS International Journal of Geo-Information}, 8\penalty0
+  (3):\penalty0 130, 2019.
+\newblock \doi{10.3390/ijgi8030130}.
+
+\bibitem[Gelb and Apparicio(2019)]{gelb2019cyclists}
+J{\'e}r{\'e}my Gelb and Philippe Apparicio.
+\newblock Noise exposure of cyclists in {H}o {C}hi {M}inh {C}ity: a
+  spatio-temporal analysis using non-linear models.
+\newblock \emph{Applied Acoustics}, 148:\penalty0 332--343, 2019.
+\newblock \doi{10.1016/j.apacoust.2018.12.031}.
+
+\bibitem[{International Organization for Standardization}(2017)]{iso1996part2}
+{International Organization for Standardization}.
+\newblock {ISO} 1996-2:2017 --- acoustics: description, measurement and
+  assessment of environmental noise. part 2: determination of sound pressure
+  levels.
+\newblock International standard, 2017.
+
+\bibitem[Kardous and Shaw(2014)]{kardous2014smartphone}
+Chucri~A. Kardous and Peter~B. Shaw.
+\newblock Evaluation of smartphone sound measurement applications.
+\newblock \emph{The Journal of the Acoustical Society of America}, 135\penalty0
+  (4):\penalty0 EL186--EL192, 2014.
+\newblock \doi{10.1121/1.4865269}.
+
+\bibitem[Kephalopoulos et~al.(2014)Kephalopoulos, Paviotti,
+  Anfosso-L{\'e}d{\'e}e, Van~Maercke, Shilton, and
+  Jones]{kephalopoulos2014cnossos}
+Stylianos Kephalopoulos, Marco Paviotti, Fabienne Anfosso-L{\'e}d{\'e}e, Dirk
+  Van~Maercke, Simon Shilton, and Nigel Jones.
+\newblock Advances in the development of common noise assessment methods in
+  {E}urope: the {CNOSSOS-EU} framework for strategic environmental noise
+  mapping.
+\newblock \emph{Science of The Total Environment}, 482--483:\penalty0 400--410,
+  2014.
+\newblock \doi{10.1016/j.scitotenv.2014.02.031}.
+
+\bibitem[Meyer and Pebesma(2021)]{meyer2021aoa}
+Hanna Meyer and Edzer Pebesma.
+\newblock Predicting into unknown space? {E}stimating the area of applicability
+  of spatial prediction models.
+\newblock \emph{Methods in Ecology and Evolution}, 12\penalty0 (9):\penalty0
+  1620--1633, 2021.
+\newblock \doi{10.1111/2041-210X.13650}.
+
+\bibitem[{Ministry of Natural Resources and Environment of Viet
+  Nam}(2010)]{qcvn26}
+{Ministry of Natural Resources and Environment of Viet Nam}.
+\newblock {QCVN} 26:2010/{BTNMT} --- national technical regulation on noise.
+\newblock Vietnamese national technical regulation, 2010.
+
+\bibitem[Murphy and King(2016)]{murphy2016smartphone}
+Enda Murphy and Eoin~A. King.
+\newblock Testing the accuracy of smartphones and sound level meter
+  applications for measuring environmental noise.
+\newblock \emph{Applied Acoustics}, 106:\penalty0 16--22, 2016.
+\newblock \doi{10.1016/j.apacoust.2015.12.012}.
+
+\bibitem[Nguyen et~al.(2025{\natexlab{a}})Nguyen, Chu, Truong, and
+  Nguyen]{nguyen2025law}
+Quang~Chinh Nguyen, An~Thanh~Thi Chu, Bao~Gia Truong, and Duyen Hong~Thuc
+  Nguyen.
+\newblock Noise pollution in developing countries: loopholes and
+  recommendations for {V}ietnam law.
+\newblock \emph{City and Environment Interactions}, 25:\penalty0 100187,
+  2025{\natexlab{a}}.
+\newblock \doi{10.1016/j.cacint.2025.100187}.
+
+\bibitem[Nguyen et~al.(2025{\natexlab{b}})Nguyen, Nishimura, and
+  Nishimura]{nguyen2025horn}
+Thu~Lan Nguyen, Yuya Nishimura, and Sohei Nishimura.
+\newblock Horn use patterns and acoustic characteristics in congested urban
+  traffic: a case study of {H}o {C}hi {M}inh {C}ity.
+\newblock \emph{Acoustics}, 7\penalty0 (2):\penalty0 36, 2025{\natexlab{b}}.
+\newblock \doi{10.3390/acoustics7020036}.
+
+\bibitem[Nsumba et~al.(2026)]{nsumba2026sunbird}
+Solomon Nsumba et~al.
+\newblock Urban {N}oise {U}ganda 61{K}: a smartphone-based urban noise dataset.
+\newblock \emph{Scientific Data}, 2026.
+\newblock \doi{10.1038/s41597-026-06658-w}.
+
+\bibitem[Phan et~al.(2010)Phan, Yano, Sato, and
+  Nishimura]{phan2010characteristics}
+Hai Yen~Thi Phan, Takashi Yano, Tetsumi Sato, and Tsuyoshi Nishimura.
+\newblock Characteristics of road traffic noise in {H}anoi and {H}o {C}hi
+  {M}inh {C}ity, {V}ietnam.
+\newblock \emph{Applied Acoustics}, 71\penalty0 (5):\penalty0 479--485, 2010.
+\newblock \doi{10.1016/j.apacoust.2009.11.008}.
+
+\bibitem[Roberts et~al.(2017)Roberts, Bahn, Ciuti, Boyce, Elith,
+  Guillera-Arroita, Hauenstein, Lahoz-Monfort, Schr{\"o}der, Thuiller, Warton,
+  Wintle, Hartig, and Dormann]{roberts2017crossvalidation}
+David~R. Roberts, Volker Bahn, Simone Ciuti, Mark~S. Boyce, Jane Elith,
+  Gurutzeta Guillera-Arroita, Severin Hauenstein, Jos{\'e}~J. Lahoz-Monfort,
+  Boris Schr{\"o}der, Wilfried Thuiller, David~I. Warton, Brendon~A. Wintle,
+  Florian Hartig, and Carsten~F. Dormann.
+\newblock Cross-validation strategies for data with temporal, spatial,
+  hierarchical, or phylogenetic structure.
+\newblock \emph{Ecography}, 40\penalty0 (8):\penalty0 913--929, 2017.
+\newblock \doi{10.1111/ecog.02881}.
+
+\end{thebibliography}

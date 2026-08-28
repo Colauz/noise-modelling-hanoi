@@ -42,9 +42,9 @@ fun NoiseHanoiTheme(content: @Composable () -> Unit) {
  */
 fun levelColour(db: Double): Color = when {
     db.isNaN() -> Color(0xFF9E9E9E)
-    db < 55 -> Color(0xFF2E7D32)
-    db < 65 -> Color(0xFF9E9D24)
-    db < 70 -> Color(0xFFEF6C00)
-    db < 80 -> Color(0xFFD84315)
-    else -> Color(0xFFB71C1C)
+    db < 55 -> Color(0xFF14654A)
+    db < 65 -> Color(0xFFF5D06B)
+    db < 70 -> Color(0xFFEE9422)
+    db < 80 -> Color(0xFFD6541E)
+    else -> Color(0xFF5E0F14)
 }
